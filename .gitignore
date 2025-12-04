@@ -104,4 +104,4 @@ logs/
 # Local configuration
 config.local.*
 *.local
-
+.cursor/
