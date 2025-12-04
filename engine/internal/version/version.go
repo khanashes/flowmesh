@@ -62,4 +62,3 @@ func String() string {
 	return fmt.Sprintf("FlowMesh version %s (build time: %s, commit: %s, go: %s)",
 		info.Version, info.BuildTime, info.GitCommit, info.GoVersion)
 }
-

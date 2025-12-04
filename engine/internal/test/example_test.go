@@ -29,4 +29,3 @@ func ExampleTest(t *testing.T) {
 	// Verify the file path is correct
 	require.True(t, filepath.IsAbs(file))
 }
-

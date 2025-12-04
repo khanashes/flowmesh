@@ -70,4 +70,3 @@ func AssertFileNotExists(t *testing.T, path string) {
 	require.Error(t, err, "file should not exist: %s", path)
 	require.True(t, os.IsNotExist(err), "expected file not to exist: %s", path)
 }
-
