@@ -71,9 +71,7 @@ jobs:
 
     - name: Run golangci-lint
       working-directory: ./engine
-      uses: golangci/golangci-lint-action@v4
-      with:
-        args: --timeout=5m
+      run: golangci-lint run --timeout=5m
 
   build:
     name: Build
