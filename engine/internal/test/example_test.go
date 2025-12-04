@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// ExampleTest demonstrates basic test utilities usage
-func ExampleTest(t *testing.T) {
+// TestExample demonstrates basic test utilities usage
+func TestExample(t *testing.T) {
 	// Create a temporary directory
 	dir := test.TempDir(t)
 	assert.DirExists(t, dir)

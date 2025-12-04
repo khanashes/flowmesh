@@ -85,19 +85,19 @@ func (rc *ResourceConfig) GetPath() string {
 // Validate validates the resource configuration
 func (rc *ResourceConfig) Validate() error {
 	if rc.Tenant == "" {
-		return ErrInvalidConfig{Field: "tenant", Reason: "cannot be empty"}
+		return InvalidConfigError{Field: "tenant", Reason: "cannot be empty"}
 	}
 	if rc.Namespace == "" {
-		return ErrInvalidConfig{Field: "namespace", Reason: "cannot be empty"}
+		return InvalidConfigError{Field: "namespace", Reason: "cannot be empty"}
 	}
 	if rc.Name == "" {
-		return ErrInvalidConfig{Field: "name", Reason: "cannot be empty"}
+		return InvalidConfigError{Field: "name", Reason: "cannot be empty"}
 	}
 	if rc.Type != ResourceStream && rc.Type != ResourceQueue && rc.Type != ResourceKV {
-		return ErrInvalidConfig{Field: "type", Reason: "must be stream, queue, or kv"}
+		return InvalidConfigError{Field: "type", Reason: "must be stream, queue, or kv"}
 	}
 	if rc.Partitions < 0 {
-		return ErrInvalidConfig{Field: "partitions", Reason: "cannot be negative"}
+		return InvalidConfigError{Field: "partitions", Reason: "cannot be negative"}
 	}
 	if rc.Partitions == 0 {
 		// Default to 1 partition for MVP

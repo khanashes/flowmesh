@@ -75,7 +75,7 @@ func TestGetResource(t *testing.T) {
 	// Get non-existent resource
 	_, err = store.GetResource("nonexistent/path")
 	assert.Error(t, err)
-	assert.IsType(t, ErrResourceNotFound{}, err)
+	assert.IsType(t, ResourceNotFoundError{}, err)
 }
 
 func TestListResources(t *testing.T) {
@@ -153,7 +153,7 @@ func TestDeleteResource(t *testing.T) {
 	// Verify it's gone
 	_, err = store.GetResource(config.GetPath())
 	assert.Error(t, err)
-	assert.IsType(t, ErrResourceNotFound{}, err)
+	assert.IsType(t, ResourceNotFoundError{}, err)
 }
 
 func TestLoadAndFlush(t *testing.T) {

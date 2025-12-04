@@ -2,30 +2,30 @@ package metastore
 
 import "fmt"
 
-// ErrResourceNotFound indicates a resource was not found
-type ErrResourceNotFound struct {
+// ResourceNotFoundError indicates a resource was not found
+type ResourceNotFoundError struct {
 	Path string
 }
 
-func (e ErrResourceNotFound) Error() string {
+func (e ResourceNotFoundError) Error() string {
 	return fmt.Sprintf("resource not found: %s", e.Path)
 }
 
-// ErrResourceExists indicates a resource already exists
-type ErrResourceExists struct {
+// ResourceExistsError indicates a resource already exists
+type ResourceExistsError struct {
 	Path string
 }
 
-func (e ErrResourceExists) Error() string {
+func (e ResourceExistsError) Error() string {
 	return fmt.Sprintf("resource already exists: %s", e.Path)
 }
 
-// ErrInvalidConfig indicates an invalid resource configuration
-type ErrInvalidConfig struct {
+// InvalidConfigError indicates an invalid resource configuration
+type InvalidConfigError struct {
 	Field  string
 	Reason string
 }
 
-func (e ErrInvalidConfig) Error() string {
+func (e InvalidConfigError) Error() string {
 	return fmt.Sprintf("invalid config field '%s': %s", e.Field, e.Reason)
 }

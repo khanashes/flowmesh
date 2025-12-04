@@ -23,7 +23,7 @@ type Config struct {
 }
 
 // Init initializes the global logger based on configuration
-func Init(cfg Config) error {
+func Init(cfg *Config) error {
 	// Set log level
 	level, err := zerolog.ParseLevel(strings.ToLower(cfg.Level))
 	if err != nil {
@@ -58,7 +58,7 @@ func Init(cfg Config) error {
 	}
 
 	// Configure format
-	if strings.ToLower(cfg.Format) == "text" {
+	if strings.EqualFold(cfg.Format, "text") {
 		writer = zerolog.ConsoleWriter{
 			Out:        writer,
 			TimeFormat: time.RFC3339,

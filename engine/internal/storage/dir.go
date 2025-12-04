@@ -89,7 +89,7 @@ func validateDirectory(path string) error {
 }
 
 // GetResourceHashDir returns the directory path for a resource based on its hash
-func GetResourceHashDir(baseDir string, resourcePath string) (string, error) {
+func GetResourceHashDir(baseDir, resourcePath string) (string, error) {
 	// Simple hash-based directory structure
 	// For MVP, use a simple hash of the resource path
 	hash := hashResourcePath(resourcePath)

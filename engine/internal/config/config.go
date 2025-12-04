@@ -128,7 +128,7 @@ func Load() (*Config, error) {
 
 	// Load from config file if specified
 	if cfg.ConfigFile != "" {
-		if err := loadFromFile(cfg, cfg.ConfigFile); err != nil {
+		if err := loadFromFile(cfg.ConfigFile); err != nil {
 			return nil, fmt.Errorf("failed to load config file: %w", err)
 		}
 	}
@@ -200,7 +200,7 @@ func (c *Config) Validate() error {
 // loadFromFile loads configuration from a file
 // Currently supports basic key=value format
 // Future: add YAML/TOML support
-func loadFromFile(cfg *Config, path string) error {
+func loadFromFile(path string) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return err

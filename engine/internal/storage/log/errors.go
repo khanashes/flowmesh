@@ -2,49 +2,49 @@ package log
 
 import "fmt"
 
-// ErrEntryTooLarge indicates an entry exceeds the maximum size
-type ErrEntryTooLarge struct {
+// EntryTooLargeError indicates an entry exceeds the maximum size
+type EntryTooLargeError struct {
 	Size int
 	Max  int
 }
 
-func (e ErrEntryTooLarge) Error() string {
+func (e EntryTooLargeError) Error() string {
 	return fmt.Sprintf("entry size %d exceeds maximum %d", e.Size, e.Max)
 }
 
-// ErrInvalidEntryLength indicates an invalid entry length
-type ErrInvalidEntryLength struct {
+// InvalidEntryLengthError indicates an invalid entry length
+type InvalidEntryLengthError struct {
 	Length uint32
 }
 
-func (e ErrInvalidEntryLength) Error() string {
+func (e InvalidEntryLengthError) Error() string {
 	return fmt.Sprintf("invalid entry length: %d", e.Length)
 }
 
-// ErrChecksumMismatch indicates a checksum validation failure
-type ErrChecksumMismatch struct {
+// ChecksumMismatchError indicates a checksum validation failure
+type ChecksumMismatchError struct {
 	Expected uint32
 	Actual   uint32
 }
 
-func (e ErrChecksumMismatch) Error() string {
+func (e ChecksumMismatchError) Error() string {
 	return fmt.Sprintf("checksum mismatch: expected %d, got %d", e.Expected, e.Actual)
 }
 
-// ErrSegmentNotFound indicates a segment file was not found
-type ErrSegmentNotFound struct {
+// SegmentNotFoundError indicates a segment file was not found
+type SegmentNotFoundError struct {
 	Path string
 }
 
-func (e ErrSegmentNotFound) Error() string {
+func (e SegmentNotFoundError) Error() string {
 	return fmt.Sprintf("segment not found: %s", e.Path)
 }
 
-// ErrSegmentClosed indicates a segment operation on a closed segment
-type ErrSegmentClosed struct {
+// SegmentClosedError indicates a segment operation on a closed segment
+type SegmentClosedError struct {
 	Path string
 }
 
-func (e ErrSegmentClosed) Error() string {
+func (e SegmentClosedError) Error() string {
 	return fmt.Sprintf("segment is closed: %s", e.Path)
 }

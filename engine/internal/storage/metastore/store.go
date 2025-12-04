@@ -59,7 +59,7 @@ func (s *Store) CreateResource(config *ResourceConfig) error {
 
 	// Check if resource already exists
 	if _, exists := s.resources[path]; exists {
-		return ErrResourceExists{Path: path}
+		return ResourceExistsError{Path: path}
 	}
 
 	// Set timestamps
@@ -95,7 +95,7 @@ func (s *Store) GetResource(path string) (*ResourceConfig, error) {
 
 	config, exists := s.resources[path]
 	if !exists {
-		return nil, ErrResourceNotFound{Path: path}
+		return nil, ResourceNotFoundError{Path: path}
 	}
 
 	// Return a copy to prevent external modification
@@ -107,7 +107,7 @@ func (s *Store) ListResources(tenant, namespace string, resourceType ResourceTyp
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	var results []*ResourceConfig
+	results := make([]*ResourceConfig, 0, len(s.resources))
 
 	for path, config := range s.resources {
 		// Filter by tenant
@@ -143,7 +143,7 @@ func (s *Store) UpdateResource(path string, updater func(*ResourceConfig) error)
 
 	config, exists := s.resources[path]
 	if !exists {
-		return ErrResourceNotFound{Path: path}
+		return ResourceNotFoundError{Path: path}
 	}
 
 	// Create a copy for updating
@@ -184,7 +184,7 @@ func (s *Store) DeleteResource(path string) error {
 	defer s.mu.Unlock()
 
 	if _, exists := s.resources[path]; !exists {
-		return ErrResourceNotFound{Path: path}
+		return ResourceNotFoundError{Path: path}
 	}
 
 	delete(s.resources, path)
@@ -256,7 +256,7 @@ func (s *Store) flush() error {
 
 	// Write to temporary file first, then rename (atomic write)
 	tmpFile := s.filePath + ".tmp"
-	if err := os.WriteFile(tmpFile, data, 0644); err != nil {
+	if err := os.WriteFile(tmpFile, data, 0o600); err != nil {
 		return fmt.Errorf("failed to write metadata file: %w", err)
 	}
 

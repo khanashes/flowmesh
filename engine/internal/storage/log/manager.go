@@ -218,7 +218,7 @@ func (m *Manager) ListSegments(resourcePath string, partition int32) ([]*Segment
 		return nil, err
 	}
 
-	var segments []*SegmentMetadata
+	segments := make([]*SegmentMetadata, 0, len(segmentNums))
 	for _, num := range segmentNums {
 		segmentPath := getSegmentPath(resourceDir, num)
 		metadata, err := m.readSegmentMetadata(segmentPath)
@@ -239,7 +239,7 @@ func (m *Manager) listSegmentsLocked(resourceDir string) ([]int, error) {
 		return nil, err
 	}
 
-	var segmentNums []int
+	segmentNums := make([]int, 0, len(files))
 	for _, file := range files {
 		var num int
 		_, err := fmt.Sscanf(filepath.Base(file), "segment-%d.log", &num)
@@ -313,7 +313,7 @@ func segmentKey(resourcePath string, partition int32) string {
 }
 
 // getResourceHashDir returns the directory path for a resource based on its hash
-func getResourceHashDir(baseDir string, resourcePath string) string {
+func getResourceHashDir(baseDir, resourcePath string) string {
 	hash := hashResourcePath(resourcePath)
 	return filepath.Join(baseDir, hash)
 }

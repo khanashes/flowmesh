@@ -96,7 +96,7 @@ func TestSegmentWriter_ChecksumValidation(t *testing.T) {
 
 	_, _, err = reader.ReadEntry()
 	assert.Error(t, err)
-	assert.IsType(t, ErrChecksumMismatch{}, err)
+	assert.IsType(t, ChecksumMismatchError{}, err)
 }
 
 func TestSegmentWriter_MultipleEntries(t *testing.T) {

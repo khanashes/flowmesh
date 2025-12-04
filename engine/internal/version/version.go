@@ -6,15 +6,17 @@ import (
 	"runtime/debug"
 )
 
+const defaultVersion = "unknown"
+
 var (
 	// Version is the application version (set at build time)
 	Version = "dev"
 
 	// BuildTime is the build time (set at build time)
-	BuildTime = "unknown"
+	BuildTime = defaultVersion
 
 	// GitCommit is the git commit hash (set at build time)
-	GitCommit = "unknown"
+	GitCommit = defaultVersion
 
 	// GoVersion is the Go version used to build
 	GoVersion = runtime.Version()
@@ -36,11 +38,11 @@ func Get() Info {
 			for _, setting := range info.Settings {
 				switch setting.Key {
 				case "vcs.revision":
-					if GitCommit == "unknown" {
+					if GitCommit == defaultVersion {
 						GitCommit = setting.Value
 					}
 				case "vcs.time":
-					if BuildTime == "unknown" {
+					if BuildTime == defaultVersion {
 						BuildTime = setting.Value
 					}
 				}
