@@ -70,8 +70,8 @@ jobs:
         version: latest
 
     - name: Run golangci-lint
-      working-directory: ./engine
-      run: golangci-lint run --timeout=5m
+      working-directory: .
+      run: golangci-lint run --timeout=5m ./engine/...
 
   build:
     name: Build

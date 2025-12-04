@@ -18,8 +18,8 @@ linters-settings:
   errcheck:
     check-type-assertions: true
     check-blank: true
-  govet:
-    check-shadowing: true
+  shadow:
+    enabled: true
   gocyclo:
     min-complexity: 15
   dupl:
@@ -57,6 +57,7 @@ linters:
     - ineffassign
     - staticcheck
     - unused
+    - shadow
     - gofmt
     - goimports
     - gocyclo
@@ -64,7 +65,7 @@ linters:
     - unparam
     - goconst
     - prealloc
-    - exportloopref
+    - copyloopvar
     - gocritic
     - bodyclose
     - dogsled
@@ -80,12 +81,9 @@ linters:
     - noctx
     - rowserrcheck
     - sqlclosecheck
-    - structcheck
     - stylecheck
     - typecheck
     - unconvert
-    - unparam
-    - varcheck
     - whitespace
 
 issues:
