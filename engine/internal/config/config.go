@@ -210,4 +210,3 @@ func loadFromFile(cfg *Config, path string) error {
 	_ = data
 	return nil
 }
-
