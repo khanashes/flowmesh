@@ -47,3 +47,51 @@ type InvalidVisibilityTimeoutError struct {
 func (e InvalidVisibilityTimeoutError) Error() string {
 	return fmt.Sprintf("invalid visibility timeout %v: %s", e.Timeout, e.Reason)
 }
+
+// NACKError indicates an error during NACK operation
+type NACKError struct {
+	ResourcePath string
+	JobID        string
+	Err          error
+}
+
+func (e NACKError) Error() string {
+	return fmt.Sprintf("failed to NACK job %s in queue %s: %v", e.JobID, e.ResourcePath, e.Err)
+}
+
+func (e NACKError) Unwrap() error {
+	return e.Err
+}
+
+// MaxAttemptsExceededError indicates a job exceeded max retry attempts
+type MaxAttemptsExceededError struct {
+	JobID        string
+	ResourcePath string
+	Attempts     int32
+	MaxAttempts  int32
+}
+
+func (e MaxAttemptsExceededError) Error() string {
+	return fmt.Sprintf("job %s exceeded max attempts (%d/%d) in queue %s", e.JobID, e.Attempts, e.MaxAttempts, e.ResourcePath)
+}
+
+// WorkerNotFoundError indicates a worker was not found
+type WorkerNotFoundError struct {
+	WorkerID     string
+	ResourcePath string
+}
+
+func (e WorkerNotFoundError) Error() string {
+	return fmt.Sprintf("worker %s not found for queue %s", e.WorkerID, e.ResourcePath)
+}
+
+// JobExpiredError indicates a job visibility timeout expired
+type JobExpiredError struct {
+	JobID        string
+	ResourcePath string
+	ExpiredAt    time.Time
+}
+
+func (e JobExpiredError) Error() string {
+	return fmt.Sprintf("job %s visibility timeout expired at %v in queue %s", e.JobID, e.ExpiredAt, e.ResourcePath)
+}

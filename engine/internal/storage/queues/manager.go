@@ -1,11 +1,13 @@
 package queues
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"sync"
 	"time"
 
@@ -26,23 +28,46 @@ type QueueState struct {
 
 // Manager manages queue operations
 type Manager struct {
-	metaStore   *metastore.Store
-	logManager  *log.Manager
-	metadataDir string
-	queueStates map[string]*QueueState
-	log         zerolog.Logger
-	mu          sync.RWMutex
+	metaStore     *metastore.Store
+	logManager    *log.Manager
+	metadataDir   string
+	queueStates   map[string]*QueueState
+	workers       map[string]map[string]*WorkerInfo // queuePath -> workerID -> WorkerInfo
+	retryPolicies map[string]*RetryPolicy           // queuePath -> RetryPolicy
+	log           zerolog.Logger
+	mu            sync.RWMutex
+	scheduler     *Scheduler
 }
 
 // NewManager creates a new queue manager
 func NewManager(metaStore *metastore.Store, logManager *log.Manager, metadataDir string) *Manager {
-	return &Manager{
-		metaStore:   metaStore,
-		logManager:  logManager,
-		metadataDir: metadataDir,
-		queueStates: make(map[string]*QueueState),
-		log:         logger.WithComponent("queues"),
+	mgr := &Manager{
+		metaStore:     metaStore,
+		logManager:    logManager,
+		metadataDir:   metadataDir,
+		queueStates:   make(map[string]*QueueState),
+		workers:       make(map[string]map[string]*WorkerInfo),
+		retryPolicies: make(map[string]*RetryPolicy),
+		log:           logger.WithComponent("queues"),
+		scheduler:     NewScheduler(metaStore, logManager),
 	}
+	mgr.scheduler.SetQueueManager(mgr)
+	return mgr
+}
+
+// Start starts the queue manager and scheduler
+func (m *Manager) Start(ctx context.Context) error {
+	return m.scheduler.Start(ctx)
+}
+
+// Stop stops the queue manager and scheduler
+func (m *Manager) Stop(ctx context.Context) error {
+	return m.scheduler.Stop(ctx)
+}
+
+// Ready returns true if the queue manager is ready
+func (m *Manager) Ready() bool {
+	return true
 }
 
 // getOrCreateQueueState gets or creates queue state for a resource
@@ -249,6 +274,16 @@ func (m *Manager) AddToInFlight(resourcePath string, jobID string, visibilityTim
 	return job, nil
 }
 
+// ACK acknowledges a job (removes from InFlight)
+func (m *Manager) ACK(ctx context.Context, resourcePath string, jobID string) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+	return m.RemoveFromInFlight(resourcePath, jobID)
+}
+
 // RemoveFromInFlight removes a job from InFlight (used for ACK)
 func (m *Manager) RemoveFromInFlight(resourcePath string, jobID string) error {
 	// Get queue state
@@ -263,9 +298,10 @@ func (m *Manager) RemoveFromInFlight(resourcePath string, jobID string) error {
 	state.mu.Lock()
 	defer state.mu.Unlock()
 
-	// Remove from InFlight
+	// Check if job exists in InFlight (idempotent)
 	if _, exists := state.InFlight[jobID]; !exists {
-		return JobNotFoundError{JobID: jobID, ResourcePath: resourcePath}
+		// Already ACKed, return nil for idempotency
+		return nil
 	}
 
 	delete(state.InFlight, jobID)
@@ -274,6 +310,134 @@ func (m *Manager) RemoveFromInFlight(resourcePath string, jobID string) error {
 		Str("resource", resourcePath).
 		Str("job_id", jobID).
 		Msg("Job removed from InFlight (ACKed)")
+
+	return nil
+}
+
+// NACK negatively acknowledges a job (requeues with backoff)
+func (m *Manager) NACK(ctx context.Context, resourcePath string, jobID string) error {
+	return m.NACKWithDelay(ctx, resourcePath, jobID, 0)
+}
+
+// NACKWithDelay negatively acknowledges a job with explicit delay
+func (m *Manager) NACKWithDelay(ctx context.Context, resourcePath string, jobID string, delay time.Duration) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+
+	// Get queue state
+	m.mu.RLock()
+	state, exists := m.queueStates[resourcePath]
+	policy := m.retryPolicies[resourcePath]
+	m.mu.RUnlock()
+
+	if !exists {
+		return QueueNotFoundError{ResourcePath: resourcePath}
+	}
+
+	state.mu.Lock()
+	defer state.mu.Unlock()
+
+	// Get job from InFlight
+	job, exists := state.InFlight[jobID]
+	if !exists {
+		return JobNotFoundError{JobID: jobID, ResourcePath: resourcePath}
+	}
+
+	// Use default policy if not set
+	if policy == nil {
+		defaultPolicy := DefaultRetryPolicy()
+		policy = &defaultPolicy
+	}
+
+	// Check max attempts
+	if policy.MaxAttempts > 0 && job.Attempts >= policy.MaxAttempts {
+		// Max attempts exceeded - will be handled by scheduler/DLQ
+		delete(state.InFlight, jobID)
+		return MaxAttemptsExceededError{
+			JobID:        jobID,
+			ResourcePath: resourcePath,
+			Attempts:     job.Attempts,
+			MaxAttempts:  policy.MaxAttempts,
+		}
+	}
+
+	// Calculate backoff
+	if delay == 0 {
+		delay = m.calculateBackoff(job.Attempts, policy)
+	}
+
+	// Remove from InFlight
+	delete(state.InFlight, jobID)
+
+	// Update job metadata
+	job.VisibleAt = time.Now().Add(delay)
+	job.ReserveUntil = time.Time{}
+	job.Attempts++
+
+	// Reinsert into ReadyHeap
+	state.ReadyHeap.PushJob(job)
+
+	m.log.Debug().
+		Str("resource", resourcePath).
+		Str("job_id", jobID).
+		Int32("attempts", job.Attempts).
+		Dur("backoff", delay).
+		Msg("Job NACKed and requeued")
+
+	return nil
+}
+
+// calculateBackoff calculates the backoff delay based on attempts and policy
+func (m *Manager) calculateBackoff(attempts int32, policy *RetryPolicy) time.Duration {
+	var delay time.Duration
+
+	switch policy.BackoffStrategy {
+	case BackoffStrategyFixed:
+		delay = policy.InitialBackoff
+	case BackoffStrategyLinear:
+		delay = policy.InitialBackoff * time.Duration(attempts)
+	case BackoffStrategyExponential:
+		multiplier := math.Pow(policy.BackoffMultiplier, float64(attempts-1))
+		delay = time.Duration(float64(policy.InitialBackoff) * multiplier)
+	default:
+		delay = policy.InitialBackoff
+	}
+
+	// Enforce max backoff
+	if delay > policy.MaxBackoff {
+		delay = policy.MaxBackoff
+	}
+
+	return delay
+}
+
+// requeueJob requeues a job with backoff
+func (m *Manager) requeueJob(resourcePath string, job *JobMetadata, delay time.Duration) error {
+	// Get queue state
+	m.mu.RLock()
+	state, exists := m.queueStates[resourcePath]
+	m.mu.RUnlock()
+
+	if !exists {
+		return QueueNotFoundError{ResourcePath: resourcePath}
+	}
+
+	state.mu.Lock()
+	defer state.mu.Unlock()
+
+	// Remove from InFlight if present
+	delete(state.InFlight, job.ID)
+
+	// Update job metadata
+	job.VisibleAt = time.Now().Add(delay)
+	job.ReserveUntil = time.Time{}
+	job.Attempts++
+
+	// Reinsert into ReadyHeap
+	state.ReadyHeap.PushJob(job)
 
 	return nil
 }
@@ -388,6 +552,509 @@ func (m *Manager) InitializeQueue(resourcePath string) error {
 		Msg("Queue initialized")
 
 	return nil
+}
+
+// Reserve reserves a job from the queue with visibility timeout
+func (m *Manager) Reserve(ctx context.Context, resourcePath string, options ReserveOptions) (*JobMetadata, error) {
+	// Check context first
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+
+	// Validate queue exists
+	_, err := m.metaStore.GetResource(resourcePath)
+	if err != nil {
+		if _, ok := err.(metastore.ResourceNotFoundError); ok {
+			return nil, QueueNotFoundError{ResourcePath: resourcePath}
+		}
+		return nil, err
+	}
+
+	// Validate visibility timeout
+	if options.VisibilityTimeout <= 0 {
+		return nil, InvalidVisibilityTimeoutError{
+			Timeout: options.VisibilityTimeout,
+			Reason:  "must be greater than zero",
+		}
+	}
+
+	// Use default options if not provided
+	if options.VisibilityTimeout == 0 {
+		options = DefaultReserveOptions()
+	}
+
+	// Try to get a job immediately
+	job, err := m.PopReadyJobWithContext(ctx, resourcePath)
+	if err != nil {
+		return nil, err
+	}
+
+	// If no job and long polling enabled, wait
+	if job == nil && options.LongPollTimeout > 0 {
+		job, err = m.longPollForJob(ctx, resourcePath, options.LongPollTimeout, options.MaxWaitTime)
+		if err != nil {
+			return nil, err
+		}
+		if job == nil {
+			return nil, nil // Timeout reached
+		}
+	}
+
+	if job == nil {
+		return nil, nil // No jobs available
+	}
+
+	// Add to InFlight (job is already popped from ReadyHeap)
+	// We need to add it directly to InFlight
+	m.mu.RLock()
+	state, exists := m.queueStates[resourcePath]
+	m.mu.RUnlock()
+
+	if !exists {
+		return nil, QueueNotFoundError{ResourcePath: resourcePath}
+	}
+
+	state.mu.Lock()
+	defer state.mu.Unlock()
+
+	// Set ReserveUntil
+	now := time.Now()
+	job.ReserveUntil = now.Add(options.VisibilityTimeout)
+	job.Attempts++
+
+	// Add to InFlight
+	state.InFlight[job.ID] = job
+
+	m.log.Debug().
+		Str("resource", resourcePath).
+		Str("job_id", job.ID).
+		Time("reserve_until", job.ReserveUntil).
+		Msg("Job reserved")
+
+	return job, nil
+}
+
+// PopReadyJobWithContext pops a ready job with context support
+func (m *Manager) PopReadyJobWithContext(ctx context.Context, resourcePath string) (*JobMetadata, error) {
+	// Get queue state
+	m.mu.RLock()
+	state, exists := m.queueStates[resourcePath]
+	m.mu.RUnlock()
+
+	if !exists {
+		return nil, QueueNotFoundError{ResourcePath: resourcePath}
+	}
+
+	now := time.Now()
+
+	// Try to get a job immediately
+	state.mu.Lock()
+	job := state.ReadyHeap.Peek()
+	if job != nil && !job.VisibleAt.After(now) {
+		popped := state.ReadyHeap.PopJob()
+		state.mu.Unlock()
+		return popped, nil
+	}
+	state.mu.Unlock()
+
+	// No job available immediately, return nil
+	return nil, nil
+}
+
+// longPollForJob waits for a job to become available
+func (m *Manager) longPollForJob(ctx context.Context, resourcePath string, pollTimeout, maxWait time.Duration) (*JobMetadata, error) {
+	deadline := time.Now().Add(maxWait)
+	if pollTimeout > 0 && pollTimeout < maxWait {
+		deadline = time.Now().Add(pollTimeout)
+	}
+
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-ticker.C:
+			if time.Now().After(deadline) {
+				return nil, nil // Timeout
+			}
+
+			// Try to get a job
+			job, err := m.PopReadyJobWithContext(ctx, resourcePath)
+			if err != nil {
+				return nil, err
+			}
+			if job != nil {
+				return job, nil
+			}
+		}
+	}
+}
+
+// Receive receives one or more jobs from the queue
+func (m *Manager) Receive(ctx context.Context, resourcePath string, maxJobs int, options ReserveOptions) ([]*JobMetadata, error) {
+	// Check context first
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+
+	if maxJobs <= 0 {
+		maxJobs = 1
+	}
+	if maxJobs > 100 {
+		maxJobs = 100 // Limit batch size
+	}
+
+	// Validate queue exists
+	_, err := m.metaStore.GetResource(resourcePath)
+	if err != nil {
+		if _, ok := err.(metastore.ResourceNotFoundError); ok {
+			return nil, QueueNotFoundError{ResourcePath: resourcePath}
+		}
+		return nil, err
+	}
+
+	// Use default options if not provided
+	if options.VisibilityTimeout == 0 {
+		options = DefaultReserveOptions()
+	}
+
+	// Get queue state
+	m.mu.RLock()
+	state, exists := m.queueStates[resourcePath]
+	m.mu.RUnlock()
+
+	if !exists {
+		return nil, QueueNotFoundError{ResourcePath: resourcePath}
+	}
+
+	var jobs []*JobMetadata
+	now := time.Now()
+
+	state.mu.Lock()
+	for len(jobs) < maxJobs {
+		job := state.ReadyHeap.Peek()
+		if job == nil {
+			break
+		}
+
+		// Check if job is visible
+		if job.VisibleAt.After(now) {
+			break
+		}
+
+		// Pop the job
+		popped := state.ReadyHeap.PopJob()
+		if popped == nil {
+			break
+		}
+
+		// Add to InFlight
+		popped.ReserveUntil = now.Add(options.VisibilityTimeout)
+		popped.Attempts++
+		state.InFlight[popped.ID] = popped
+		jobs = append(jobs, popped)
+	}
+	state.mu.Unlock()
+
+	// If no jobs and long polling enabled, wait
+	if len(jobs) == 0 && options.LongPollTimeout > 0 {
+		job, err := m.longPollForJob(ctx, resourcePath, options.LongPollTimeout, options.MaxWaitTime)
+		if err != nil {
+			return nil, err
+		}
+		if job != nil {
+			// Add to InFlight
+			inFlightJob, err := m.AddToInFlight(resourcePath, job.ID, options.VisibilityTimeout)
+			if err != nil {
+				return nil, err
+			}
+			jobs = append(jobs, inFlightJob)
+		}
+	}
+
+	return jobs, nil
+}
+
+// ReceiveWithContext receives jobs with context support
+func (m *Manager) ReceiveWithContext(ctx context.Context, resourcePath string, maxJobs int, options ReserveOptions) ([]*JobMetadata, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+	return m.Receive(ctx, resourcePath, maxJobs, options)
+}
+
+// RegisterWorker registers a worker for a queue
+func (m *Manager) RegisterWorker(ctx context.Context, resourcePath string, workerID string) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+
+	// Validate queue exists
+	_, err := m.metaStore.GetResource(resourcePath)
+	if err != nil {
+		if _, ok := err.(metastore.ResourceNotFoundError); ok {
+			return QueueNotFoundError{ResourcePath: resourcePath}
+		}
+		return err
+	}
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	// Initialize workers map for this queue if needed
+	if m.workers[resourcePath] == nil {
+		m.workers[resourcePath] = make(map[string]*WorkerInfo)
+	}
+
+	// Create or update worker info
+	worker := &WorkerInfo{
+		WorkerID:      workerID,
+		QueuePath:     resourcePath,
+		LastHeartbeat: time.Now(),
+		ActiveJobs:    make([]string, 0),
+	}
+	m.workers[resourcePath][workerID] = worker
+
+	m.log.Debug().
+		Str("resource", resourcePath).
+		Str("worker_id", workerID).
+		Msg("Worker registered")
+
+	return nil
+}
+
+// UnregisterWorker unregisters a worker
+func (m *Manager) UnregisterWorker(ctx context.Context, resourcePath string, workerID string) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	workers, exists := m.workers[resourcePath]
+	if !exists {
+		return WorkerNotFoundError{WorkerID: workerID, ResourcePath: resourcePath}
+	}
+
+	worker, exists := workers[workerID]
+	if !exists {
+		return WorkerNotFoundError{WorkerID: workerID, ResourcePath: resourcePath}
+	}
+
+	// Requeue any active jobs
+	for _, jobID := range worker.ActiveJobs {
+		// Get job from InFlight
+		state, stateExists := m.queueStates[resourcePath]
+		if stateExists {
+			state.mu.Lock()
+			if job, jobExists := state.InFlight[jobID]; jobExists {
+				// Requeue the job
+				job.VisibleAt = time.Now()
+				job.ReserveUntil = time.Time{}
+				state.ReadyHeap.PushJob(job)
+				delete(state.InFlight, jobID)
+			}
+			state.mu.Unlock()
+		}
+	}
+
+	delete(workers, workerID)
+	if len(workers) == 0 {
+		delete(m.workers, resourcePath)
+	}
+
+	m.log.Debug().
+		Str("resource", resourcePath).
+		Str("worker_id", workerID).
+		Msg("Worker unregistered")
+
+	return nil
+}
+
+// Heartbeat updates worker heartbeat
+func (m *Manager) Heartbeat(ctx context.Context, resourcePath string, workerID string) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	workers, exists := m.workers[resourcePath]
+	if !exists {
+		return WorkerNotFoundError{WorkerID: workerID, ResourcePath: resourcePath}
+	}
+
+	worker, exists := workers[workerID]
+	if !exists {
+		return WorkerNotFoundError{WorkerID: workerID, ResourcePath: resourcePath}
+	}
+
+	worker.LastHeartbeat = time.Now()
+	return nil
+}
+
+// GetJobPayload retrieves the payload for a job from the log
+func (m *Manager) GetJobPayload(ctx context.Context, resourcePath string, jobID string) ([]byte, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+
+	// Get job metadata
+	job, err := m.GetJobMetadata(ctx, resourcePath, jobID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Read from segment
+	reader, err := log.NewSegmentReader(job.PayloadPos.File)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open segment: %w", err)
+	}
+	defer reader.Close()
+
+	// Seek to the offset
+	// Note: We need to read entries until we find the one at the correct offset
+	// For now, we'll read from the beginning and find the matching entry
+	for {
+		data, offset, readErr := reader.ReadEntry()
+		if readErr != nil {
+			if errors.Is(readErr, io.EOF) {
+				break
+			}
+			return nil, fmt.Errorf("failed to read entry: %w", readErr)
+		}
+
+		// Check if this is the entry we're looking for
+		if offset == job.PayloadPos.Offset {
+			// Decode message
+			msg, decodeErr := log.DecodeMessage(data)
+			if decodeErr != nil {
+				return nil, fmt.Errorf("failed to decode message: %w", decodeErr)
+			}
+
+			// Verify job ID matches
+			if msg.ID != jobID {
+				return nil, fmt.Errorf("job ID mismatch: expected %s, got %s", jobID, msg.ID)
+			}
+
+			return msg.Payload, nil
+		}
+
+		// If we've passed the offset, the entry wasn't found
+		if offset > job.PayloadPos.Offset {
+			return nil, fmt.Errorf("job entry not found at offset %d", job.PayloadPos.Offset)
+		}
+	}
+
+	return nil, fmt.Errorf("job entry not found")
+}
+
+// GetJobMetadata retrieves job metadata by ID
+func (m *Manager) GetJobMetadata(ctx context.Context, resourcePath string, jobID string) (*JobMetadata, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+
+	// Get queue state
+	m.mu.RLock()
+	state, exists := m.queueStates[resourcePath]
+	m.mu.RUnlock()
+
+	if !exists {
+		return nil, QueueNotFoundError{ResourcePath: resourcePath}
+	}
+
+	state.mu.RLock()
+	defer state.mu.RUnlock()
+
+	// Check InFlight first
+	if job, exists := state.InFlight[jobID]; exists {
+		return job, nil
+	}
+
+	// Check ReadyHeap
+	allJobs := state.ReadyHeap.GetAll()
+	for _, job := range allJobs {
+		if job.ID == jobID {
+			return job, nil
+		}
+	}
+
+	return nil, JobNotFoundError{JobID: jobID, ResourcePath: resourcePath}
+}
+
+// GetQueueStats returns statistics for a queue
+func (m *Manager) GetQueueStats(ctx context.Context, resourcePath string) (*QueueStats, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+
+	// Validate queue exists
+	_, err := m.metaStore.GetResource(resourcePath)
+	if err != nil {
+		if _, ok := err.(metastore.ResourceNotFoundError); ok {
+			return nil, QueueNotFoundError{ResourcePath: resourcePath}
+		}
+		return nil, err
+	}
+
+	// Get queue state
+	m.mu.RLock()
+	state, exists := m.queueStates[resourcePath]
+	m.mu.RUnlock()
+
+	if !exists {
+		return nil, QueueNotFoundError{ResourcePath: resourcePath}
+	}
+
+	state.mu.RLock()
+	defer state.mu.RUnlock()
+
+	now := time.Now()
+	stats := &QueueStats{
+		TotalJobs:     state.NextSeq,
+		PendingJobs:   int64(state.ReadyHeap.Len()),
+		InFlightJobs:  int64(len(state.InFlight)),
+		CompletedJobs: 0, // Would need to track this separately
+		FailedJobs:    0, // Would need to track this separately
+		OldestJobAge:  0,
+	}
+
+	// Find oldest job
+	allJobs := state.ReadyHeap.GetAll()
+	if len(allJobs) > 0 {
+		oldest := allJobs[0]
+		for _, job := range allJobs {
+			if job.CreatedAt.Before(oldest.CreatedAt) {
+				oldest = job
+			}
+		}
+		stats.OldestJobAge = now.Sub(oldest.CreatedAt)
+	}
+
+	return stats, nil
 }
 
 // recoverLastSeq recovers the last sequence number by reading the last segment
