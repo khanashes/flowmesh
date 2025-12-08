@@ -57,7 +57,8 @@ func TestStorage_Validate(t *testing.T) {
 	require.NoError(t, err)
 
 	// Should validate successfully
-	err = storage.Validate()
+	ctx := context.Background()
+	err = storage.Validate(ctx)
 	assert.NoError(t, err)
 }
 

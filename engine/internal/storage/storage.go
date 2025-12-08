@@ -6,7 +6,6 @@ import (
 	"os"
 	"sync"
 
-	"github.com/flowmesh/engine/internal/logger"
 	logpkg "github.com/flowmesh/engine/internal/storage/log"
 	"github.com/flowmesh/engine/internal/storage/metastore"
 	"github.com/flowmesh/engine/internal/storage/queues"
@@ -15,6 +14,7 @@ import (
 )
 
 // Storage represents the complete storage system
+// It implements StorageBackend interface
 type Storage struct {
 	paths         *StoragePaths
 	metaStore     *metastore.Store
@@ -24,46 +24,16 @@ type Storage struct {
 	log           zerolog.Logger
 	mu            sync.RWMutex
 	closed        bool
+	ready         bool
 }
 
-// New creates a new storage system
+// Ensure Storage implements StorageBackend interface
+var _ StorageBackend = (*Storage)(nil)
+
+// New creates a new storage system with default configuration
+// For more control, use NewBuilder()
 func New(dataDir string) (*Storage, error) {
-	log := logger.WithComponent("storage")
-
-	// Initialize directories
-	paths, err := InitDirectories(dataDir)
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize directories: %w", err)
-	}
-
-	// Initialize metadata store
-	metaStore, err := metastore.NewStore(paths.MetadataDir)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create metadata store: %w", err)
-	}
-
-	// Initialize log manager
-	logManager := logpkg.NewManager(paths.BaseDir)
-
-	storage := &Storage{
-		paths:      paths,
-		metaStore:  metaStore,
-		logManager: logManager,
-		log:        log,
-		closed:     false,
-	}
-
-	// Initialize stream manager
-	storage.streamManager = streams.NewManager(metaStore, logManager, paths.MetadataDir)
-
-	// Initialize queue manager
-	storage.queueManager = queues.NewManager(metaStore, logManager, paths.MetadataDir)
-
-	log.Info().
-		Str("data_dir", dataDir).
-		Msg("Storage initialized")
-
-	return storage, nil
+	return NewBuilder().WithDataDir(dataDir).Build()
 }
 
 // MetaStore returns the metadata store
@@ -72,18 +42,18 @@ func (s *Storage) MetaStore() *metastore.Store {
 }
 
 // LogManager returns the log manager
-func (s *Storage) LogManager() *logpkg.Manager {
+func (s *Storage) LogManager() LogManager {
 	return s.logManager
 }
 
 // StreamManager returns the stream manager
-func (s *Storage) StreamManager() *streams.Manager {
-	return s.streamManager
+func (s *Storage) StreamManager() StreamManager {
+	return &streamManagerWrapper{Manager: s.streamManager}
 }
 
 // QueueManager returns the queue manager
-func (s *Storage) QueueManager() *queues.Manager {
-	return s.queueManager
+func (s *Storage) QueueManager() QueueManager {
+	return &queueManagerWrapper{Manager: s.queueManager}
 }
 
 // Paths returns the storage paths
@@ -134,8 +104,50 @@ func (s *Storage) Close(ctx context.Context) error {
 	return lastErr
 }
 
+// Start initializes and starts the storage system
+func (s *Storage) Start(ctx context.Context) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.ready {
+		return nil
+	}
+
+	s.log.Info().Msg("Starting storage system...")
+
+	// Validate storage
+	if err := s.Validate(ctx); err != nil {
+		return fmt.Errorf("storage validation failed: %w", err)
+	}
+
+	// Load metadata
+	if err := s.metaStore.Load(); err != nil {
+		if !os.IsNotExist(err) {
+			return fmt.Errorf("failed to load metadata: %w", err)
+		}
+		// Metadata file doesn't exist yet, that's okay
+	}
+
+	s.ready = true
+	s.log.Info().Msg("Storage system started")
+
+	return nil
+}
+
+// Stop gracefully stops the storage system
+func (s *Storage) Stop(ctx context.Context) error {
+	return s.Close(ctx)
+}
+
+// Ready returns true if the storage system is ready
+func (s *Storage) Ready() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.ready && !s.closed
+}
+
 // Validate validates the storage system integrity
-func (s *Storage) Validate() error {
+func (s *Storage) Validate(ctx context.Context) error {
 	// Check that directories exist
 	if err := validateStorageDirectory(s.paths.BaseDir); err != nil {
 		return fmt.Errorf("base directory invalid: %w", err)
