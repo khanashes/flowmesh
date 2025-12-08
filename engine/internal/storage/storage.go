@@ -9,6 +9,7 @@ import (
 	"github.com/flowmesh/engine/internal/logger"
 	logpkg "github.com/flowmesh/engine/internal/storage/log"
 	"github.com/flowmesh/engine/internal/storage/metastore"
+	"github.com/flowmesh/engine/internal/storage/queues"
 	"github.com/flowmesh/engine/internal/storage/streams"
 	"github.com/rs/zerolog"
 )
@@ -19,6 +20,7 @@ type Storage struct {
 	metaStore     *metastore.Store
 	logManager    *logpkg.Manager
 	streamManager *streams.Manager
+	queueManager  *queues.Manager
 	log           zerolog.Logger
 	mu            sync.RWMutex
 	closed        bool
@@ -54,6 +56,9 @@ func New(dataDir string) (*Storage, error) {
 	// Initialize stream manager
 	storage.streamManager = streams.NewManager(metaStore, logManager, paths.MetadataDir)
 
+	// Initialize queue manager
+	storage.queueManager = queues.NewManager(metaStore, logManager, paths.MetadataDir)
+
 	log.Info().
 		Str("data_dir", dataDir).
 		Msg("Storage initialized")
@@ -74,6 +79,11 @@ func (s *Storage) LogManager() *logpkg.Manager {
 // StreamManager returns the stream manager
 func (s *Storage) StreamManager() *streams.Manager {
 	return s.streamManager
+}
+
+// QueueManager returns the queue manager
+func (s *Storage) QueueManager() *queues.Manager {
+	return s.queueManager
 }
 
 // Paths returns the storage paths
