@@ -9,17 +9,19 @@ import (
 	"github.com/flowmesh/engine/internal/logger"
 	logpkg "github.com/flowmesh/engine/internal/storage/log"
 	"github.com/flowmesh/engine/internal/storage/metastore"
+	"github.com/flowmesh/engine/internal/storage/streams"
 	"github.com/rs/zerolog"
 )
 
 // Storage represents the complete storage system
 type Storage struct {
-	paths      *StoragePaths
-	metaStore  *metastore.Store
-	logManager *logpkg.Manager
-	log        zerolog.Logger
-	mu         sync.RWMutex
-	closed     bool
+	paths         *StoragePaths
+	metaStore     *metastore.Store
+	logManager    *logpkg.Manager
+	streamManager *streams.Manager
+	log           zerolog.Logger
+	mu            sync.RWMutex
+	closed        bool
 }
 
 // New creates a new storage system
@@ -49,6 +51,9 @@ func New(dataDir string) (*Storage, error) {
 		closed:     false,
 	}
 
+	// Initialize stream manager
+	storage.streamManager = streams.NewManager(metaStore, logManager, paths.MetadataDir)
+
 	log.Info().
 		Str("data_dir", dataDir).
 		Msg("Storage initialized")
@@ -64,6 +69,11 @@ func (s *Storage) MetaStore() *metastore.Store {
 // LogManager returns the log manager
 func (s *Storage) LogManager() *logpkg.Manager {
 	return s.logManager
+}
+
+// StreamManager returns the stream manager
+func (s *Storage) StreamManager() *streams.Manager {
+	return s.streamManager
 }
 
 // Paths returns the storage paths
@@ -93,6 +103,12 @@ func (s *Storage) Close(ctx context.Context) error {
 	// Close all segments
 	if err := s.logManager.CloseAll(); err != nil {
 		s.log.Error().Err(err).Msg("Failed to close all segments")
+		lastErr = err
+	}
+
+	// Save stream indexes
+	if err := s.streamManager.SaveIndexes(); err != nil {
+		s.log.Error().Err(err).Msg("Failed to save stream indexes")
 		lastErr = err
 	}
 
