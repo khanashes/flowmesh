@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/flowmesh/engine/internal/storage/consumers"
 	"github.com/flowmesh/engine/internal/storage/kv"
 	"github.com/flowmesh/engine/internal/storage/log"
 	"github.com/flowmesh/engine/internal/storage/queues"
@@ -298,5 +299,100 @@ func (w *kvManagerWrapper) Stop(ctx context.Context) error {
 
 // Ready implements Lifecycle interface
 func (w *kvManagerWrapper) Ready() bool {
+	return w.Manager.Ready()
+}
+
+// consumerGroupManagerWrapper wraps consumers.Manager to implement ConsumerGroupManager interface
+type consumerGroupManagerWrapper struct {
+	*consumers.Manager
+}
+
+// Ensure consumerGroupManagerWrapper implements ConsumerGroupManager interface
+var _ ConsumerGroupManager = (*consumerGroupManagerWrapper)(nil)
+
+// CommitOffset implements ConsumerGroupManager interface
+func (w *consumerGroupManagerWrapper) CommitOffset(ctx context.Context, stream, group string, partition int32, offset int64) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+	return w.Manager.CommitOffset(ctx, stream, group, partition, offset)
+}
+
+// GetCommittedOffset implements ConsumerGroupManager interface
+func (w *consumerGroupManagerWrapper) GetCommittedOffset(ctx context.Context, stream, group string, partition int32) (int64, error) {
+	select {
+	case <-ctx.Done():
+		return -1, ctx.Err()
+	default:
+	}
+	return w.Manager.GetCommittedOffset(ctx, stream, group, partition)
+}
+
+// GetConsumerGroupState implements ConsumerGroupManager interface
+func (w *consumerGroupManagerWrapper) GetConsumerGroupState(ctx context.Context, stream, group string, partition int32) (*ConsumerGroupState, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+	state, err := w.Manager.GetConsumerGroupState(ctx, stream, group, partition)
+	if err != nil {
+		return nil, err
+	}
+	// Convert consumers.ConsumerGroupState to storage.ConsumerGroupState
+	return &ConsumerGroupState{
+		Stream:          state.Stream,
+		Group:           state.Group,
+		Partition:       state.Partition,
+		CommittedOffset: state.CommittedOffset,
+		LatestOffset:    state.LatestOffset,
+		Lag:             state.Lag,
+	}, nil
+}
+
+// CalculateLag implements ConsumerGroupManager interface
+func (w *consumerGroupManagerWrapper) CalculateLag(ctx context.Context, stream, group string, partition int32) (int64, error) {
+	select {
+	case <-ctx.Done():
+		return -1, ctx.Err()
+	default:
+	}
+	return w.Manager.CalculateLag(ctx, stream, group, partition)
+}
+
+// ListConsumerGroups implements ConsumerGroupManager interface
+func (w *consumerGroupManagerWrapper) ListConsumerGroups(ctx context.Context, stream string) ([]string, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+	return w.Manager.ListConsumerGroups(ctx, stream)
+}
+
+// DeleteConsumerGroup implements ConsumerGroupManager interface
+func (w *consumerGroupManagerWrapper) DeleteConsumerGroup(ctx context.Context, stream, group string) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+	return w.Manager.DeleteConsumerGroup(ctx, stream, group)
+}
+
+// Start implements Lifecycle interface
+func (w *consumerGroupManagerWrapper) Start(ctx context.Context) error {
+	return w.Manager.Start(ctx)
+}
+
+// Stop implements Lifecycle interface
+func (w *consumerGroupManagerWrapper) Stop(ctx context.Context) error {
+	return w.Manager.Stop(ctx)
+}
+
+// Ready implements Lifecycle interface
+func (w *consumerGroupManagerWrapper) Ready() bool {
 	return w.Manager.Ready()
 }

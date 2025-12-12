@@ -140,3 +140,100 @@ func ExampleUsage() {
 	}
 	fmt.Printf("Deleted key: user:123\n")
 }
+
+// ExampleConsumerGroups demonstrates consumer group operations
+func ExampleConsumerGroups() {
+	ctx := context.Background()
+
+	// Create storage
+	storage, err := New("data")
+	if err != nil {
+		panic(err)
+	}
+	defer storage.Close(ctx)
+
+	if err := storage.Start(ctx); err != nil {
+		panic(err)
+	}
+
+	// Create a stream first
+	factory := NewResourceFactory(storage.MetaStore())
+	stream, err := factory.CreateStream(ctx, "tenant1", "ns1", "events", 1)
+	if err != nil {
+		panic(err)
+	}
+
+	streamMgr := storage.StreamManager()
+	consumerGroupMgr := storage.ConsumerGroupManager()
+
+	// Write some events to the stream
+	events := []StreamEvent{
+		{Payload: []byte("event1")},
+		{Payload: []byte("event2")},
+		{Payload: []byte("event3")},
+	}
+	offsets, err := streamMgr.WriteEvents(ctx, stream.GetPath(), events)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Wrote %d events, last offset: %d\n", len(events), offsets[len(offsets)-1])
+
+	// Create a consumer group and commit offset
+	streamPath := stream.GetPath()
+	groupName := "my-consumer-group"
+	partition := int32(0)
+
+	// Commit offset after reading first event (offset 0)
+	err = consumerGroupMgr.CommitOffset(ctx, streamPath, groupName, partition, 0)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Committed offset 0 for consumer group '%s'\n", groupName)
+
+	// Get the committed offset
+	committedOffset, err := consumerGroupMgr.GetCommittedOffset(ctx, streamPath, groupName, partition)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Committed offset: %d\n", committedOffset)
+
+	// Calculate consumer lag
+	lag, err := consumerGroupMgr.CalculateLag(ctx, streamPath, groupName, partition)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Consumer lag: %d\n", lag)
+
+	// Get full consumer group state
+	state, err := consumerGroupMgr.GetConsumerGroupState(ctx, streamPath, groupName, partition)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Consumer group state:\n")
+	fmt.Printf("  Stream: %s\n", state.Stream)
+	fmt.Printf("  Group: %s\n", state.Group)
+	fmt.Printf("  Committed Offset: %d\n", state.CommittedOffset)
+	fmt.Printf("  Latest Offset: %d\n", state.LatestOffset)
+	fmt.Printf("  Lag: %d\n", state.Lag)
+
+	// List all consumer groups for the stream
+	groups, err := consumerGroupMgr.ListConsumerGroups(ctx, streamPath)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Consumer groups for stream: %v\n", groups)
+
+	// Commit a new offset (after reading more events)
+	err = consumerGroupMgr.CommitOffset(ctx, streamPath, groupName, partition, 2)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Updated committed offset to 2\n")
+
+	// Check lag again
+	lag, err = consumerGroupMgr.CalculateLag(ctx, streamPath, groupName, partition)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Updated consumer lag: %d\n", lag)
+}

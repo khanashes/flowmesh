@@ -93,6 +93,33 @@ type KVManager interface {
 	InitializeKVStore(ctx context.Context, resourcePath string) error
 }
 
+// ConsumerGroupState represents the state of a consumer group (exposed in interface)
+type ConsumerGroupState struct {
+	Stream          string
+	Group           string
+	Partition       int32
+	CommittedOffset int64
+	LatestOffset    int64
+	Lag             int64
+}
+
+// ConsumerGroupManager defines the interface for consumer group management
+type ConsumerGroupManager interface {
+	Lifecycle
+	// CommitOffset commits an offset for a consumer group
+	CommitOffset(ctx context.Context, stream, group string, partition int32, offset int64) error
+	// GetCommittedOffset retrieves the committed offset for a consumer group
+	GetCommittedOffset(ctx context.Context, stream, group string, partition int32) (int64, error)
+	// GetConsumerGroupState retrieves the complete state of a consumer group
+	GetConsumerGroupState(ctx context.Context, stream, group string, partition int32) (*ConsumerGroupState, error)
+	// CalculateLag calculates the lag for a consumer group
+	CalculateLag(ctx context.Context, stream, group string, partition int32) (int64, error)
+	// ListConsumerGroups returns all consumer groups for a stream
+	ListConsumerGroups(ctx context.Context, stream string) ([]string, error)
+	// DeleteConsumerGroup deletes all offsets for a consumer group
+	DeleteConsumerGroup(ctx context.Context, stream, group string) error
+}
+
 // StorageBackend defines the interface for storage operations
 type StorageBackend interface {
 	Lifecycle
@@ -106,6 +133,8 @@ type StorageBackend interface {
 	QueueManager() QueueManager
 	// KVManager returns the KV store manager
 	KVManager() KVManager
+	// ConsumerGroupManager returns the consumer group manager
+	ConsumerGroupManager() ConsumerGroupManager
 	// Paths returns the storage paths
 	Paths() *StoragePaths
 	// Validate validates the storage system integrity

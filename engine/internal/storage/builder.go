@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/flowmesh/engine/internal/logger"
+	"github.com/flowmesh/engine/internal/storage/consumers"
 	"github.com/flowmesh/engine/internal/storage/kv"
 	logpkg "github.com/flowmesh/engine/internal/storage/log"
 	"github.com/flowmesh/engine/internal/storage/metastore"
@@ -120,16 +121,24 @@ func (b *Builder) Build() (*Storage, error) {
 	// Initialize KV manager
 	kvMgr := kv.NewManager(b.metaStore, paths.KVDir)
 
+	// Initialize consumer group manager with a function to get latest offset from stream manager
+	// This closure captures the streamMgr to avoid circular dependencies
+	latestOffsetFunc := func(stream string, partition int32) (int64, error) {
+		return streamMgr.GetLatestOffset(stream, partition)
+	}
+	consumerGroupMgr := consumers.NewManager(b.metaStore, paths.MetadataDir, latestOffsetFunc)
+
 	storage := &Storage{
-		paths:         paths,
-		metaStore:     b.metaStore,
-		logManager:    b.logManager,
-		streamManager: streamMgr,
-		queueManager:  queueMgr,
-		kvManager:     kvMgr,
-		log:           b.log,
-		closed:        false,
-		ready:         false,
+		paths:                paths,
+		metaStore:            b.metaStore,
+		logManager:           b.logManager,
+		streamManager:        streamMgr,
+		queueManager:         queueMgr,
+		kvManager:            kvMgr,
+		consumerGroupManager: consumerGroupMgr,
+		log:                  b.log,
+		closed:               false,
+		ready:                false,
 	}
 
 	b.log.Info().

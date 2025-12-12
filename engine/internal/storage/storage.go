@@ -6,6 +6,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/flowmesh/engine/internal/storage/consumers"
 	"github.com/flowmesh/engine/internal/storage/kv"
 	logpkg "github.com/flowmesh/engine/internal/storage/log"
 	"github.com/flowmesh/engine/internal/storage/metastore"
@@ -17,16 +18,17 @@ import (
 // Storage represents the complete storage system
 // It implements StorageBackend interface
 type Storage struct {
-	paths         *StoragePaths
-	metaStore     *metastore.Store
-	logManager    *logpkg.Manager
-	streamManager *streams.Manager
-	queueManager  *queues.Manager
-	kvManager     *kv.Manager
-	log           zerolog.Logger
-	mu            sync.RWMutex
-	closed        bool
-	ready         bool
+	paths                *StoragePaths
+	metaStore            *metastore.Store
+	logManager           *logpkg.Manager
+	streamManager        *streams.Manager
+	queueManager         *queues.Manager
+	kvManager            *kv.Manager
+	consumerGroupManager *consumers.Manager
+	log                  zerolog.Logger
+	mu                   sync.RWMutex
+	closed               bool
+	ready                bool
 }
 
 // Ensure Storage implements StorageBackend interface
@@ -61,6 +63,11 @@ func (s *Storage) QueueManager() QueueManager {
 // KVManager returns the KV store manager
 func (s *Storage) KVManager() KVManager {
 	return &kvManagerWrapper{Manager: s.kvManager}
+}
+
+// ConsumerGroupManager returns the consumer group manager
+func (s *Storage) ConsumerGroupManager() ConsumerGroupManager {
+	return &consumerGroupManagerWrapper{Manager: s.consumerGroupManager}
 }
 
 // Paths returns the storage paths
@@ -111,6 +118,14 @@ func (s *Storage) Close(ctx context.Context) error {
 		lastErr = err
 	}
 
+	// Stop consumer group manager
+	if s.consumerGroupManager != nil {
+		if err := s.consumerGroupManager.Stop(context.Background()); err != nil {
+			s.log.Error().Err(err).Msg("Failed to stop consumer group manager")
+			lastErr = err
+		}
+	}
+
 	s.closed = true
 	s.log.Info().Msg("Storage closed")
 
@@ -144,6 +159,13 @@ func (s *Storage) Start(ctx context.Context) error {
 	// Start KV manager
 	if err := s.kvManager.Start(ctx); err != nil {
 		return fmt.Errorf("failed to start KV manager: %w", err)
+	}
+
+	// Start consumer group manager
+	if s.consumerGroupManager != nil {
+		if err := s.consumerGroupManager.Start(ctx); err != nil {
+			return fmt.Errorf("failed to start consumer group manager: %w", err)
+		}
 	}
 
 	s.ready = true
