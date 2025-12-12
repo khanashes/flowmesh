@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package flowmesh.v1;
+
+option go_package = "github.com/flowmesh/engine/api/proto/flowmeshpb";
+
+// ResourcePath represents a hierarchical resource path
+message ResourcePath {
+  string tenant = 1;
+  string namespace = 2;
+  string resource_type = 3; // "stream", "queue", "kv"
+  string name = 4;
+}
+
+// Status represents operation status
+message Status {
+  int32 code = 1;      // HTTP/gRPC status code
+  string message = 2;  // Human-readable error message
+  string details = 3;  // Additional error details
+}
+
+// HealthCheckRequest is a request for health check
+message HealthCheckRequest {
+}
+
+// HealthCheckResponse is a response for health check
+message HealthCheckResponse {
+  Status status = 1;
+}
+
+// ReadinessCheckRequest is a request for readiness check
+message ReadinessCheckRequest {
+}
+
+// ReadinessCheckResponse is a response for readiness check
+message ReadinessCheckResponse {
+  Status status = 1;
+  bool ready = 2;
+}
+
+// HealthService provides health and readiness checks
+service HealthService {
+  // HealthCheck checks if the server is running
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+
+  // ReadinessCheck checks if the server is ready to serve requests
+  rpc ReadinessCheck(ReadinessCheckRequest) returns (ReadinessCheckResponse);
+}
+
