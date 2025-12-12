@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  flowmesh:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        VERSION: dev
+    container_name: flowmesh-dev
+    image: flowmesh:dev
+    ports:
+      - "50051:50051"  # gRPC
+      - "8080:8080"    # HTTP/REST
+      - "9090:9090"    # Metrics
+    environment:
+      - SERVER_GRPC_ADDR=:50051
+      - SERVER_HTTP_ADDR=:8080
+      - STORAGE_DATA_DIR=/app/data
+      - LOGGING_LEVEL=debug
+      - LOGGING_FORMAT=text
+      - LOGGING_OUTPUT=stdout
+    volumes:
+      - flowmesh-data-dev:/app/data
+      # Mount source for hot reload (if using a tool like air)
+      - ./engine:/build:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "8080"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    networks:
+      - flowmesh-dev-network
+
+volumes:
+  flowmesh-data-dev:
+    driver: local
+
+networks:
+  flowmesh-dev-network:
+    driver: bridge
+

@@ -95,6 +95,27 @@ make build
 ./bin/flowmesh
 ```
 
+### Using Docker
+
+```bash
+# Build Docker image
+make docker-build
+
+# Run with Docker Compose (production)
+make docker-run
+
+# Run in development mode
+make docker-dev
+
+# View logs
+make docker-logs
+
+# Stop containers
+make docker-stop
+```
+
+For more Docker details, see [docker/README.md](docker/README.md).
+
 ### Using the Binary
 
 ```bash

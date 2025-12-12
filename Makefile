@@ -1,4 +1,4 @@
-.PHONY: help build test lint clean dev run version install-tools verify
+.PHONY: help build test lint clean dev run version install-tools verify docker-build docker-run docker-stop docker-clean docker-push
 
 # Variables
 BINARY_NAME=flowmesh
@@ -90,4 +90,45 @@ verify: ## Verify development environment
 	@cd $(ENGINE_DIR) && $(GOMOD) verify || { echo "Dependencies verification failed"; exit 1; }
 	@echo "✓ Dependencies are valid"
 	@echo "Environment verification complete"
+
+# Docker targets
+docker-build: ## Build Docker image
+	@echo "Building Docker image..."
+	@docker build -t flowmesh:$(VERSION) \
+		--build-arg VERSION=$(VERSION) \
+		-f docker/Dockerfile .
+	@echo "Docker image built: flowmesh:$(VERSION)"
+
+docker-run: docker-build ## Build and run Docker container
+	@echo "Running Docker container..."
+	@docker-compose up -d
+	@echo "Container started. Use 'docker-compose logs -f' to view logs"
+
+docker-dev: ## Run Docker container in development mode
+	@echo "Running Docker container in development mode..."
+	@docker-compose -f docker-compose.dev.yml up -d
+	@echo "Development container started. Use 'docker-compose -f docker-compose.dev.yml logs -f' to view logs"
+
+docker-stop: ## Stop Docker container
+	@echo "Stopping Docker containers..."
+	@docker-compose down
+	@docker-compose -f docker-compose.dev.yml down 2>/dev/null || true
+	@echo "Containers stopped"
+
+docker-logs: ## View Docker container logs
+	@docker-compose logs -f
+
+docker-clean: ## Clean Docker images and containers
+	@echo "Cleaning Docker resources..."
+	@docker-compose down -v 2>/dev/null || true
+	@docker-compose -f docker-compose.dev.yml down -v 2>/dev/null || true
+	@docker rmi flowmesh:$(VERSION) 2>/dev/null || true
+	@docker rmi flowmesh:latest 2>/dev/null || true
+	@docker rmi flowmesh:dev 2>/dev/null || true
+	@echo "Docker resources cleaned"
+
+docker-push: docker-build ## Build and push Docker image to registry
+	@echo "Pushing Docker image..."
+	@docker tag flowmesh:$(VERSION) flowmesh:latest
+	@echo "Tagged as latest. Run 'docker push <registry>/flowmesh:$(VERSION)' to push"
 
