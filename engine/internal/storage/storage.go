@@ -6,6 +6,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/flowmesh/engine/internal/storage/kv"
 	logpkg "github.com/flowmesh/engine/internal/storage/log"
 	"github.com/flowmesh/engine/internal/storage/metastore"
 	"github.com/flowmesh/engine/internal/storage/queues"
@@ -21,6 +22,7 @@ type Storage struct {
 	logManager    *logpkg.Manager
 	streamManager *streams.Manager
 	queueManager  *queues.Manager
+	kvManager     *kv.Manager
 	log           zerolog.Logger
 	mu            sync.RWMutex
 	closed        bool
@@ -54,6 +56,11 @@ func (s *Storage) StreamManager() StreamManager {
 // QueueManager returns the queue manager
 func (s *Storage) QueueManager() QueueManager {
 	return &queueManagerWrapper{Manager: s.queueManager}
+}
+
+// KVManager returns the KV store manager
+func (s *Storage) KVManager() KVManager {
+	return &kvManagerWrapper{Manager: s.kvManager}
 }
 
 // Paths returns the storage paths
@@ -98,6 +105,12 @@ func (s *Storage) Close(ctx context.Context) error {
 		lastErr = err
 	}
 
+	// Stop KV manager
+	if err := s.kvManager.Stop(context.Background()); err != nil {
+		s.log.Error().Err(err).Msg("Failed to stop KV manager")
+		lastErr = err
+	}
+
 	s.closed = true
 	s.log.Info().Msg("Storage closed")
 
@@ -126,6 +139,11 @@ func (s *Storage) Start(ctx context.Context) error {
 			return fmt.Errorf("failed to load metadata: %w", err)
 		}
 		// Metadata file doesn't exist yet, that's okay
+	}
+
+	// Start KV manager
+	if err := s.kvManager.Start(ctx); err != nil {
+		return fmt.Errorf("failed to start KV manager: %w", err)
 	}
 
 	s.ready = true

@@ -86,4 +86,57 @@ func ExampleUsage() {
 			panic(err)
 		}
 	}
+
+	// Example 5: Using the KV manager
+	kvMgr := storage.KVManager()
+
+	// Create a KV store
+	kvStore, err := factory.CreateKVStore(ctx, "tenant1", "ns1", "my-kv")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Created KV store: %s\n", kvStore.GetPath())
+
+	// Initialize KV store
+	err = kvMgr.InitializeKVStore(ctx, kvStore.GetPath())
+	if err != nil {
+		panic(err)
+	}
+
+	// Set a value
+	err = kvMgr.Set(ctx, kvStore.GetPath(), "user:123", []byte(`{"name":"John","age":30}`), KVSetOptions{
+		TTL: 3600 * time.Second, // 1 hour TTL
+	})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Set key: user:123\n")
+
+	// Get a value
+	value, err := kvMgr.Get(ctx, kvStore.GetPath(), "user:123")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Got value: %s\n", string(value))
+
+	// Check if key exists
+	exists, err := kvMgr.Exists(ctx, kvStore.GetPath(), "user:123")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Key exists: %v\n", exists)
+
+	// List keys with prefix
+	keys, err := kvMgr.ListKeys(ctx, kvStore.GetPath(), "user:")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Keys with prefix 'user:': %v\n", keys)
+
+	// Delete a key
+	err = kvMgr.Delete(ctx, kvStore.GetPath(), "user:123")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Deleted key: user:123\n")
 }

@@ -70,6 +70,29 @@ type QueueManager interface {
 	GetInFlight(ctx context.Context, resourcePath string, jobID string) (*QueueJob, error)
 }
 
+// KVSetOptions specifies options for Set operations
+type KVSetOptions struct {
+	// TTL is the time-to-live duration (0 = no expiration)
+	TTL time.Duration
+}
+
+// KVManager defines the interface for KV store management
+type KVManager interface {
+	Lifecycle
+	// Set sets a key-value pair in the KV store
+	Set(ctx context.Context, resourcePath, key string, value []byte, options KVSetOptions) error
+	// Get retrieves a value by key from the KV store
+	Get(ctx context.Context, resourcePath, key string) ([]byte, error)
+	// Delete deletes a key from the KV store
+	Delete(ctx context.Context, resourcePath, key string) error
+	// Exists checks if a key exists in the KV store
+	Exists(ctx context.Context, resourcePath, key string) (bool, error)
+	// ListKeys lists all keys in a KV store, optionally filtered by prefix
+	ListKeys(ctx context.Context, resourcePath, prefix string) ([]string, error)
+	// InitializeKVStore initializes a KV store by opening its database
+	InitializeKVStore(ctx context.Context, resourcePath string) error
+}
+
 // StorageBackend defines the interface for storage operations
 type StorageBackend interface {
 	Lifecycle
@@ -81,6 +104,8 @@ type StorageBackend interface {
 	StreamManager() StreamManager
 	// QueueManager returns the queue manager
 	QueueManager() QueueManager
+	// KVManager returns the KV store manager
+	KVManager() KVManager
 	// Paths returns the storage paths
 	Paths() *StoragePaths
 	// Validate validates the storage system integrity

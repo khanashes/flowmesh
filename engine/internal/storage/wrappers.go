@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/flowmesh/engine/internal/storage/kv"
 	"github.com/flowmesh/engine/internal/storage/log"
 	"github.com/flowmesh/engine/internal/storage/queues"
 	"github.com/flowmesh/engine/internal/storage/streams"
@@ -242,4 +243,60 @@ func (w *queueManagerWrapper) Stop(ctx context.Context) error {
 // Ready implements Lifecycle interface
 func (w *queueManagerWrapper) Ready() bool {
 	return true
+}
+
+// kvManagerWrapper wraps kv.Manager to implement KVManager interface
+type kvManagerWrapper struct {
+	*kv.Manager
+}
+
+// Ensure kvManagerWrapper implements KVManager interface
+var _ KVManager = (*kvManagerWrapper)(nil)
+
+// Set implements KVManager interface
+func (w *kvManagerWrapper) Set(ctx context.Context, resourcePath, key string, value []byte, options KVSetOptions) error {
+	kvOptions := kv.SetOptions{
+		TTL: options.TTL,
+	}
+	return w.Manager.Set(ctx, resourcePath, key, value, kvOptions)
+}
+
+// Get implements KVManager interface
+func (w *kvManagerWrapper) Get(ctx context.Context, resourcePath, key string) ([]byte, error) {
+	return w.Manager.Get(ctx, resourcePath, key)
+}
+
+// Delete implements KVManager interface
+func (w *kvManagerWrapper) Delete(ctx context.Context, resourcePath, key string) error {
+	return w.Manager.Delete(ctx, resourcePath, key)
+}
+
+// Exists implements KVManager interface
+func (w *kvManagerWrapper) Exists(ctx context.Context, resourcePath, key string) (bool, error) {
+	return w.Manager.Exists(ctx, resourcePath, key)
+}
+
+// ListKeys implements KVManager interface
+func (w *kvManagerWrapper) ListKeys(ctx context.Context, resourcePath, prefix string) ([]string, error) {
+	return w.Manager.ListKeys(ctx, resourcePath, prefix)
+}
+
+// InitializeKVStore implements KVManager interface
+func (w *kvManagerWrapper) InitializeKVStore(ctx context.Context, resourcePath string) error {
+	return w.Manager.InitializeKVStore(ctx, resourcePath)
+}
+
+// Start implements Lifecycle interface
+func (w *kvManagerWrapper) Start(ctx context.Context) error {
+	return w.Manager.Start(ctx)
+}
+
+// Stop implements Lifecycle interface
+func (w *kvManagerWrapper) Stop(ctx context.Context) error {
+	return w.Manager.Stop(ctx)
+}
+
+// Ready implements Lifecycle interface
+func (w *kvManagerWrapper) Ready() bool {
+	return w.Manager.Ready()
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/flowmesh/engine/internal/logger"
+	"github.com/flowmesh/engine/internal/storage/kv"
 	logpkg "github.com/flowmesh/engine/internal/storage/log"
 	"github.com/flowmesh/engine/internal/storage/metastore"
 	"github.com/flowmesh/engine/internal/storage/queues"
@@ -116,12 +117,16 @@ func (b *Builder) Build() (*Storage, error) {
 		queueMgr = b.queueMgr
 	}
 
+	// Initialize KV manager
+	kvMgr := kv.NewManager(b.metaStore, paths.KVDir)
+
 	storage := &Storage{
 		paths:         paths,
 		metaStore:     b.metaStore,
 		logManager:    b.logManager,
 		streamManager: streamMgr,
 		queueManager:  queueMgr,
+		kvManager:     kvMgr,
 		log:           b.log,
 		closed:        false,
 		ready:         false,
