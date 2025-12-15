@@ -310,3 +310,81 @@ service QueueService {
   rpc GetQueueStats(GetQueueStatsRequest) returns (GetQueueStatsResponse);
 }
 
+// SetRequest is a request to set a key-value pair
+message SetRequest {
+  ResourcePath resource_path = 1;        // KV store resource path
+  string key = 2;                         // Key to set
+  bytes value = 3;                        // Value to set
+  int64 ttl_seconds = 4;                  // Optional TTL in seconds (0 = no expiration)
+}
+
+// SetResponse is a response to setting a key-value pair
+message SetResponse {
+  Status status = 1;                      // Operation status
+}
+
+// GetRequest is a request to get a value by key
+message GetRequest {
+  ResourcePath resource_path = 1;        // KV store resource path
+  string key = 2;                         // Key to retrieve
+}
+
+// GetResponse is a response to getting a value
+message GetResponse {
+  Status status = 1;                      // Operation status
+  bytes value = 2;                        // Retrieved value
+}
+
+// DeleteRequest is a request to delete a key
+message DeleteRequest {
+  ResourcePath resource_path = 1;        // KV store resource path
+  string key = 2;                         // Key to delete
+}
+
+// DeleteResponse is a response to deleting a key
+message DeleteResponse {
+  Status status = 1;                      // Operation status
+}
+
+// ExistsRequest is a request to check if a key exists
+message ExistsRequest {
+  ResourcePath resource_path = 1;        // KV store resource path
+  string key = 2;                         // Key to check
+}
+
+// ExistsResponse is a response to checking if a key exists
+message ExistsResponse {
+  Status status = 1;                      // Operation status
+  bool exists = 2;                        // Whether the key exists
+}
+
+// ListKeysRequest is a request to list keys
+message ListKeysRequest {
+  ResourcePath resource_path = 1;        // KV store resource path
+  string prefix = 2;                      // Optional prefix filter (empty = all keys)
+}
+
+// ListKeysResponse is a response to listing keys
+message ListKeysResponse {
+  Status status = 1;                      // Operation status
+  repeated string keys = 2;               // List of keys
+}
+
+// KVService provides operations for working with KV stores
+service KVService {
+  // Set sets a key-value pair with optional TTL
+  rpc Set(SetRequest) returns (SetResponse);
+
+  // Get retrieves a value by key
+  rpc Get(GetRequest) returns (GetResponse);
+
+  // Delete deletes a key
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
+
+  // Exists checks if a key exists
+  rpc Exists(ExistsRequest) returns (ExistsResponse);
+
+  // ListKeys lists all keys, optionally filtered by prefix
+  rpc ListKeys(ListKeysRequest) returns (ListKeysResponse);
+}
+

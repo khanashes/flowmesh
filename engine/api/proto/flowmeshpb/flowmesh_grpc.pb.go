@@ -825,3 +825,271 @@ var QueueService_ServiceDesc = grpc.ServiceDesc{
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "flowmesh.proto",
 }
+
+const (
+	KVService_Set_FullMethodName      = "/flowmesh.v1.KVService/Set"
+	KVService_Get_FullMethodName      = "/flowmesh.v1.KVService/Get"
+	KVService_Delete_FullMethodName   = "/flowmesh.v1.KVService/Delete"
+	KVService_Exists_FullMethodName   = "/flowmesh.v1.KVService/Exists"
+	KVService_ListKeys_FullMethodName = "/flowmesh.v1.KVService/ListKeys"
+)
+
+// KVServiceClient is the client API for KVService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// KVService provides operations for working with KV stores
+type KVServiceClient interface {
+	// Set sets a key-value pair with optional TTL
+	Set(ctx context.Context, in *SetRequest, opts ...grpc.CallOption) (*SetResponse, error)
+	// Get retrieves a value by key
+	Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetResponse, error)
+	// Delete deletes a key
+	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
+	// Exists checks if a key exists
+	Exists(ctx context.Context, in *ExistsRequest, opts ...grpc.CallOption) (*ExistsResponse, error)
+	// ListKeys lists all keys, optionally filtered by prefix
+	ListKeys(ctx context.Context, in *ListKeysRequest, opts ...grpc.CallOption) (*ListKeysResponse, error)
+}
+
+type kVServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewKVServiceClient(cc grpc.ClientConnInterface) KVServiceClient {
+	return &kVServiceClient{cc}
+}
+
+func (c *kVServiceClient) Set(ctx context.Context, in *SetRequest, opts ...grpc.CallOption) (*SetResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetResponse)
+	err := c.cc.Invoke(ctx, KVService_Set_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *kVServiceClient) Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetResponse)
+	err := c.cc.Invoke(ctx, KVService_Get_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *kVServiceClient) Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteResponse)
+	err := c.cc.Invoke(ctx, KVService_Delete_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *kVServiceClient) Exists(ctx context.Context, in *ExistsRequest, opts ...grpc.CallOption) (*ExistsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ExistsResponse)
+	err := c.cc.Invoke(ctx, KVService_Exists_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *kVServiceClient) ListKeys(ctx context.Context, in *ListKeysRequest, opts ...grpc.CallOption) (*ListKeysResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListKeysResponse)
+	err := c.cc.Invoke(ctx, KVService_ListKeys_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// KVServiceServer is the server API for KVService service.
+// All implementations must embed UnimplementedKVServiceServer
+// for forward compatibility.
+//
+// KVService provides operations for working with KV stores
+type KVServiceServer interface {
+	// Set sets a key-value pair with optional TTL
+	Set(context.Context, *SetRequest) (*SetResponse, error)
+	// Get retrieves a value by key
+	Get(context.Context, *GetRequest) (*GetResponse, error)
+	// Delete deletes a key
+	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)
+	// Exists checks if a key exists
+	Exists(context.Context, *ExistsRequest) (*ExistsResponse, error)
+	// ListKeys lists all keys, optionally filtered by prefix
+	ListKeys(context.Context, *ListKeysRequest) (*ListKeysResponse, error)
+	mustEmbedUnimplementedKVServiceServer()
+}
+
+// UnimplementedKVServiceServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedKVServiceServer struct{}
+
+func (UnimplementedKVServiceServer) Set(context.Context, *SetRequest) (*SetResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Set not implemented")
+}
+func (UnimplementedKVServiceServer) Get(context.Context, *GetRequest) (*GetResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Get not implemented")
+}
+func (UnimplementedKVServiceServer) Delete(context.Context, *DeleteRequest) (*DeleteResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Delete not implemented")
+}
+func (UnimplementedKVServiceServer) Exists(context.Context, *ExistsRequest) (*ExistsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Exists not implemented")
+}
+func (UnimplementedKVServiceServer) ListKeys(context.Context, *ListKeysRequest) (*ListKeysResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListKeys not implemented")
+}
+func (UnimplementedKVServiceServer) mustEmbedUnimplementedKVServiceServer() {}
+func (UnimplementedKVServiceServer) testEmbeddedByValue()                   {}
+
+// UnsafeKVServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to KVServiceServer will
+// result in compilation errors.
+type UnsafeKVServiceServer interface {
+	mustEmbedUnimplementedKVServiceServer()
+}
+
+func RegisterKVServiceServer(s grpc.ServiceRegistrar, srv KVServiceServer) {
+	// If the following call panics, it indicates UnimplementedKVServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&KVService_ServiceDesc, srv)
+}
+
+func _KVService_Set_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KVServiceServer).Set(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KVService_Set_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KVServiceServer).Set(ctx, req.(*SetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _KVService_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KVServiceServer).Get(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KVService_Get_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KVServiceServer).Get(ctx, req.(*GetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _KVService_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KVServiceServer).Delete(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KVService_Delete_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KVServiceServer).Delete(ctx, req.(*DeleteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _KVService_Exists_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ExistsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KVServiceServer).Exists(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KVService_Exists_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KVServiceServer).Exists(ctx, req.(*ExistsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _KVService_ListKeys_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListKeysRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KVServiceServer).ListKeys(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KVService_ListKeys_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KVServiceServer).ListKeys(ctx, req.(*ListKeysRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// KVService_ServiceDesc is the grpc.ServiceDesc for KVService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var KVService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "flowmesh.v1.KVService",
+	HandlerType: (*KVServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Set",
+			Handler:    _KVService_Set_Handler,
+		},
+		{
+			MethodName: "Get",
+			Handler:    _KVService_Get_Handler,
+		},
+		{
+			MethodName: "Delete",
+			Handler:    _KVService_Delete_Handler,
+		},
+		{
+			MethodName: "Exists",
+			Handler:    _KVService_Exists_Handler,
+		},
+		{
+			MethodName: "ListKeys",
+			Handler:    _KVService_ListKeys_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "flowmesh.proto",
+}

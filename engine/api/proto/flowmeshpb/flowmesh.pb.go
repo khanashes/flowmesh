@@ -2222,6 +2222,536 @@ func (x *GetQueueStatsResponse) GetStats() *QueueStats {
 	return nil
 }
 
+// SetRequest is a request to set a key-value pair
+type SetRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ResourcePath  *ResourcePath          `protobuf:"bytes,1,opt,name=resource_path,json=resourcePath,proto3" json:"resource_path,omitempty"` // KV store resource path
+	Key           string                 `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`                                       // Key to set
+	Value         []byte                 `protobuf:"bytes,3,opt,name=value,proto3" json:"value,omitempty"`                                   // Value to set
+	TtlSeconds    int64                  `protobuf:"varint,4,opt,name=ttl_seconds,json=ttlSeconds,proto3" json:"ttl_seconds,omitempty"`      // Optional TTL in seconds (0 = no expiration)
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetRequest) Reset() {
+	*x = SetRequest{}
+	mi := &file_flowmesh_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetRequest) ProtoMessage() {}
+
+func (x *SetRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetRequest.ProtoReflect.Descriptor instead.
+func (*SetRequest) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *SetRequest) GetResourcePath() *ResourcePath {
+	if x != nil {
+		return x.ResourcePath
+	}
+	return nil
+}
+
+func (x *SetRequest) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+func (x *SetRequest) GetValue() []byte {
+	if x != nil {
+		return x.Value
+	}
+	return nil
+}
+
+func (x *SetRequest) GetTtlSeconds() int64 {
+	if x != nil {
+		return x.TtlSeconds
+	}
+	return 0
+}
+
+// SetResponse is a response to setting a key-value pair
+type SetResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        *Status                `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"` // Operation status
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetResponse) Reset() {
+	*x = SetResponse{}
+	mi := &file_flowmesh_proto_msgTypes[38]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetResponse) ProtoMessage() {}
+
+func (x *SetResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[38]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetResponse.ProtoReflect.Descriptor instead.
+func (*SetResponse) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{38}
+}
+
+func (x *SetResponse) GetStatus() *Status {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
+// GetRequest is a request to get a value by key
+type GetRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ResourcePath  *ResourcePath          `protobuf:"bytes,1,opt,name=resource_path,json=resourcePath,proto3" json:"resource_path,omitempty"` // KV store resource path
+	Key           string                 `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`                                       // Key to retrieve
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetRequest) Reset() {
+	*x = GetRequest{}
+	mi := &file_flowmesh_proto_msgTypes[39]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetRequest) ProtoMessage() {}
+
+func (x *GetRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[39]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetRequest.ProtoReflect.Descriptor instead.
+func (*GetRequest) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{39}
+}
+
+func (x *GetRequest) GetResourcePath() *ResourcePath {
+	if x != nil {
+		return x.ResourcePath
+	}
+	return nil
+}
+
+func (x *GetRequest) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+// GetResponse is a response to getting a value
+type GetResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        *Status                `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"` // Operation status
+	Value         []byte                 `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`   // Retrieved value
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetResponse) Reset() {
+	*x = GetResponse{}
+	mi := &file_flowmesh_proto_msgTypes[40]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetResponse) ProtoMessage() {}
+
+func (x *GetResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[40]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetResponse.ProtoReflect.Descriptor instead.
+func (*GetResponse) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{40}
+}
+
+func (x *GetResponse) GetStatus() *Status {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
+func (x *GetResponse) GetValue() []byte {
+	if x != nil {
+		return x.Value
+	}
+	return nil
+}
+
+// DeleteRequest is a request to delete a key
+type DeleteRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ResourcePath  *ResourcePath          `protobuf:"bytes,1,opt,name=resource_path,json=resourcePath,proto3" json:"resource_path,omitempty"` // KV store resource path
+	Key           string                 `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`                                       // Key to delete
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteRequest) Reset() {
+	*x = DeleteRequest{}
+	mi := &file_flowmesh_proto_msgTypes[41]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteRequest) ProtoMessage() {}
+
+func (x *DeleteRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[41]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteRequest.ProtoReflect.Descriptor instead.
+func (*DeleteRequest) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{41}
+}
+
+func (x *DeleteRequest) GetResourcePath() *ResourcePath {
+	if x != nil {
+		return x.ResourcePath
+	}
+	return nil
+}
+
+func (x *DeleteRequest) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+// DeleteResponse is a response to deleting a key
+type DeleteResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        *Status                `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"` // Operation status
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteResponse) Reset() {
+	*x = DeleteResponse{}
+	mi := &file_flowmesh_proto_msgTypes[42]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteResponse) ProtoMessage() {}
+
+func (x *DeleteResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[42]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteResponse.ProtoReflect.Descriptor instead.
+func (*DeleteResponse) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{42}
+}
+
+func (x *DeleteResponse) GetStatus() *Status {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
+// ExistsRequest is a request to check if a key exists
+type ExistsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ResourcePath  *ResourcePath          `protobuf:"bytes,1,opt,name=resource_path,json=resourcePath,proto3" json:"resource_path,omitempty"` // KV store resource path
+	Key           string                 `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`                                       // Key to check
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExistsRequest) Reset() {
+	*x = ExistsRequest{}
+	mi := &file_flowmesh_proto_msgTypes[43]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExistsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExistsRequest) ProtoMessage() {}
+
+func (x *ExistsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[43]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExistsRequest.ProtoReflect.Descriptor instead.
+func (*ExistsRequest) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{43}
+}
+
+func (x *ExistsRequest) GetResourcePath() *ResourcePath {
+	if x != nil {
+		return x.ResourcePath
+	}
+	return nil
+}
+
+func (x *ExistsRequest) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+// ExistsResponse is a response to checking if a key exists
+type ExistsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        *Status                `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`  // Operation status
+	Exists        bool                   `protobuf:"varint,2,opt,name=exists,proto3" json:"exists,omitempty"` // Whether the key exists
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExistsResponse) Reset() {
+	*x = ExistsResponse{}
+	mi := &file_flowmesh_proto_msgTypes[44]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExistsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExistsResponse) ProtoMessage() {}
+
+func (x *ExistsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[44]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExistsResponse.ProtoReflect.Descriptor instead.
+func (*ExistsResponse) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{44}
+}
+
+func (x *ExistsResponse) GetStatus() *Status {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
+func (x *ExistsResponse) GetExists() bool {
+	if x != nil {
+		return x.Exists
+	}
+	return false
+}
+
+// ListKeysRequest is a request to list keys
+type ListKeysRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ResourcePath  *ResourcePath          `protobuf:"bytes,1,opt,name=resource_path,json=resourcePath,proto3" json:"resource_path,omitempty"` // KV store resource path
+	Prefix        string                 `protobuf:"bytes,2,opt,name=prefix,proto3" json:"prefix,omitempty"`                                 // Optional prefix filter (empty = all keys)
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListKeysRequest) Reset() {
+	*x = ListKeysRequest{}
+	mi := &file_flowmesh_proto_msgTypes[45]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListKeysRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListKeysRequest) ProtoMessage() {}
+
+func (x *ListKeysRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[45]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListKeysRequest.ProtoReflect.Descriptor instead.
+func (*ListKeysRequest) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{45}
+}
+
+func (x *ListKeysRequest) GetResourcePath() *ResourcePath {
+	if x != nil {
+		return x.ResourcePath
+	}
+	return nil
+}
+
+func (x *ListKeysRequest) GetPrefix() string {
+	if x != nil {
+		return x.Prefix
+	}
+	return ""
+}
+
+// ListKeysResponse is a response to listing keys
+type ListKeysResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        *Status                `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"` // Operation status
+	Keys          []string               `protobuf:"bytes,2,rep,name=keys,proto3" json:"keys,omitempty"`     // List of keys
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListKeysResponse) Reset() {
+	*x = ListKeysResponse{}
+	mi := &file_flowmesh_proto_msgTypes[46]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListKeysResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListKeysResponse) ProtoMessage() {}
+
+func (x *ListKeysResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[46]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListKeysResponse.ProtoReflect.Descriptor instead.
+func (*ListKeysResponse) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{46}
+}
+
+func (x *ListKeysResponse) GetStatus() *Status {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
+func (x *ListKeysResponse) GetKeys() []string {
+	if x != nil {
+		return x.Keys
+	}
+	return nil
+}
+
 var File_flowmesh_proto protoreflect.FileDescriptor
 
 const file_flowmesh_proto_rawDesc = "" +
@@ -2386,7 +2916,40 @@ const file_flowmesh_proto_rawDesc = "" +
 	"\rresource_path\x18\x01 \x01(\v2\x19.flowmesh.v1.ResourcePathR\fresourcePath\"s\n" +
 	"\x15GetQueueStatsResponse\x12+\n" +
 	"\x06status\x18\x01 \x01(\v2\x13.flowmesh.v1.StatusR\x06status\x12-\n" +
-	"\x05stats\x18\x02 \x01(\v2\x17.flowmesh.v1.QueueStatsR\x05stats2\xbc\x01\n" +
+	"\x05stats\x18\x02 \x01(\v2\x17.flowmesh.v1.QueueStatsR\x05stats\"\x95\x01\n" +
+	"\n" +
+	"SetRequest\x12>\n" +
+	"\rresource_path\x18\x01 \x01(\v2\x19.flowmesh.v1.ResourcePathR\fresourcePath\x12\x10\n" +
+	"\x03key\x18\x02 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x03 \x01(\fR\x05value\x12\x1f\n" +
+	"\vttl_seconds\x18\x04 \x01(\x03R\n" +
+	"ttlSeconds\":\n" +
+	"\vSetResponse\x12+\n" +
+	"\x06status\x18\x01 \x01(\v2\x13.flowmesh.v1.StatusR\x06status\"^\n" +
+	"\n" +
+	"GetRequest\x12>\n" +
+	"\rresource_path\x18\x01 \x01(\v2\x19.flowmesh.v1.ResourcePathR\fresourcePath\x12\x10\n" +
+	"\x03key\x18\x02 \x01(\tR\x03key\"P\n" +
+	"\vGetResponse\x12+\n" +
+	"\x06status\x18\x01 \x01(\v2\x13.flowmesh.v1.StatusR\x06status\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\fR\x05value\"a\n" +
+	"\rDeleteRequest\x12>\n" +
+	"\rresource_path\x18\x01 \x01(\v2\x19.flowmesh.v1.ResourcePathR\fresourcePath\x12\x10\n" +
+	"\x03key\x18\x02 \x01(\tR\x03key\"=\n" +
+	"\x0eDeleteResponse\x12+\n" +
+	"\x06status\x18\x01 \x01(\v2\x13.flowmesh.v1.StatusR\x06status\"a\n" +
+	"\rExistsRequest\x12>\n" +
+	"\rresource_path\x18\x01 \x01(\v2\x19.flowmesh.v1.ResourcePathR\fresourcePath\x12\x10\n" +
+	"\x03key\x18\x02 \x01(\tR\x03key\"U\n" +
+	"\x0eExistsResponse\x12+\n" +
+	"\x06status\x18\x01 \x01(\v2\x13.flowmesh.v1.StatusR\x06status\x12\x16\n" +
+	"\x06exists\x18\x02 \x01(\bR\x06exists\"i\n" +
+	"\x0fListKeysRequest\x12>\n" +
+	"\rresource_path\x18\x01 \x01(\v2\x19.flowmesh.v1.ResourcePathR\fresourcePath\x12\x16\n" +
+	"\x06prefix\x18\x02 \x01(\tR\x06prefix\"S\n" +
+	"\x10ListKeysResponse\x12+\n" +
+	"\x06status\x18\x01 \x01(\v2\x13.flowmesh.v1.StatusR\x06status\x12\x12\n" +
+	"\x04keys\x18\x02 \x03(\tR\x04keys2\xbc\x01\n" +
 	"\rHealthService\x12P\n" +
 	"\vHealthCheck\x12\x1f.flowmesh.v1.HealthCheckRequest\x1a .flowmesh.v1.HealthCheckResponse\x12Y\n" +
 	"\x0eReadinessCheck\x12\".flowmesh.v1.ReadinessCheckRequest\x1a#.flowmesh.v1.ReadinessCheckResponse2\xed\x04\n" +
@@ -2405,7 +2968,13 @@ const file_flowmesh_proto_rawDesc = "" +
 	"\aReceive\x12\x1b.flowmesh.v1.ReceiveRequest\x1a\x1c.flowmesh.v1.ReceiveResponse\x128\n" +
 	"\x03ACK\x12\x17.flowmesh.v1.ACKRequest\x1a\x18.flowmesh.v1.ACKResponse\x12;\n" +
 	"\x04NACK\x12\x18.flowmesh.v1.NACKRequest\x1a\x19.flowmesh.v1.NACKResponse\x12V\n" +
-	"\rGetQueueStats\x12!.flowmesh.v1.GetQueueStatsRequest\x1a\".flowmesh.v1.GetQueueStatsResponseB1Z/github.com/flowmesh/engine/api/proto/flowmeshpbb\x06proto3"
+	"\rGetQueueStats\x12!.flowmesh.v1.GetQueueStatsRequest\x1a\".flowmesh.v1.GetQueueStatsResponse2\xce\x02\n" +
+	"\tKVService\x128\n" +
+	"\x03Set\x12\x17.flowmesh.v1.SetRequest\x1a\x18.flowmesh.v1.SetResponse\x128\n" +
+	"\x03Get\x12\x17.flowmesh.v1.GetRequest\x1a\x18.flowmesh.v1.GetResponse\x12A\n" +
+	"\x06Delete\x12\x1a.flowmesh.v1.DeleteRequest\x1a\x1b.flowmesh.v1.DeleteResponse\x12A\n" +
+	"\x06Exists\x12\x1a.flowmesh.v1.ExistsRequest\x1a\x1b.flowmesh.v1.ExistsResponse\x12G\n" +
+	"\bListKeys\x12\x1c.flowmesh.v1.ListKeysRequest\x1a\x1d.flowmesh.v1.ListKeysResponseB1Z/github.com/flowmesh/engine/api/proto/flowmeshpbb\x06proto3"
 
 var (
 	file_flowmesh_proto_rawDescOnce sync.Once
@@ -2419,7 +2988,7 @@ func file_flowmesh_proto_rawDescGZIP() []byte {
 	return file_flowmesh_proto_rawDescData
 }
 
-var file_flowmesh_proto_msgTypes = make([]protoimpl.MessageInfo, 41)
+var file_flowmesh_proto_msgTypes = make([]protoimpl.MessageInfo, 51)
 var file_flowmesh_proto_goTypes = []any{
 	(*ResourcePath)(nil),                  // 0: flowmesh.v1.ResourcePath
 	(*Status)(nil),                        // 1: flowmesh.v1.Status
@@ -2458,16 +3027,26 @@ var file_flowmesh_proto_goTypes = []any{
 	(*QueueStats)(nil),                    // 34: flowmesh.v1.QueueStats
 	(*GetQueueStatsRequest)(nil),          // 35: flowmesh.v1.GetQueueStatsRequest
 	(*GetQueueStatsResponse)(nil),         // 36: flowmesh.v1.GetQueueStatsResponse
-	nil,                                   // 37: flowmesh.v1.Event.HeadersEntry
-	nil,                                   // 38: flowmesh.v1.Message.HeadersEntry
-	nil,                                   // 39: flowmesh.v1.Job.HeadersEntry
-	nil,                                   // 40: flowmesh.v1.EnqueueRequest.HeadersEntry
+	(*SetRequest)(nil),                    // 37: flowmesh.v1.SetRequest
+	(*SetResponse)(nil),                   // 38: flowmesh.v1.SetResponse
+	(*GetRequest)(nil),                    // 39: flowmesh.v1.GetRequest
+	(*GetResponse)(nil),                   // 40: flowmesh.v1.GetResponse
+	(*DeleteRequest)(nil),                 // 41: flowmesh.v1.DeleteRequest
+	(*DeleteResponse)(nil),                // 42: flowmesh.v1.DeleteResponse
+	(*ExistsRequest)(nil),                 // 43: flowmesh.v1.ExistsRequest
+	(*ExistsResponse)(nil),                // 44: flowmesh.v1.ExistsResponse
+	(*ListKeysRequest)(nil),               // 45: flowmesh.v1.ListKeysRequest
+	(*ListKeysResponse)(nil),              // 46: flowmesh.v1.ListKeysResponse
+	nil,                                   // 47: flowmesh.v1.Event.HeadersEntry
+	nil,                                   // 48: flowmesh.v1.Message.HeadersEntry
+	nil,                                   // 49: flowmesh.v1.Job.HeadersEntry
+	nil,                                   // 50: flowmesh.v1.EnqueueRequest.HeadersEntry
 }
 var file_flowmesh_proto_depIdxs = []int32{
 	1,  // 0: flowmesh.v1.HealthCheckResponse.status:type_name -> flowmesh.v1.Status
 	1,  // 1: flowmesh.v1.ReadinessCheckResponse.status:type_name -> flowmesh.v1.Status
-	37, // 2: flowmesh.v1.Event.headers:type_name -> flowmesh.v1.Event.HeadersEntry
-	38, // 3: flowmesh.v1.Message.headers:type_name -> flowmesh.v1.Message.HeadersEntry
+	47, // 2: flowmesh.v1.Event.headers:type_name -> flowmesh.v1.Event.HeadersEntry
+	48, // 3: flowmesh.v1.Message.headers:type_name -> flowmesh.v1.Message.HeadersEntry
 	0,  // 4: flowmesh.v1.WriteEventsRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
 	6,  // 5: flowmesh.v1.WriteEventsRequest.events:type_name -> flowmesh.v1.Event
 	1,  // 6: flowmesh.v1.WriteEventsResponse.status:type_name -> flowmesh.v1.Status
@@ -2486,9 +3065,9 @@ var file_flowmesh_proto_depIdxs = []int32{
 	0,  // 19: flowmesh.v1.GetConsumerGroupStateRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
 	1,  // 20: flowmesh.v1.GetConsumerGroupStateResponse.status:type_name -> flowmesh.v1.Status
 	20, // 21: flowmesh.v1.GetConsumerGroupStateResponse.state:type_name -> flowmesh.v1.ConsumerGroupState
-	39, // 22: flowmesh.v1.Job.headers:type_name -> flowmesh.v1.Job.HeadersEntry
+	49, // 22: flowmesh.v1.Job.headers:type_name -> flowmesh.v1.Job.HeadersEntry
 	0,  // 23: flowmesh.v1.EnqueueRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
-	40, // 24: flowmesh.v1.EnqueueRequest.headers:type_name -> flowmesh.v1.EnqueueRequest.HeadersEntry
+	50, // 24: flowmesh.v1.EnqueueRequest.headers:type_name -> flowmesh.v1.EnqueueRequest.HeadersEntry
 	1,  // 25: flowmesh.v1.EnqueueResponse.status:type_name -> flowmesh.v1.Status
 	0,  // 26: flowmesh.v1.ReserveRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
 	1,  // 27: flowmesh.v1.ReserveResponse.status:type_name -> flowmesh.v1.Status
@@ -2503,41 +3082,61 @@ var file_flowmesh_proto_depIdxs = []int32{
 	0,  // 36: flowmesh.v1.GetQueueStatsRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
 	1,  // 37: flowmesh.v1.GetQueueStatsResponse.status:type_name -> flowmesh.v1.Status
 	34, // 38: flowmesh.v1.GetQueueStatsResponse.stats:type_name -> flowmesh.v1.QueueStats
-	2,  // 39: flowmesh.v1.HealthService.HealthCheck:input_type -> flowmesh.v1.HealthCheckRequest
-	4,  // 40: flowmesh.v1.HealthService.ReadinessCheck:input_type -> flowmesh.v1.ReadinessCheckRequest
-	8,  // 41: flowmesh.v1.StreamService.WriteEvents:input_type -> flowmesh.v1.WriteEventsRequest
-	10, // 42: flowmesh.v1.StreamService.ReadStream:input_type -> flowmesh.v1.ReadStreamRequest
-	12, // 43: flowmesh.v1.StreamService.Subscribe:input_type -> flowmesh.v1.SubscribeRequest
-	14, // 44: flowmesh.v1.StreamService.CommitOffset:input_type -> flowmesh.v1.CommitOffsetRequest
-	16, // 45: flowmesh.v1.StreamService.GetOffset:input_type -> flowmesh.v1.GetOffsetRequest
-	18, // 46: flowmesh.v1.StreamService.GetLatestOffset:input_type -> flowmesh.v1.GetLatestOffsetRequest
-	21, // 47: flowmesh.v1.StreamService.GetConsumerGroupState:input_type -> flowmesh.v1.GetConsumerGroupStateRequest
-	24, // 48: flowmesh.v1.QueueService.Enqueue:input_type -> flowmesh.v1.EnqueueRequest
-	26, // 49: flowmesh.v1.QueueService.Reserve:input_type -> flowmesh.v1.ReserveRequest
-	28, // 50: flowmesh.v1.QueueService.Receive:input_type -> flowmesh.v1.ReceiveRequest
-	30, // 51: flowmesh.v1.QueueService.ACK:input_type -> flowmesh.v1.ACKRequest
-	32, // 52: flowmesh.v1.QueueService.NACK:input_type -> flowmesh.v1.NACKRequest
-	35, // 53: flowmesh.v1.QueueService.GetQueueStats:input_type -> flowmesh.v1.GetQueueStatsRequest
-	3,  // 54: flowmesh.v1.HealthService.HealthCheck:output_type -> flowmesh.v1.HealthCheckResponse
-	5,  // 55: flowmesh.v1.HealthService.ReadinessCheck:output_type -> flowmesh.v1.ReadinessCheckResponse
-	9,  // 56: flowmesh.v1.StreamService.WriteEvents:output_type -> flowmesh.v1.WriteEventsResponse
-	11, // 57: flowmesh.v1.StreamService.ReadStream:output_type -> flowmesh.v1.ReadStreamResponse
-	13, // 58: flowmesh.v1.StreamService.Subscribe:output_type -> flowmesh.v1.SubscribeResponse
-	15, // 59: flowmesh.v1.StreamService.CommitOffset:output_type -> flowmesh.v1.CommitOffsetResponse
-	17, // 60: flowmesh.v1.StreamService.GetOffset:output_type -> flowmesh.v1.GetOffsetResponse
-	19, // 61: flowmesh.v1.StreamService.GetLatestOffset:output_type -> flowmesh.v1.GetLatestOffsetResponse
-	22, // 62: flowmesh.v1.StreamService.GetConsumerGroupState:output_type -> flowmesh.v1.GetConsumerGroupStateResponse
-	25, // 63: flowmesh.v1.QueueService.Enqueue:output_type -> flowmesh.v1.EnqueueResponse
-	27, // 64: flowmesh.v1.QueueService.Reserve:output_type -> flowmesh.v1.ReserveResponse
-	29, // 65: flowmesh.v1.QueueService.Receive:output_type -> flowmesh.v1.ReceiveResponse
-	31, // 66: flowmesh.v1.QueueService.ACK:output_type -> flowmesh.v1.ACKResponse
-	33, // 67: flowmesh.v1.QueueService.NACK:output_type -> flowmesh.v1.NACKResponse
-	36, // 68: flowmesh.v1.QueueService.GetQueueStats:output_type -> flowmesh.v1.GetQueueStatsResponse
-	54, // [54:69] is the sub-list for method output_type
-	39, // [39:54] is the sub-list for method input_type
-	39, // [39:39] is the sub-list for extension type_name
-	39, // [39:39] is the sub-list for extension extendee
-	0,  // [0:39] is the sub-list for field type_name
+	0,  // 39: flowmesh.v1.SetRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	1,  // 40: flowmesh.v1.SetResponse.status:type_name -> flowmesh.v1.Status
+	0,  // 41: flowmesh.v1.GetRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	1,  // 42: flowmesh.v1.GetResponse.status:type_name -> flowmesh.v1.Status
+	0,  // 43: flowmesh.v1.DeleteRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	1,  // 44: flowmesh.v1.DeleteResponse.status:type_name -> flowmesh.v1.Status
+	0,  // 45: flowmesh.v1.ExistsRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	1,  // 46: flowmesh.v1.ExistsResponse.status:type_name -> flowmesh.v1.Status
+	0,  // 47: flowmesh.v1.ListKeysRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	1,  // 48: flowmesh.v1.ListKeysResponse.status:type_name -> flowmesh.v1.Status
+	2,  // 49: flowmesh.v1.HealthService.HealthCheck:input_type -> flowmesh.v1.HealthCheckRequest
+	4,  // 50: flowmesh.v1.HealthService.ReadinessCheck:input_type -> flowmesh.v1.ReadinessCheckRequest
+	8,  // 51: flowmesh.v1.StreamService.WriteEvents:input_type -> flowmesh.v1.WriteEventsRequest
+	10, // 52: flowmesh.v1.StreamService.ReadStream:input_type -> flowmesh.v1.ReadStreamRequest
+	12, // 53: flowmesh.v1.StreamService.Subscribe:input_type -> flowmesh.v1.SubscribeRequest
+	14, // 54: flowmesh.v1.StreamService.CommitOffset:input_type -> flowmesh.v1.CommitOffsetRequest
+	16, // 55: flowmesh.v1.StreamService.GetOffset:input_type -> flowmesh.v1.GetOffsetRequest
+	18, // 56: flowmesh.v1.StreamService.GetLatestOffset:input_type -> flowmesh.v1.GetLatestOffsetRequest
+	21, // 57: flowmesh.v1.StreamService.GetConsumerGroupState:input_type -> flowmesh.v1.GetConsumerGroupStateRequest
+	24, // 58: flowmesh.v1.QueueService.Enqueue:input_type -> flowmesh.v1.EnqueueRequest
+	26, // 59: flowmesh.v1.QueueService.Reserve:input_type -> flowmesh.v1.ReserveRequest
+	28, // 60: flowmesh.v1.QueueService.Receive:input_type -> flowmesh.v1.ReceiveRequest
+	30, // 61: flowmesh.v1.QueueService.ACK:input_type -> flowmesh.v1.ACKRequest
+	32, // 62: flowmesh.v1.QueueService.NACK:input_type -> flowmesh.v1.NACKRequest
+	35, // 63: flowmesh.v1.QueueService.GetQueueStats:input_type -> flowmesh.v1.GetQueueStatsRequest
+	37, // 64: flowmesh.v1.KVService.Set:input_type -> flowmesh.v1.SetRequest
+	39, // 65: flowmesh.v1.KVService.Get:input_type -> flowmesh.v1.GetRequest
+	41, // 66: flowmesh.v1.KVService.Delete:input_type -> flowmesh.v1.DeleteRequest
+	43, // 67: flowmesh.v1.KVService.Exists:input_type -> flowmesh.v1.ExistsRequest
+	45, // 68: flowmesh.v1.KVService.ListKeys:input_type -> flowmesh.v1.ListKeysRequest
+	3,  // 69: flowmesh.v1.HealthService.HealthCheck:output_type -> flowmesh.v1.HealthCheckResponse
+	5,  // 70: flowmesh.v1.HealthService.ReadinessCheck:output_type -> flowmesh.v1.ReadinessCheckResponse
+	9,  // 71: flowmesh.v1.StreamService.WriteEvents:output_type -> flowmesh.v1.WriteEventsResponse
+	11, // 72: flowmesh.v1.StreamService.ReadStream:output_type -> flowmesh.v1.ReadStreamResponse
+	13, // 73: flowmesh.v1.StreamService.Subscribe:output_type -> flowmesh.v1.SubscribeResponse
+	15, // 74: flowmesh.v1.StreamService.CommitOffset:output_type -> flowmesh.v1.CommitOffsetResponse
+	17, // 75: flowmesh.v1.StreamService.GetOffset:output_type -> flowmesh.v1.GetOffsetResponse
+	19, // 76: flowmesh.v1.StreamService.GetLatestOffset:output_type -> flowmesh.v1.GetLatestOffsetResponse
+	22, // 77: flowmesh.v1.StreamService.GetConsumerGroupState:output_type -> flowmesh.v1.GetConsumerGroupStateResponse
+	25, // 78: flowmesh.v1.QueueService.Enqueue:output_type -> flowmesh.v1.EnqueueResponse
+	27, // 79: flowmesh.v1.QueueService.Reserve:output_type -> flowmesh.v1.ReserveResponse
+	29, // 80: flowmesh.v1.QueueService.Receive:output_type -> flowmesh.v1.ReceiveResponse
+	31, // 81: flowmesh.v1.QueueService.ACK:output_type -> flowmesh.v1.ACKResponse
+	33, // 82: flowmesh.v1.QueueService.NACK:output_type -> flowmesh.v1.NACKResponse
+	36, // 83: flowmesh.v1.QueueService.GetQueueStats:output_type -> flowmesh.v1.GetQueueStatsResponse
+	38, // 84: flowmesh.v1.KVService.Set:output_type -> flowmesh.v1.SetResponse
+	40, // 85: flowmesh.v1.KVService.Get:output_type -> flowmesh.v1.GetResponse
+	42, // 86: flowmesh.v1.KVService.Delete:output_type -> flowmesh.v1.DeleteResponse
+	44, // 87: flowmesh.v1.KVService.Exists:output_type -> flowmesh.v1.ExistsResponse
+	46, // 88: flowmesh.v1.KVService.ListKeys:output_type -> flowmesh.v1.ListKeysResponse
+	69, // [69:89] is the sub-list for method output_type
+	49, // [49:69] is the sub-list for method input_type
+	49, // [49:49] is the sub-list for extension type_name
+	49, // [49:49] is the sub-list for extension extendee
+	0,  // [0:49] is the sub-list for field type_name
 }
 
 func init() { file_flowmesh_proto_init() }
@@ -2551,9 +3150,9 @@ func file_flowmesh_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_flowmesh_proto_rawDesc), len(file_flowmesh_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   41,
+			NumMessages:   51,
 			NumExtensions: 0,
-			NumServices:   3,
+			NumServices:   4,
 		},
 		GoTypes:           file_flowmesh_proto_goTypes,
 		DependencyIndexes: file_flowmesh_proto_depIdxs,

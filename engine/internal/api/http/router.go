@@ -15,6 +15,7 @@ type Router struct {
 	storage        storage.StorageBackend
 	streamHandlers *handlers.StreamHandlers
 	queueHandlers  *handlers.QueueHandlers
+	kvHandlers     *handlers.KVHandlers
 }
 
 // NewRouter creates a new router
@@ -24,6 +25,7 @@ func NewRouter(storage storage.StorageBackend) *Router {
 		storage:        storage,
 		streamHandlers: handlers.NewStreamHandlers(storage),
 		queueHandlers:  handlers.NewQueueHandlers(storage),
+		kvHandlers:     handlers.NewKVHandlers(storage),
 	}
 
 	r.setupRoutes()
@@ -49,6 +51,9 @@ func (r *Router) setupRoutes() {
 
 	// Queue API endpoints
 	r.mux.Handle("/api/v1/queues/", chain(http.HandlerFunc(r.handleQueueRoutes)))
+
+	// KV API endpoints
+	r.mux.Handle("/api/v1/kv/", chain(http.HandlerFunc(r.handleKVRoutes)))
 
 	// Default API v1 route (for unmatched paths)
 	r.mux.Handle("/api/v1/", chain(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -137,6 +142,44 @@ func (r *Router) handleQueueRoutes(w http.ResponseWriter, req *http.Request) {
 	// GET /api/v1/queues/{tenant}/{namespace}/{name}/stats
 	if req.Method == http.MethodGet && matchPattern(path, "/stats") {
 		r.queueHandlers.GetQueueStats(w, req)
+		return
+	}
+
+	// No match found
+	http.NotFound(w, req)
+}
+
+// handleKVRoutes routes KV-related requests to appropriate handlers
+func (r *Router) handleKVRoutes(w http.ResponseWriter, req *http.Request) {
+	path := req.URL.Path
+
+	// PUT /api/v1/kv/{tenant}/{namespace}/{name}/keys/{key}
+	if req.Method == http.MethodPut && matchPattern(path, "/keys/") {
+		r.kvHandlers.Set(w, req)
+		return
+	}
+
+	// GET /api/v1/kv/{tenant}/{namespace}/{name}/keys/{key}
+	if req.Method == http.MethodGet && matchPattern(path, "/keys/") {
+		r.kvHandlers.Get(w, req)
+		return
+	}
+
+	// DELETE /api/v1/kv/{tenant}/{namespace}/{name}/keys/{key}
+	if req.Method == http.MethodDelete && matchPattern(path, "/keys/") {
+		r.kvHandlers.Delete(w, req)
+		return
+	}
+
+	// HEAD /api/v1/kv/{tenant}/{namespace}/{name}/keys/{key}
+	if req.Method == http.MethodHead && matchPattern(path, "/keys/") {
+		r.kvHandlers.Exists(w, req)
+		return
+	}
+
+	// GET /api/v1/kv/{tenant}/{namespace}/{name}/keys
+	if req.Method == http.MethodGet && matchPattern(path, "/keys") {
+		r.kvHandlers.ListKeys(w, req)
 		return
 	}
 
