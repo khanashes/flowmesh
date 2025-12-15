@@ -8,6 +8,7 @@ import (
 	"github.com/flowmesh/engine/internal/storage/kv"
 	"github.com/flowmesh/engine/internal/storage/log"
 	"github.com/flowmesh/engine/internal/storage/queues"
+	"github.com/flowmesh/engine/internal/storage/schema"
 	"github.com/flowmesh/engine/internal/storage/streams"
 )
 
@@ -550,4 +551,27 @@ func (w *consumerGroupManagerWrapper) Stop(ctx context.Context) error {
 // Ready implements Lifecycle interface
 func (w *consumerGroupManagerWrapper) Ready() bool {
 	return w.Manager.Ready()
+}
+
+// schemaRegistryWrapper wraps schema.Registry to implement SchemaRegistry interface
+type schemaRegistryWrapper struct {
+	*schema.Registry
+}
+
+// Ensure schemaRegistryWrapper implements SchemaRegistry interface
+var _ SchemaRegistry = (*schemaRegistryWrapper)(nil)
+
+// Start implements Lifecycle interface
+func (w *schemaRegistryWrapper) Start(ctx context.Context) error {
+	return nil // Schema registry doesn't need explicit startup
+}
+
+// Stop implements Lifecycle interface
+func (w *schemaRegistryWrapper) Stop(ctx context.Context) error {
+	return nil // Schema registry cleanup if needed
+}
+
+// Ready implements Lifecycle interface
+func (w *schemaRegistryWrapper) Ready() bool {
+	return true
 }

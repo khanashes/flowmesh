@@ -1,6 +1,7 @@
 package streams
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
@@ -13,6 +14,7 @@ import (
 	"github.com/flowmesh/engine/internal/logger"
 	"github.com/flowmesh/engine/internal/storage/log"
 	"github.com/flowmesh/engine/internal/storage/metastore"
+	"github.com/flowmesh/engine/internal/storage/schema"
 	"github.com/rs/zerolog"
 )
 
@@ -31,24 +33,28 @@ type StreamState struct {
 
 // Manager manages stream operations
 type Manager struct {
-	metaStore    *metastore.Store
-	logManager   *log.Manager
-	metadataDir  string
-	streamStates map[string]*StreamState
-	indexes      map[string]*OffsetIndex
-	log          zerolog.Logger
-	mu           sync.RWMutex
+	metaStore      *metastore.Store
+	logManager     *log.Manager
+	metadataDir    string
+	schemaRegistry *schema.Registry
+	validator      *schema.Validator
+	streamStates   map[string]*StreamState
+	indexes        map[string]*OffsetIndex
+	log            zerolog.Logger
+	mu             sync.RWMutex
 }
 
 // NewManager creates a new stream manager
 func NewManager(metaStore *metastore.Store, logManager *log.Manager, metadataDir string) *Manager {
 	return &Manager{
-		metaStore:    metaStore,
-		logManager:   logManager,
-		metadataDir:  metadataDir,
-		streamStates: make(map[string]*StreamState),
-		indexes:      make(map[string]*OffsetIndex),
-		log:          logger.WithComponent("streams"),
+		metaStore:      metaStore,
+		logManager:     logManager,
+		metadataDir:    metadataDir,
+		schemaRegistry: schema.NewRegistry(metaStore),
+		validator:      schema.NewValidator(),
+		streamStates:   make(map[string]*StreamState),
+		indexes:        make(map[string]*OffsetIndex),
+		log:            logger.WithComponent("streams"),
 	}
 }
 
@@ -85,13 +91,37 @@ func (m *Manager) getOrCreateIndex(resourcePath string) *OffsetIndex {
 
 // WriteEvents writes events to a stream and returns assigned offsets
 func (m *Manager) WriteEvents(resourcePath string, events []Event) ([]int64, error) {
-	// Validate stream exists
-	_, err := m.metaStore.GetResource(resourcePath)
+	// Validate stream exists and get config
+	config, err := m.metaStore.GetResource(resourcePath)
 	if err != nil {
 		if _, ok := err.(metastore.ResourceNotFoundError); ok {
 			return nil, StreamNotFoundError{ResourcePath: resourcePath}
 		}
 		return nil, WriteError{ResourcePath: resourcePath, Err: err}
+	}
+
+	// Validate events against schema if schema is configured
+	if config.Schema != nil {
+		// Get schema (use latest if version is 0)
+		var schemaDef *schema.Schema
+		if config.Schema.Version > 0 {
+			schemaDef, err = m.schemaRegistry.GetSchema(context.Background(), config.Tenant, config.Schema.ID, config.Schema.Version)
+		} else {
+			schemaDef, err = m.schemaRegistry.GetLatestSchema(context.Background(), config.Tenant, config.Schema.ID)
+		}
+		if err != nil {
+			return nil, WriteError{ResourcePath: resourcePath, Err: fmt.Errorf("failed to get schema: %w", err)}
+		}
+
+		// Validate each event payload
+		for i, event := range events {
+			if err := m.validator.Validate(event.Payload, schemaDef.Definition); err != nil {
+				return nil, WriteError{
+					ResourcePath: resourcePath,
+					Err:          fmt.Errorf("event %d validation failed: %w", i, err),
+				}
+			}
+		}
 	}
 
 	// Get or create stream state
@@ -118,6 +148,20 @@ func (m *Manager) WriteEvents(resourcePath string, events []Event) ([]int64, err
 
 	offsets := make([]int64, 0, len(events))
 
+	// Determine schema version once before the loop
+	schemaVersion := int32(0)
+	if config.Schema != nil {
+		if config.Schema.Version > 0 {
+			schemaVersion = config.Schema.Version
+		} else {
+			// Get latest version
+			latestSchema, err := m.schemaRegistry.GetLatestSchema(context.Background(), config.Tenant, config.Schema.ID)
+			if err == nil {
+				schemaVersion = latestSchema.Version
+			}
+		}
+	}
+
 	for i, event := range events {
 		// Assign offset
 		offset := nextOffset + int64(i)
@@ -141,7 +185,7 @@ func (m *Manager) WriteEvents(resourcePath string, events []Event) ([]int64, err
 			CreatedAt:     time.Now(),
 			VisibleAt:     time.Time{}, // Not used for streams
 			Attempts:      0,           // Not used for streams
-			SchemaVersion: 0,           // Future: schema versioning
+			SchemaVersion: schemaVersion,
 		}
 
 		// Encode message

@@ -101,5 +101,6 @@ func (m *mockStorageBackend) StreamManager() storage.StreamManager              
 func (m *mockStorageBackend) QueueManager() storage.QueueManager                 { return nil }
 func (m *mockStorageBackend) KVManager() storage.KVManager                       { return nil }
 func (m *mockStorageBackend) ConsumerGroupManager() storage.ConsumerGroupManager { return nil }
+func (m *mockStorageBackend) SchemaRegistry() storage.SchemaRegistry             { return nil }
 func (m *mockStorageBackend) Paths() *storage.StoragePaths                       { return nil }
 func (m *mockStorageBackend) Validate(ctx context.Context) error                 { return nil }

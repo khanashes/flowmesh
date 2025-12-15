@@ -7,6 +7,7 @@ import (
 	"github.com/flowmesh/engine/internal/storage/log"
 	"github.com/flowmesh/engine/internal/storage/metastore"
 	"github.com/flowmesh/engine/internal/storage/queues"
+	"github.com/flowmesh/engine/internal/storage/schema"
 )
 
 // Lifecycle manages component lifecycle
@@ -158,6 +159,21 @@ type ConsumerGroupManager interface {
 	DeleteConsumerGroup(ctx context.Context, stream, group string) error
 }
 
+// SchemaRegistry defines the interface for schema management
+type SchemaRegistry interface {
+	Lifecycle
+	// RegisterSchema registers a new schema version
+	RegisterSchema(ctx context.Context, tenant, schemaID, schemaType string, version int32, definition []byte) error
+	// GetSchema retrieves a specific schema version
+	GetSchema(ctx context.Context, tenant, schemaID string, version int32) (*schema.Schema, error)
+	// GetLatestSchema retrieves the latest version of a schema
+	GetLatestSchema(ctx context.Context, tenant, schemaID string) (*schema.Schema, error)
+	// ListSchemas lists all schemas, optionally filtered by schema ID
+	ListSchemas(ctx context.Context, tenant, schemaID string) ([]*schema.Schema, error)
+	// DeleteSchema deletes a specific schema version
+	DeleteSchema(ctx context.Context, tenant, schemaID string, version int32) error
+}
+
 // StorageBackend defines the interface for storage operations
 type StorageBackend interface {
 	Lifecycle
@@ -173,6 +189,8 @@ type StorageBackend interface {
 	KVManager() KVManager
 	// ConsumerGroupManager returns the consumer group manager
 	ConsumerGroupManager() ConsumerGroupManager
+	// SchemaRegistry returns the schema registry
+	SchemaRegistry() SchemaRegistry
 	// Paths returns the storage paths
 	Paths() *StoragePaths
 	// Validate validates the storage system integrity

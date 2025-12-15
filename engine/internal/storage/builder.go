@@ -10,6 +10,7 @@ import (
 	logpkg "github.com/flowmesh/engine/internal/storage/log"
 	"github.com/flowmesh/engine/internal/storage/metastore"
 	"github.com/flowmesh/engine/internal/storage/queues"
+	"github.com/flowmesh/engine/internal/storage/schema"
 	"github.com/flowmesh/engine/internal/storage/streams"
 	"github.com/rs/zerolog"
 )
@@ -128,6 +129,9 @@ func (b *Builder) Build() (*Storage, error) {
 	}
 	consumerGroupMgr := consumers.NewManager(b.metaStore, paths.MetadataDir, latestOffsetFunc)
 
+	// Initialize schema registry
+	schemaReg := schema.NewRegistry(b.metaStore)
+
 	storage := &Storage{
 		paths:                paths,
 		metaStore:            b.metaStore,
@@ -136,6 +140,7 @@ func (b *Builder) Build() (*Storage, error) {
 		queueManager:         queueMgr,
 		kvManager:            kvMgr,
 		consumerGroupManager: consumerGroupMgr,
+		schemaRegistry:       schemaReg,
 		log:                  b.log,
 		closed:               false,
 		ready:                false,

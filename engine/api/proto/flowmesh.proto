@@ -456,3 +456,93 @@ service KVService {
   rpc ListKeys(ListKeysRequest) returns (ListKeysResponse);
 }
 
+// Schema represents a JSON schema definition
+message Schema {
+  string id = 1;                    // Schema identifier
+  string type = 2;                  // Schema type (e.g., "jsonschema")
+  int32 version = 3;                // Schema version
+  bytes definition = 4;             // Schema definition (JSON)
+  int64 created_at = 5;            // Creation timestamp (Unix nanoseconds)
+}
+
+// RegisterSchemaRequest is a request to register a schema
+message RegisterSchemaRequest {
+  string tenant = 1;                // Tenant identifier
+  string schema_id = 2;            // Schema identifier
+  string schema_type = 3;          // Schema type (e.g., "jsonschema")
+  int32 version = 4;               // Schema version
+  bytes definition = 5;            // Schema definition (JSON)
+}
+
+// RegisterSchemaResponse is a response to registering a schema
+message RegisterSchemaResponse {
+  Status status = 1;               // Operation status
+}
+
+// GetSchemaRequest is a request to get a schema
+message GetSchemaRequest {
+  string tenant = 1;               // Tenant identifier
+  string schema_id = 2;           // Schema identifier
+  int32 version = 3;              // Schema version (0 = latest)
+}
+
+// GetSchemaResponse is a response to getting a schema
+message GetSchemaResponse {
+  Status status = 1;              // Operation status
+  Schema schema = 2;              // Schema definition
+}
+
+// ListSchemasRequest is a request to list schemas
+message ListSchemasRequest {
+  string tenant = 1;              // Tenant identifier
+  string schema_id = 2;          // Optional schema ID filter (empty = all schemas)
+}
+
+// ListSchemasResponse is a response to listing schemas
+message ListSchemasResponse {
+  Status status = 1;              // Operation status
+  repeated Schema schemas = 2;   // List of schemas
+}
+
+// DeleteSchemaRequest is a request to delete a schema
+message DeleteSchemaRequest {
+  string tenant = 1;             // Tenant identifier
+  string schema_id = 2;         // Schema identifier
+  int32 version = 3;            // Schema version
+}
+
+// DeleteSchemaResponse is a response to deleting a schema
+message DeleteSchemaResponse {
+  Status status = 1;            // Operation status
+}
+
+// SetResourceSchemaRequest is a request to set a schema on a resource
+message SetResourceSchemaRequest {
+  ResourcePath resource_path = 1;  // Resource path
+  string schema_id = 2;           // Schema identifier
+  int32 version = 3;             // Schema version (0 = latest)
+}
+
+// SetResourceSchemaResponse is a response to setting a schema on a resource
+message SetResourceSchemaResponse {
+  Status status = 1;            // Operation status
+}
+
+// SchemaService provides operations for working with schemas
+service SchemaService {
+  // RegisterSchema registers a new schema version
+  rpc RegisterSchema(RegisterSchemaRequest) returns (RegisterSchemaResponse);
+
+  // GetSchema retrieves a schema by ID and version
+  rpc GetSchema(GetSchemaRequest) returns (GetSchemaResponse);
+
+  // ListSchemas lists all schemas, optionally filtered by schema ID
+  rpc ListSchemas(ListSchemasRequest) returns (ListSchemasResponse);
+
+  // DeleteSchema deletes a schema version
+  rpc DeleteSchema(DeleteSchemaRequest) returns (DeleteSchemaResponse);
+
+  // SetResourceSchema attaches a schema to a resource (stream/queue)
+  rpc SetResourceSchema(SetResourceSchemaRequest) returns (SetResourceSchemaResponse);
+}
+

@@ -2,6 +2,7 @@ package http
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/flowmesh/engine/internal/api/http/handlers"
 	"github.com/flowmesh/engine/internal/api/http/middleware"
@@ -16,6 +17,7 @@ type Router struct {
 	streamHandlers *handlers.StreamHandlers
 	queueHandlers  *handlers.QueueHandlers
 	kvHandlers     *handlers.KVHandlers
+	schemaHandlers *handlers.SchemaHandlers
 }
 
 // NewRouter creates a new router
@@ -26,6 +28,7 @@ func NewRouter(storage storage.StorageBackend) *Router {
 		streamHandlers: handlers.NewStreamHandlers(storage),
 		queueHandlers:  handlers.NewQueueHandlers(storage),
 		kvHandlers:     handlers.NewKVHandlers(storage),
+		schemaHandlers: handlers.NewSchemaHandlers(storage),
 	}
 
 	r.setupRoutes()
@@ -54,6 +57,13 @@ func (r *Router) setupRoutes() {
 
 	// KV API endpoints
 	r.mux.Handle("/api/v1/kv/", chain(http.HandlerFunc(r.handleKVRoutes)))
+
+	// Schema API endpoints
+	r.mux.Handle("/api/v1/schemas/", chain(http.HandlerFunc(r.handleSchemaRoutes)))
+
+	// Resource schema endpoints
+	r.mux.Handle("/api/v1/streams/", chain(http.HandlerFunc(r.handleStreamSchemaRoutes)))
+	r.mux.Handle("/api/v1/queues/", chain(http.HandlerFunc(r.handleQueueSchemaRoutes)))
 
 	// Default API v1 route (for unmatched paths)
 	r.mux.Handle("/api/v1/", chain(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -209,6 +219,66 @@ func (r *Router) handleKVRoutes(w http.ResponseWriter, req *http.Request) {
 
 	// No match found
 	http.NotFound(w, req)
+}
+
+// handleSchemaRoutes routes schema-related requests to appropriate handlers
+func (r *Router) handleSchemaRoutes(w http.ResponseWriter, req *http.Request) {
+	path := req.URL.Path
+
+	// POST /api/v1/schemas (or /api/v1/{tenant}/schemas)
+	if req.Method == http.MethodPost {
+		r.schemaHandlers.RegisterSchema(w, req)
+		return
+	}
+
+	// GET /api/v1/schemas (list all schemas)
+	if req.Method == http.MethodGet && !strings.Contains(path, "/v") {
+		r.schemaHandlers.ListSchemas(w, req)
+		return
+	}
+
+	// GET /api/v1/schemas/{schema_id}/v{version} (get specific schema)
+	if req.Method == http.MethodGet && strings.Contains(path, "/v") {
+		r.schemaHandlers.GetSchema(w, req)
+		return
+	}
+
+	// DELETE /api/v1/schemas/{schema_id}/v{version}
+	if req.Method == http.MethodDelete {
+		r.schemaHandlers.DeleteSchema(w, req)
+		return
+	}
+
+	// No match found
+	http.NotFound(w, req)
+}
+
+// handleStreamSchemaRoutes handles schema attachment for streams
+func (r *Router) handleStreamSchemaRoutes(w http.ResponseWriter, req *http.Request) {
+	path := req.URL.Path
+
+	// PUT /api/v1/streams/{tenant}/{namespace}/{name}/schema
+	if req.Method == http.MethodPut && matchPattern(path, "/schema") {
+		r.schemaHandlers.SetResourceSchema(w, req)
+		return
+	}
+
+	// Delegate to stream routes
+	r.handleStreamRoutes(w, req)
+}
+
+// handleQueueSchemaRoutes handles schema attachment for queues
+func (r *Router) handleQueueSchemaRoutes(w http.ResponseWriter, req *http.Request) {
+	path := req.URL.Path
+
+	// PUT /api/v1/queues/{tenant}/{namespace}/{name}/schema
+	if req.Method == http.MethodPut && matchPattern(path, "/schema") {
+		r.schemaHandlers.SetResourceSchema(w, req)
+		return
+	}
+
+	// Delegate to queue routes
+	r.handleQueueRoutes(w, req)
 }
 
 // matchPattern checks if a path matches a pattern with required segments

@@ -11,6 +11,7 @@ import (
 	logpkg "github.com/flowmesh/engine/internal/storage/log"
 	"github.com/flowmesh/engine/internal/storage/metastore"
 	"github.com/flowmesh/engine/internal/storage/queues"
+	"github.com/flowmesh/engine/internal/storage/schema"
 	"github.com/flowmesh/engine/internal/storage/streams"
 	"github.com/rs/zerolog"
 )
@@ -25,6 +26,7 @@ type Storage struct {
 	queueManager         *queues.Manager
 	kvManager            *kv.Manager
 	consumerGroupManager *consumers.Manager
+	schemaRegistry       *schema.Registry
 	log                  zerolog.Logger
 	mu                   sync.RWMutex
 	closed               bool
@@ -68,6 +70,11 @@ func (s *Storage) KVManager() KVManager {
 // ConsumerGroupManager returns the consumer group manager
 func (s *Storage) ConsumerGroupManager() ConsumerGroupManager {
 	return &consumerGroupManagerWrapper{Manager: s.consumerGroupManager}
+}
+
+// SchemaRegistry returns the schema registry
+func (s *Storage) SchemaRegistry() SchemaRegistry {
+	return &schemaRegistryWrapper{Registry: s.schemaRegistry}
 }
 
 // Paths returns the storage paths

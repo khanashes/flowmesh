@@ -335,5 +335,6 @@ func (m *mockStorageBackendWithMutex) StreamManager() storage.StreamManager     
 func (m *mockStorageBackendWithMutex) QueueManager() storage.QueueManager                 { return nil }
 func (m *mockStorageBackendWithMutex) KVManager() storage.KVManager                       { return nil }
 func (m *mockStorageBackendWithMutex) ConsumerGroupManager() storage.ConsumerGroupManager { return nil }
+func (m *mockStorageBackendWithMutex) SchemaRegistry() storage.SchemaRegistry             { return nil }
 func (m *mockStorageBackendWithMutex) Paths() *storage.StoragePaths                       { return nil }
 func (m *mockStorageBackendWithMutex) Validate(ctx context.Context) error                 { return nil }

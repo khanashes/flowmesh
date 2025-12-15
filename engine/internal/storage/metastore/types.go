@@ -14,6 +14,8 @@ const (
 	ResourceQueue ResourceType = "queue"
 	// ResourceKV represents a key-value store
 	ResourceKV ResourceType = "kv"
+	// ResourceSchema represents a schema definition
+	ResourceSchema ResourceType = "schema"
 )
 
 // RetentionConfig defines retention policy for resources
@@ -110,8 +112,8 @@ func (rc *ResourceConfig) Validate() error {
 	if rc.Name == "" {
 		return InvalidConfigError{Field: "name", Reason: "cannot be empty"}
 	}
-	if rc.Type != ResourceStream && rc.Type != ResourceQueue && rc.Type != ResourceKV {
-		return InvalidConfigError{Field: "type", Reason: "must be stream, queue, or kv"}
+	if rc.Type != ResourceStream && rc.Type != ResourceQueue && rc.Type != ResourceKV && rc.Type != ResourceSchema {
+		return InvalidConfigError{Field: "type", Reason: "must be stream, queue, kv, or schema"}
 	}
 	if rc.Partitions < 0 {
 		return InvalidConfigError{Field: "partitions", Reason: "cannot be negative"}

@@ -14,6 +14,7 @@ import (
 	"github.com/flowmesh/engine/internal/logger"
 	"github.com/flowmesh/engine/internal/storage/log"
 	"github.com/flowmesh/engine/internal/storage/metastore"
+	"github.com/flowmesh/engine/internal/storage/schema"
 	"github.com/rs/zerolog"
 )
 
@@ -28,28 +29,32 @@ type QueueState struct {
 
 // Manager manages queue operations
 type Manager struct {
-	metaStore     *metastore.Store
-	logManager    *log.Manager
-	metadataDir   string
-	queueStates   map[string]*QueueState
-	workers       map[string]map[string]*WorkerInfo // queuePath -> workerID -> WorkerInfo
-	retryPolicies map[string]*RetryPolicy           // queuePath -> RetryPolicy
-	log           zerolog.Logger
-	mu            sync.RWMutex
-	scheduler     *Scheduler
+	metaStore      *metastore.Store
+	logManager     *log.Manager
+	metadataDir    string
+	schemaRegistry *schema.Registry
+	validator      *schema.Validator
+	queueStates    map[string]*QueueState
+	workers        map[string]map[string]*WorkerInfo // queuePath -> workerID -> WorkerInfo
+	retryPolicies  map[string]*RetryPolicy           // queuePath -> RetryPolicy
+	log            zerolog.Logger
+	mu             sync.RWMutex
+	scheduler      *Scheduler
 }
 
 // NewManager creates a new queue manager
 func NewManager(metaStore *metastore.Store, logManager *log.Manager, metadataDir string) *Manager {
 	mgr := &Manager{
-		metaStore:     metaStore,
-		logManager:    logManager,
-		metadataDir:   metadataDir,
-		queueStates:   make(map[string]*QueueState),
-		workers:       make(map[string]map[string]*WorkerInfo),
-		retryPolicies: make(map[string]*RetryPolicy),
-		log:           logger.WithComponent("queues"),
-		scheduler:     NewScheduler(metaStore, logManager),
+		metaStore:      metaStore,
+		logManager:     logManager,
+		metadataDir:    metadataDir,
+		schemaRegistry: schema.NewRegistry(metaStore),
+		validator:      schema.NewValidator(),
+		queueStates:    make(map[string]*QueueState),
+		workers:        make(map[string]map[string]*WorkerInfo),
+		retryPolicies:  make(map[string]*RetryPolicy),
+		log:            logger.WithComponent("queues"),
+		scheduler:      NewScheduler(metaStore, logManager),
 	}
 	mgr.scheduler.SetQueueManager(mgr)
 	return mgr
@@ -91,13 +96,35 @@ func (m *Manager) getOrCreateQueueState(resourcePath string) *QueueState {
 
 // Enqueue enqueues a job to a queue and returns job ID and sequence number
 func (m *Manager) Enqueue(resourcePath string, payload []byte, options EnqueueOptions) (string, int64, error) {
-	// Validate queue exists
-	_, err := m.metaStore.GetResource(resourcePath)
+	// Validate queue exists and get config
+	config, err := m.metaStore.GetResource(resourcePath)
 	if err != nil {
 		if _, ok := err.(metastore.ResourceNotFoundError); ok {
 			return "", 0, QueueNotFoundError{ResourcePath: resourcePath}
 		}
 		return "", 0, EnqueueError{ResourcePath: resourcePath, Err: err}
+	}
+
+	// Validate payload against schema if schema is configured
+	if config.Schema != nil {
+		// Get schema (use latest if version is 0)
+		var schemaDef *schema.Schema
+		if config.Schema.Version > 0 {
+			schemaDef, err = m.schemaRegistry.GetSchema(context.Background(), config.Tenant, config.Schema.ID, config.Schema.Version)
+		} else {
+			schemaDef, err = m.schemaRegistry.GetLatestSchema(context.Background(), config.Tenant, config.Schema.ID)
+		}
+		if err != nil {
+			return "", 0, EnqueueError{ResourcePath: resourcePath, Err: fmt.Errorf("failed to get schema: %w", err)}
+		}
+
+		// Validate payload
+		if err := m.validator.Validate(payload, schemaDef.Definition); err != nil {
+			return "", 0, EnqueueError{
+				ResourcePath: resourcePath,
+				Err:          fmt.Errorf("payload validation failed: %w", err),
+			}
+		}
 	}
 
 	// Get or create queue state
@@ -133,6 +160,20 @@ func (m *Manager) Enqueue(resourcePath string, payload []byte, options EnqueueOp
 	// Get file position before writing
 	fileOffset := writer.Offset()
 
+	// Determine schema version
+	schemaVersion := int32(0)
+	if config.Schema != nil {
+		if config.Schema.Version > 0 {
+			schemaVersion = config.Schema.Version
+		} else {
+			// Get latest version
+			latestSchema, err := m.schemaRegistry.GetLatestSchema(context.Background(), config.Tenant, config.Schema.ID)
+			if err == nil {
+				schemaVersion = latestSchema.Version
+			}
+		}
+	}
+
 	// Create message
 	msg := &log.Message{
 		ID:            jobID,
@@ -146,7 +187,7 @@ func (m *Manager) Enqueue(resourcePath string, payload []byte, options EnqueueOp
 		CreatedAt:     now,
 		VisibleAt:     visibleAt,
 		Attempts:      0,
-		SchemaVersion: 0, // Future: schema versioning
+		SchemaVersion: schemaVersion,
 	}
 
 	// Encode message
