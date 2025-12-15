@@ -157,12 +157,22 @@ func (s *Scheduler) handleExpiredJob(resourcePath string, job *JobMetadata) erro
 
 	// Check max attempts
 	if policy.MaxAttempts > 0 && job.Attempts >= policy.MaxAttempts {
-		// Max attempts exceeded - will be moved to DLQ in Phase 12
+		// Max attempts exceeded - move to DLQ
+		err := s.queueMgr.MoveToDLQ(context.Background(), resourcePath, job.ID)
+		if err != nil {
+			s.log.Error().
+				Err(err).
+				Str("queue", resourcePath).
+				Str("job_id", job.ID).
+				Int32("attempts", job.Attempts).
+				Msg("Failed to move job to DLQ")
+			return err
+		}
 		s.log.Warn().
 			Str("queue", resourcePath).
 			Str("job_id", job.ID).
 			Int32("attempts", job.Attempts).
-			Msg("Job exceeded max attempts, will be moved to DLQ")
+			Msg("Job exceeded max attempts, moved to DLQ")
 		return nil
 	}
 

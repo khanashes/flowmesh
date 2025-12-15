@@ -6,6 +6,7 @@ import (
 
 	"github.com/flowmesh/engine/internal/storage/log"
 	"github.com/flowmesh/engine/internal/storage/metastore"
+	"github.com/flowmesh/engine/internal/storage/queues"
 )
 
 // Lifecycle manages component lifecycle
@@ -78,6 +79,16 @@ type QueueManager interface {
 	GetQueueStats(ctx context.Context, resourcePath string) (*QueueStats, error)
 	// Receive receives multiple jobs from the queue (batch receive)
 	Receive(ctx context.Context, resourcePath string, maxJobs int, options QueueReserveOptions) ([]*QueueJob, error)
+	// SetRetryPolicy sets the retry policy for a queue
+	SetRetryPolicy(ctx context.Context, resourcePath string, policy queues.RetryPolicy) error
+	// GetRetryPolicy gets the retry policy for a queue
+	GetRetryPolicy(ctx context.Context, resourcePath string) (*queues.RetryPolicy, error)
+	// MoveToDLQ moves a job to the dead-letter queue
+	MoveToDLQ(ctx context.Context, resourcePath string, jobID string) error
+	// GetDLQPath gets or creates the DLQ path for a queue
+	GetDLQPath(ctx context.Context, resourcePath string) (string, error)
+	// ListDLQJobs lists jobs in the DLQ
+	ListDLQJobs(ctx context.Context, resourcePath string, maxJobs int) ([]*QueueJob, error)
 }
 
 // QueueStats represents statistics for a queue

@@ -3,6 +3,8 @@ package validation
 import (
 	"fmt"
 	"time"
+
+	"github.com/flowmesh/engine/api/proto/flowmeshpb"
 )
 
 // ValidateEnqueueRequest validates an enqueue request
@@ -160,6 +162,54 @@ func ValidateMaxJobs(maxJobs int) error {
 
 	if maxJobs > 100 {
 		return fmt.Errorf("max_jobs cannot exceed 100")
+	}
+
+	return nil
+}
+
+// ValidateRetryPolicy validates a retry policy configuration
+func ValidateRetryPolicy(policy *flowmeshpb.RetryPolicy) error {
+	if policy == nil {
+		return fmt.Errorf("policy cannot be nil")
+	}
+
+	// MaxAttempts: 0 (unlimited) or positive
+	if policy.MaxAttempts < 0 {
+		return fmt.Errorf("max_attempts cannot be negative")
+	}
+
+	// InitialBackoffSeconds: positive
+	if policy.InitialBackoffSeconds <= 0 {
+		return fmt.Errorf("initial_backoff_seconds must be positive")
+	}
+
+	// MaxBackoffSeconds: positive and >= InitialBackoffSeconds
+	if policy.MaxBackoffSeconds <= 0 {
+		return fmt.Errorf("max_backoff_seconds must be positive")
+	}
+	if policy.MaxBackoffSeconds < policy.InitialBackoffSeconds {
+		return fmt.Errorf("max_backoff_seconds must be >= initial_backoff_seconds")
+	}
+
+	// BackoffMultiplier: positive
+	if policy.BackoffMultiplier <= 0 {
+		return fmt.Errorf("backoff_multiplier must be positive")
+	}
+
+	// BackoffStrategy: valid strategy
+	validStrategies := map[string]bool{
+		"fixed":       true,
+		"linear":      true,
+		"exponential": true,
+	}
+	if !validStrategies[policy.BackoffStrategy] {
+		return fmt.Errorf("backoff_strategy must be one of: fixed, linear, exponential")
+	}
+
+	// Max backoff reasonable limit: 1 year
+	maxBackoffLimit := int64(365 * 24 * 60 * 60)
+	if policy.MaxBackoffSeconds > maxBackoffLimit {
+		return fmt.Errorf("max_backoff_seconds cannot exceed %d (1 year)", maxBackoffLimit)
 	}
 
 	return nil

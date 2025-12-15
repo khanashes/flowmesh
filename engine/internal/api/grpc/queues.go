@@ -495,3 +495,194 @@ func (s *QueueService) mapQueueError(err error, resourcePath string) error {
 		return status.Error(codes.Internal, err.Error())
 	}
 }
+
+// SetRetryPolicy sets the retry policy for a queue
+func (s *QueueService) SetRetryPolicy(ctx context.Context, req *flowmeshpb.SetRetryPolicyRequest) (*flowmeshpb.SetRetryPolicyResponse, error) {
+	// Validate request
+	if req.ResourcePath == nil {
+		return nil, status.Error(codes.InvalidArgument, "resource_path is required")
+	}
+	if req.Policy == nil {
+		return nil, status.Error(codes.InvalidArgument, "policy is required")
+	}
+
+	// Build resource path
+	resourcePath, err := validation.BuildResourcePath(
+		req.ResourcePath.Tenant,
+		req.ResourcePath.Namespace,
+		req.ResourcePath.ResourceType,
+		req.ResourcePath.Name,
+	)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// Validate retry policy
+	if err := validation.ValidateRetryPolicy(req.Policy); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// Convert proto RetryPolicy to storage RetryPolicy
+	policy := queues.RetryPolicy{
+		MaxAttempts:       req.Policy.MaxAttempts,
+		InitialBackoff:    time.Duration(req.Policy.InitialBackoffSeconds) * time.Second,
+		MaxBackoff:        time.Duration(req.Policy.MaxBackoffSeconds) * time.Second,
+		BackoffMultiplier: req.Policy.BackoffMultiplier,
+		BackoffStrategy:   queues.BackoffStrategy(req.Policy.BackoffStrategy),
+	}
+
+	// Set retry policy
+	queueMgr := s.storage.QueueManager()
+	if err := queueMgr.SetRetryPolicy(ctx, resourcePath, policy); err != nil {
+		return nil, s.mapQueueError(err, resourcePath)
+	}
+
+	return &flowmeshpb.SetRetryPolicyResponse{
+		Status: &flowmeshpb.Status{Code: int32(codes.OK)},
+	}, nil
+}
+
+// GetRetryPolicy gets the retry policy for a queue
+func (s *QueueService) GetRetryPolicy(ctx context.Context, req *flowmeshpb.GetRetryPolicyRequest) (*flowmeshpb.GetRetryPolicyResponse, error) {
+	// Validate request
+	if req.ResourcePath == nil {
+		return nil, status.Error(codes.InvalidArgument, "resource_path is required")
+	}
+
+	// Build resource path
+	resourcePath, err := validation.BuildResourcePath(
+		req.ResourcePath.Tenant,
+		req.ResourcePath.Namespace,
+		req.ResourcePath.ResourceType,
+		req.ResourcePath.Name,
+	)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// Get retry policy
+	queueMgr := s.storage.QueueManager()
+	policy, err := queueMgr.GetRetryPolicy(ctx, resourcePath)
+	if err != nil {
+		return nil, s.mapQueueError(err, resourcePath)
+	}
+
+	// Convert storage RetryPolicy to proto RetryPolicy
+	protoPolicy := &flowmeshpb.RetryPolicy{
+		MaxAttempts:           policy.MaxAttempts,
+		InitialBackoffSeconds: int64(policy.InitialBackoff.Seconds()),
+		MaxBackoffSeconds:     int64(policy.MaxBackoff.Seconds()),
+		BackoffMultiplier:     policy.BackoffMultiplier,
+		BackoffStrategy:       string(policy.BackoffStrategy),
+	}
+
+	return &flowmeshpb.GetRetryPolicyResponse{
+		Status: &flowmeshpb.Status{Code: int32(codes.OK)},
+		Policy: protoPolicy,
+	}, nil
+}
+
+// ListDLQJobs lists jobs in the dead-letter queue
+func (s *QueueService) ListDLQJobs(ctx context.Context, req *flowmeshpb.ListDLQJobsRequest) (*flowmeshpb.ListDLQJobsResponse, error) {
+	// Validate request
+	if req.ResourcePath == nil {
+		return nil, status.Error(codes.InvalidArgument, "resource_path is required")
+	}
+	if req.MaxJobs <= 0 {
+		req.MaxJobs = 100 // Default limit
+	}
+
+	// Build resource path
+	resourcePath, err := validation.BuildResourcePath(
+		req.ResourcePath.Tenant,
+		req.ResourcePath.Namespace,
+		req.ResourcePath.ResourceType,
+		req.ResourcePath.Name,
+	)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// List DLQ jobs
+	queueMgr := s.storage.QueueManager()
+	dlqJobs, err := queueMgr.ListDLQJobs(ctx, resourcePath, int(req.MaxJobs))
+	if err != nil {
+		return nil, s.mapQueueError(err, resourcePath)
+	}
+
+	// Get DLQ path to read jobs from
+	dlqPath, err := queueMgr.GetDLQPath(ctx, resourcePath)
+	if err != nil {
+		return nil, s.mapQueueError(err, resourcePath)
+	}
+
+	// Convert QueueJob to proto Job
+	protoJobs := make([]*flowmeshpb.Job, 0, len(dlqJobs))
+	for _, job := range dlqJobs {
+		payload, err := queueMgr.GetJobPayload(ctx, dlqPath, job.ID)
+		if err != nil {
+			s.log.Warn().Err(err).Str("job_id", job.ID).Msg("Failed to get job payload for DLQ listing")
+			continue
+		}
+
+		protoJobs = append(protoJobs, &flowmeshpb.Job{
+			Id:        job.ID,
+			Seq:       job.Seq,
+			Payload:   payload,
+			Attempts:  int32(job.Attempts),
+			CreatedAt: job.CreatedAt.Unix(),
+		})
+	}
+
+	return &flowmeshpb.ListDLQJobsResponse{
+		Status: &flowmeshpb.Status{Code: int32(codes.OK)},
+		Jobs:   protoJobs,
+	}, nil
+}
+
+// ReplayDLQJob replays a job from DLQ back to the main queue
+func (s *QueueService) ReplayDLQJob(ctx context.Context, req *flowmeshpb.ReplayDLQJobRequest) (*flowmeshpb.ReplayDLQJobResponse, error) {
+	// Validate request
+	if req.ResourcePath == nil {
+		return nil, status.Error(codes.InvalidArgument, "resource_path is required")
+	}
+	if req.JobId == "" {
+		return nil, status.Error(codes.InvalidArgument, "job_id is required")
+	}
+
+	// Build resource path
+	resourcePath, err := validation.BuildResourcePath(
+		req.ResourcePath.Tenant,
+		req.ResourcePath.Namespace,
+		req.ResourcePath.ResourceType,
+		req.ResourcePath.Name,
+	)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// Get DLQ path
+	queueMgr := s.storage.QueueManager()
+	dlqPath, err := queueMgr.GetDLQPath(ctx, resourcePath)
+	if err != nil {
+		return nil, s.mapQueueError(err, resourcePath)
+	}
+
+	// Get job payload from DLQ
+	payload, err := queueMgr.GetJobPayload(ctx, dlqPath, req.JobId)
+	if err != nil {
+		return nil, s.mapQueueError(err, dlqPath)
+	}
+
+	// Enqueue back to main queue (reset attempts by creating new job)
+	jobID, seq, err := queueMgr.Enqueue(ctx, resourcePath, payload, storage.QueueEnqueueOptions{})
+	if err != nil {
+		return nil, s.mapQueueError(err, resourcePath)
+	}
+
+	return &flowmeshpb.ReplayDLQJobResponse{
+		Status: &flowmeshpb.Status{Code: int32(codes.OK)},
+		JobId:  jobID,
+		Seq:    seq,
+	}, nil
+}

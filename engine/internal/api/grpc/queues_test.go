@@ -9,6 +9,7 @@ import (
 	"github.com/flowmesh/engine/internal/storage"
 	"github.com/flowmesh/engine/internal/storage/log"
 	queueerrors "github.com/flowmesh/engine/internal/storage/queues"
+	queues "github.com/flowmesh/engine/internal/storage/queues"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
@@ -56,6 +57,11 @@ type mockQueueManager struct {
 	getJobPayloadFunc      func(ctx context.Context, resourcePath string, jobID string) ([]byte, error)
 	getQueueStatsFunc      func(ctx context.Context, resourcePath string) (*storage.QueueStats, error)
 	getInFlightFunc        func(ctx context.Context, resourcePath string, jobID string) (*storage.QueueJob, error)
+	setRetryPolicyFunc     func(ctx context.Context, resourcePath string, policy queueerrors.RetryPolicy) error
+	getRetryPolicyFunc     func(ctx context.Context, resourcePath string) (*queueerrors.RetryPolicy, error)
+	moveToDLQFunc          func(ctx context.Context, resourcePath string, jobID string) error
+	getDLQPathFunc         func(ctx context.Context, resourcePath string) (string, error)
+	listDLQJobsFunc        func(ctx context.Context, resourcePath string, maxJobs int) ([]*storage.QueueJob, error)
 }
 
 func (m *mockQueueManager) Enqueue(ctx context.Context, resourcePath string, payload []byte, options storage.QueueEnqueueOptions) (string, int64, error) {
@@ -143,6 +149,42 @@ func (m *mockQueueManager) PopReadyJob(ctx context.Context, resourcePath string)
 
 func (m *mockQueueManager) Ready() bool {
 	return true
+}
+
+func (m *mockQueueManager) SetRetryPolicy(ctx context.Context, resourcePath string, policy queueerrors.RetryPolicy) error {
+	if m.setRetryPolicyFunc != nil {
+		return m.setRetryPolicyFunc(ctx, resourcePath, policy)
+	}
+	return nil
+}
+
+func (m *mockQueueManager) GetRetryPolicy(ctx context.Context, resourcePath string) (*queueerrors.RetryPolicy, error) {
+	if m.getRetryPolicyFunc != nil {
+		return m.getRetryPolicyFunc(ctx, resourcePath)
+	}
+	policy := queueerrors.DefaultRetryPolicy()
+	return &policy, nil
+}
+
+func (m *mockQueueManager) MoveToDLQ(ctx context.Context, resourcePath string, jobID string) error {
+	if m.moveToDLQFunc != nil {
+		return m.moveToDLQFunc(ctx, resourcePath, jobID)
+	}
+	return nil
+}
+
+func (m *mockQueueManager) GetDLQPath(ctx context.Context, resourcePath string) (string, error) {
+	if m.getDLQPathFunc != nil {
+		return m.getDLQPathFunc(ctx, resourcePath)
+	}
+	return resourcePath + "-dlq", nil
+}
+
+func (m *mockQueueManager) ListDLQJobs(ctx context.Context, resourcePath string, maxJobs int) ([]*storage.QueueJob, error) {
+	if m.listDLQJobsFunc != nil {
+		return m.listDLQJobsFunc(ctx, resourcePath, maxJobs)
+	}
+	return []*storage.QueueJob{}, nil
 }
 
 func TestQueueService_Enqueue(t *testing.T) {
@@ -480,6 +522,294 @@ func TestQueueService_GetQueueStats(t *testing.T) {
 		}
 
 		_, err := service.GetQueueStats(context.Background(), req)
+		assert.Error(t, err)
+		st, ok := status.FromError(err)
+		require.True(t, ok)
+		assert.Equal(t, codes.NotFound, st.Code())
+	})
+}
+
+func TestQueueService_SetRetryPolicy(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		mockMgr := &mockQueueManager{
+			setRetryPolicyFunc: func(ctx context.Context, resourcePath string, policy queueerrors.RetryPolicy) error {
+				return nil
+			},
+		}
+		mockStorage := &mockQueueStorage{queueMgr: mockMgr}
+		service := NewQueueService(mockStorage)
+
+		req := &flowmeshpb.SetRetryPolicyRequest{
+			ResourcePath: &flowmeshpb.ResourcePath{
+				Tenant:       "test-tenant",
+				Namespace:    "test-ns",
+				ResourceType: "queue",
+				Name:         "test-queue",
+			},
+			Policy: &flowmeshpb.RetryPolicy{
+				MaxAttempts:           3,
+				InitialBackoffSeconds: 1,
+				MaxBackoffSeconds:     60,
+				BackoffMultiplier:     2.0,
+				BackoffStrategy:       "exponential",
+			},
+		}
+
+		resp, err := service.SetRetryPolicy(context.Background(), req)
+		require.NoError(t, err)
+		assert.Equal(t, int32(codes.OK), resp.Status.Code)
+	})
+
+	t.Run("invalid policy", func(t *testing.T) {
+		mockStorage := &mockQueueStorage{queueMgr: &mockQueueManager{}}
+		service := NewQueueService(mockStorage)
+
+		req := &flowmeshpb.SetRetryPolicyRequest{
+			ResourcePath: &flowmeshpb.ResourcePath{
+				Tenant:       "test-tenant",
+				Namespace:    "test-ns",
+				ResourceType: "queue",
+				Name:         "test-queue",
+			},
+			Policy: &flowmeshpb.RetryPolicy{
+				MaxAttempts:           -1, // Invalid
+				InitialBackoffSeconds: 1,
+				MaxBackoffSeconds:     60,
+				BackoffMultiplier:     2.0,
+				BackoffStrategy:       "exponential",
+			},
+		}
+
+		_, err := service.SetRetryPolicy(context.Background(), req)
+		assert.Error(t, err)
+		st, ok := status.FromError(err)
+		require.True(t, ok)
+		assert.Equal(t, codes.InvalidArgument, st.Code())
+	})
+
+	t.Run("queue not found", func(t *testing.T) {
+		mockMgr := &mockQueueManager{
+			setRetryPolicyFunc: func(ctx context.Context, resourcePath string, policy queueerrors.RetryPolicy) error {
+				return queueerrors.QueueNotFoundError{ResourcePath: resourcePath}
+			},
+		}
+		mockStorage := &mockQueueStorage{queueMgr: mockMgr}
+		service := NewQueueService(mockStorage)
+
+		req := &flowmeshpb.SetRetryPolicyRequest{
+			ResourcePath: &flowmeshpb.ResourcePath{
+				Tenant:       "test-tenant",
+				Namespace:    "test-ns",
+				ResourceType: "queue",
+				Name:         "nonexistent",
+			},
+			Policy: &flowmeshpb.RetryPolicy{
+				MaxAttempts:           3,
+				InitialBackoffSeconds: 1,
+				MaxBackoffSeconds:     60,
+				BackoffMultiplier:     2.0,
+				BackoffStrategy:       "exponential",
+			},
+		}
+
+		_, err := service.SetRetryPolicy(context.Background(), req)
+		assert.Error(t, err)
+		st, ok := status.FromError(err)
+		require.True(t, ok)
+		assert.Equal(t, codes.NotFound, st.Code())
+	})
+}
+
+func TestQueueService_GetRetryPolicy(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		expectedPolicy := queues.RetryPolicy{
+			MaxAttempts:       3,
+			InitialBackoff:    1 * time.Second,
+			MaxBackoff:        60 * time.Second,
+			BackoffMultiplier: 2.0,
+			BackoffStrategy:   queues.BackoffStrategyExponential,
+		}
+		mockMgr := &mockQueueManager{
+			getRetryPolicyFunc: func(ctx context.Context, resourcePath string) (*queueerrors.RetryPolicy, error) {
+				return &expectedPolicy, nil
+			},
+		}
+		mockStorage := &mockQueueStorage{queueMgr: mockMgr}
+		service := NewQueueService(mockStorage)
+
+		req := &flowmeshpb.GetRetryPolicyRequest{
+			ResourcePath: &flowmeshpb.ResourcePath{
+				Tenant:       "test-tenant",
+				Namespace:    "test-ns",
+				ResourceType: "queue",
+				Name:         "test-queue",
+			},
+		}
+
+		resp, err := service.GetRetryPolicy(context.Background(), req)
+		require.NoError(t, err)
+		assert.Equal(t, int32(codes.OK), resp.Status.Code)
+		assert.NotNil(t, resp.Policy)
+		assert.Equal(t, int32(3), resp.Policy.MaxAttempts)
+		assert.Equal(t, int64(1), resp.Policy.InitialBackoffSeconds)
+		assert.Equal(t, int64(60), resp.Policy.MaxBackoffSeconds)
+		assert.Equal(t, 2.0, resp.Policy.BackoffMultiplier)
+		assert.Equal(t, "exponential", resp.Policy.BackoffStrategy)
+	})
+
+	t.Run("queue not found", func(t *testing.T) {
+		mockMgr := &mockQueueManager{
+			getRetryPolicyFunc: func(ctx context.Context, resourcePath string) (*queueerrors.RetryPolicy, error) {
+				return nil, queueerrors.QueueNotFoundError{ResourcePath: resourcePath}
+			},
+		}
+		mockStorage := &mockQueueStorage{queueMgr: mockMgr}
+		service := NewQueueService(mockStorage)
+
+		req := &flowmeshpb.GetRetryPolicyRequest{
+			ResourcePath: &flowmeshpb.ResourcePath{
+				Tenant:       "test-tenant",
+				Namespace:    "test-ns",
+				ResourceType: "queue",
+				Name:         "nonexistent",
+			},
+		}
+
+		_, err := service.GetRetryPolicy(context.Background(), req)
+		assert.Error(t, err)
+		st, ok := status.FromError(err)
+		require.True(t, ok)
+		assert.Equal(t, codes.NotFound, st.Code())
+	})
+}
+
+func TestQueueService_ListDLQJobs(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		now := time.Now()
+		mockMgr := &mockQueueManager{
+			listDLQJobsFunc: func(ctx context.Context, resourcePath string, maxJobs int) ([]*storage.QueueJob, error) {
+				return []*storage.QueueJob{
+					{
+						ID:        "dlq-job-1",
+						Seq:       1,
+						CreatedAt: now,
+						Attempts:  3,
+					},
+					{
+						ID:        "dlq-job-2",
+						Seq:       2,
+						CreatedAt: now,
+						Attempts:  3,
+					},
+				}, nil
+			},
+			getJobPayloadFunc: func(ctx context.Context, resourcePath string, jobID string) ([]byte, error) {
+				return []byte("test payload"), nil
+			},
+		}
+		mockStorage := &mockQueueStorage{queueMgr: mockMgr}
+		service := NewQueueService(mockStorage)
+
+		req := &flowmeshpb.ListDLQJobsRequest{
+			ResourcePath: &flowmeshpb.ResourcePath{
+				Tenant:       "test-tenant",
+				Namespace:    "test-ns",
+				ResourceType: "queue",
+				Name:         "test-queue",
+			},
+			MaxJobs: 10,
+		}
+
+		resp, err := service.ListDLQJobs(context.Background(), req)
+		require.NoError(t, err)
+		assert.Equal(t, int32(codes.OK), resp.Status.Code)
+		assert.Len(t, resp.Jobs, 2)
+		assert.Equal(t, "dlq-job-1", resp.Jobs[0].Id)
+		assert.Equal(t, "dlq-job-2", resp.Jobs[1].Id)
+	})
+
+	t.Run("queue not found", func(t *testing.T) {
+		mockMgr := &mockQueueManager{
+			listDLQJobsFunc: func(ctx context.Context, resourcePath string, maxJobs int) ([]*storage.QueueJob, error) {
+				return nil, queueerrors.QueueNotFoundError{ResourcePath: resourcePath}
+			},
+		}
+		mockStorage := &mockQueueStorage{queueMgr: mockMgr}
+		service := NewQueueService(mockStorage)
+
+		req := &flowmeshpb.ListDLQJobsRequest{
+			ResourcePath: &flowmeshpb.ResourcePath{
+				Tenant:       "test-tenant",
+				Namespace:    "test-ns",
+				ResourceType: "queue",
+				Name:         "nonexistent",
+			},
+		}
+
+		_, err := service.ListDLQJobs(context.Background(), req)
+		assert.Error(t, err)
+		st, ok := status.FromError(err)
+		require.True(t, ok)
+		assert.Equal(t, codes.NotFound, st.Code())
+	})
+}
+
+func TestQueueService_ReplayDLQJob(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		mockMgr := &mockQueueManager{
+			getDLQPathFunc: func(ctx context.Context, resourcePath string) (string, error) {
+				return resourcePath + "-dlq", nil
+			},
+			getJobPayloadFunc: func(ctx context.Context, resourcePath string, jobID string) ([]byte, error) {
+				return []byte("replay payload"), nil
+			},
+			enqueueFunc: func(ctx context.Context, resourcePath string, payload []byte, options storage.QueueEnqueueOptions) (string, int64, error) {
+				return "new-job-123", 100, nil
+			},
+		}
+		mockStorage := &mockQueueStorage{queueMgr: mockMgr}
+		service := NewQueueService(mockStorage)
+
+		req := &flowmeshpb.ReplayDLQJobRequest{
+			ResourcePath: &flowmeshpb.ResourcePath{
+				Tenant:       "test-tenant",
+				Namespace:    "test-ns",
+				ResourceType: "queue",
+				Name:         "test-queue",
+			},
+			JobId: "dlq-job-1",
+		}
+
+		resp, err := service.ReplayDLQJob(context.Background(), req)
+		require.NoError(t, err)
+		assert.Equal(t, int32(codes.OK), resp.Status.Code)
+		assert.Equal(t, "new-job-123", resp.JobId)
+		assert.Equal(t, int64(100), resp.Seq)
+	})
+
+	t.Run("job not found in DLQ", func(t *testing.T) {
+		mockMgr := &mockQueueManager{
+			getDLQPathFunc: func(ctx context.Context, resourcePath string) (string, error) {
+				return resourcePath + "-dlq", nil
+			},
+			getJobPayloadFunc: func(ctx context.Context, resourcePath string, jobID string) ([]byte, error) {
+				return nil, queueerrors.JobNotFoundError{JobID: jobID, ResourcePath: resourcePath}
+			},
+		}
+		mockStorage := &mockQueueStorage{queueMgr: mockMgr}
+		service := NewQueueService(mockStorage)
+
+		req := &flowmeshpb.ReplayDLQJobRequest{
+			ResourcePath: &flowmeshpb.ResourcePath{
+				Tenant:       "test-tenant",
+				Namespace:    "test-ns",
+				ResourceType: "queue",
+				Name:         "test-queue",
+			},
+			JobId: "nonexistent-job",
+		}
+
+		_, err := service.ReplayDLQJob(context.Background(), req)
 		assert.Error(t, err)
 		st, ok := status.FromError(err)
 		require.True(t, ok)

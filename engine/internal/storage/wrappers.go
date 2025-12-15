@@ -110,19 +110,19 @@ func (w *queueManagerWrapper) Reserve(ctx context.Context, resourcePath string, 
 	default:
 	}
 
-	// Pop a ready job
-	job, err := w.Manager.PopReadyJob(resourcePath)
-	if err != nil {
-		return nil, err
-	}
-	if job == nil {
-		return nil, nil // No jobs available
+	// Use Manager's Reserve method which properly handles popping and adding to InFlight atomically
+	options := queues.ReserveOptions{
+		VisibilityTimeout: visibilityTimeout,
+		LongPollTimeout:   0, // No long polling for this interface
+		MaxWaitTime:       0,
 	}
 
-	// Add to InFlight
-	jobMeta, err := w.Manager.AddToInFlight(resourcePath, job.ID, visibilityTimeout)
+	jobMeta, err := w.Manager.Reserve(ctx, resourcePath, options)
 	if err != nil {
 		return nil, err
+	}
+	if jobMeta == nil {
+		return nil, nil // No jobs available
 	}
 
 	return &QueueJob{
@@ -329,6 +329,76 @@ func (w *queueManagerWrapper) Stop(ctx context.Context) error {
 // Ready implements Lifecycle interface
 func (w *queueManagerWrapper) Ready() bool {
 	return true
+}
+
+// SetRetryPolicy implements QueueManager interface
+func (w *queueManagerWrapper) SetRetryPolicy(ctx context.Context, resourcePath string, policy queues.RetryPolicy) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+	return w.Manager.SetRetryPolicy(ctx, resourcePath, policy)
+}
+
+// GetRetryPolicy implements QueueManager interface
+func (w *queueManagerWrapper) GetRetryPolicy(ctx context.Context, resourcePath string) (*queues.RetryPolicy, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+	return w.Manager.GetRetryPolicy(ctx, resourcePath)
+}
+
+// MoveToDLQ implements QueueManager interface
+func (w *queueManagerWrapper) MoveToDLQ(ctx context.Context, resourcePath string, jobID string) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+	return w.Manager.MoveToDLQ(ctx, resourcePath, jobID)
+}
+
+// GetDLQPath implements QueueManager interface
+func (w *queueManagerWrapper) GetDLQPath(ctx context.Context, resourcePath string) (string, error) {
+	select {
+	case <-ctx.Done():
+		return "", ctx.Err()
+	default:
+	}
+	return w.Manager.GetDLQPath(ctx, resourcePath)
+}
+
+// ListDLQJobs implements QueueManager interface
+func (w *queueManagerWrapper) ListDLQJobs(ctx context.Context, resourcePath string, maxJobs int) ([]*QueueJob, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+
+	dlqJobs, err := w.Manager.ListDLQJobs(ctx, resourcePath, maxJobs)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert JobMetadata to QueueJob
+	queueJobs := make([]*QueueJob, 0, len(dlqJobs))
+	for _, jobMeta := range dlqJobs {
+		queueJobs = append(queueJobs, &QueueJob{
+			ID:           jobMeta.ID,
+			Seq:          jobMeta.Seq,
+			VisibleAt:    jobMeta.VisibleAt,
+			ReserveUntil: jobMeta.ReserveUntil,
+			PayloadPos:   jobMeta.PayloadPos,
+			Attempts:     jobMeta.Attempts,
+			CreatedAt:    jobMeta.CreatedAt,
+		})
+	}
+
+	return queueJobs, nil
 }
 
 // kvManagerWrapper wraps kv.Manager to implement KVManager interface

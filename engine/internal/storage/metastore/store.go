@@ -289,6 +289,11 @@ func (s *Store) copyResource(config *ResourceConfig) *ResourceConfig {
 		copied.Schema = &schemaCopy
 	}
 
+	if config.RetryPolicy != nil {
+		retryPolicyCopy := *config.RetryPolicy
+		copied.RetryPolicy = &retryPolicyCopy
+	}
+
 	// Deep copy headers if present (for future use)
 	// Note: Headers are in Message, not ResourceConfig, so this is placeholder
 

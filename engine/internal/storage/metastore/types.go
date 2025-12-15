@@ -36,6 +36,21 @@ type DLQConfig struct {
 	DLQPath string `json:"dlq_path,omitempty"`
 }
 
+// RetryPolicyConfig defines retry behavior for failed jobs (for queues)
+// This mirrors queues.RetryPolicy but is defined here to avoid circular dependencies
+type RetryPolicyConfig struct {
+	// MaxAttempts is the maximum number of delivery attempts (0 = unlimited)
+	MaxAttempts int32 `json:"max_attempts"`
+	// InitialBackoffSeconds is the initial delay before retry in seconds
+	InitialBackoffSeconds int64 `json:"initial_backoff_seconds"`
+	// MaxBackoffSeconds is the maximum delay between retries in seconds
+	MaxBackoffSeconds int64 `json:"max_backoff_seconds"`
+	// BackoffMultiplier is the multiplier for exponential backoff
+	BackoffMultiplier float64 `json:"backoff_multiplier"`
+	// BackoffStrategy is the strategy for calculating backoff (fixed, linear, exponential)
+	BackoffStrategy string `json:"backoff_strategy"`
+}
+
 // SchemaRef references a schema for validation
 type SchemaRef struct {
 	// ID is the unique schema identifier
@@ -64,6 +79,8 @@ type ResourceConfig struct {
 	Retention RetentionConfig `json:"retention,omitempty"`
 	// DLQ defines dead-letter queue configuration (for queues)
 	DLQ *DLQConfig `json:"dlq,omitempty"`
+	// RetryPolicy defines retry behavior (for queues)
+	RetryPolicy *RetryPolicyConfig `json:"retry_policy,omitempty"`
 	// Schema references a schema for validation
 	Schema *SchemaRef `json:"schema,omitempty"`
 	// CreatedAt is when the resource was created

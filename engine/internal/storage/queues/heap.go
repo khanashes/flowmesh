@@ -101,6 +101,23 @@ func (h *JobMinHeap) Remove(jobID string) bool {
 	return false
 }
 
+// Copy creates a copy of the heap for safe iteration
+func (h *JobMinHeap) Copy() *JobMinHeap {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	copy := &JobMinHeap{
+		jobs: make([]*JobMetadata, len(h.jobs)),
+	}
+	for i, job := range h.jobs {
+		// Create a shallow copy of the job
+		jobCopy := *job
+		copy.jobs[i] = &jobCopy
+	}
+	heap.Init(copy)
+	return copy
+}
+
 // GetAll returns all jobs in the heap (for testing/recovery)
 func (h *JobMinHeap) GetAll() []*JobMetadata {
 	h.mu.RLock()

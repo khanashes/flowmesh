@@ -519,12 +519,16 @@ var StreamService_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
-	QueueService_Enqueue_FullMethodName       = "/flowmesh.v1.QueueService/Enqueue"
-	QueueService_Reserve_FullMethodName       = "/flowmesh.v1.QueueService/Reserve"
-	QueueService_Receive_FullMethodName       = "/flowmesh.v1.QueueService/Receive"
-	QueueService_ACK_FullMethodName           = "/flowmesh.v1.QueueService/ACK"
-	QueueService_NACK_FullMethodName          = "/flowmesh.v1.QueueService/NACK"
-	QueueService_GetQueueStats_FullMethodName = "/flowmesh.v1.QueueService/GetQueueStats"
+	QueueService_Enqueue_FullMethodName        = "/flowmesh.v1.QueueService/Enqueue"
+	QueueService_Reserve_FullMethodName        = "/flowmesh.v1.QueueService/Reserve"
+	QueueService_Receive_FullMethodName        = "/flowmesh.v1.QueueService/Receive"
+	QueueService_ACK_FullMethodName            = "/flowmesh.v1.QueueService/ACK"
+	QueueService_NACK_FullMethodName           = "/flowmesh.v1.QueueService/NACK"
+	QueueService_GetQueueStats_FullMethodName  = "/flowmesh.v1.QueueService/GetQueueStats"
+	QueueService_SetRetryPolicy_FullMethodName = "/flowmesh.v1.QueueService/SetRetryPolicy"
+	QueueService_GetRetryPolicy_FullMethodName = "/flowmesh.v1.QueueService/GetRetryPolicy"
+	QueueService_ListDLQJobs_FullMethodName    = "/flowmesh.v1.QueueService/ListDLQJobs"
+	QueueService_ReplayDLQJob_FullMethodName   = "/flowmesh.v1.QueueService/ReplayDLQJob"
 )
 
 // QueueServiceClient is the client API for QueueService service.
@@ -545,6 +549,14 @@ type QueueServiceClient interface {
 	NACK(ctx context.Context, in *NACKRequest, opts ...grpc.CallOption) (*NACKResponse, error)
 	// GetQueueStats retrieves queue statistics (depth, in-flight, age, etc.)
 	GetQueueStats(ctx context.Context, in *GetQueueStatsRequest, opts ...grpc.CallOption) (*GetQueueStatsResponse, error)
+	// SetRetryPolicy sets the retry policy for a queue
+	SetRetryPolicy(ctx context.Context, in *SetRetryPolicyRequest, opts ...grpc.CallOption) (*SetRetryPolicyResponse, error)
+	// GetRetryPolicy gets the retry policy for a queue
+	GetRetryPolicy(ctx context.Context, in *GetRetryPolicyRequest, opts ...grpc.CallOption) (*GetRetryPolicyResponse, error)
+	// ListDLQJobs lists jobs in the dead-letter queue
+	ListDLQJobs(ctx context.Context, in *ListDLQJobsRequest, opts ...grpc.CallOption) (*ListDLQJobsResponse, error)
+	// ReplayDLQJob replays a job from DLQ back to the main queue
+	ReplayDLQJob(ctx context.Context, in *ReplayDLQJobRequest, opts ...grpc.CallOption) (*ReplayDLQJobResponse, error)
 }
 
 type queueServiceClient struct {
@@ -615,6 +627,46 @@ func (c *queueServiceClient) GetQueueStats(ctx context.Context, in *GetQueueStat
 	return out, nil
 }
 
+func (c *queueServiceClient) SetRetryPolicy(ctx context.Context, in *SetRetryPolicyRequest, opts ...grpc.CallOption) (*SetRetryPolicyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetRetryPolicyResponse)
+	err := c.cc.Invoke(ctx, QueueService_SetRetryPolicy_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queueServiceClient) GetRetryPolicy(ctx context.Context, in *GetRetryPolicyRequest, opts ...grpc.CallOption) (*GetRetryPolicyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetRetryPolicyResponse)
+	err := c.cc.Invoke(ctx, QueueService_GetRetryPolicy_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queueServiceClient) ListDLQJobs(ctx context.Context, in *ListDLQJobsRequest, opts ...grpc.CallOption) (*ListDLQJobsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListDLQJobsResponse)
+	err := c.cc.Invoke(ctx, QueueService_ListDLQJobs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queueServiceClient) ReplayDLQJob(ctx context.Context, in *ReplayDLQJobRequest, opts ...grpc.CallOption) (*ReplayDLQJobResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ReplayDLQJobResponse)
+	err := c.cc.Invoke(ctx, QueueService_ReplayDLQJob_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueueServiceServer is the server API for QueueService service.
 // All implementations must embed UnimplementedQueueServiceServer
 // for forward compatibility.
@@ -633,6 +685,14 @@ type QueueServiceServer interface {
 	NACK(context.Context, *NACKRequest) (*NACKResponse, error)
 	// GetQueueStats retrieves queue statistics (depth, in-flight, age, etc.)
 	GetQueueStats(context.Context, *GetQueueStatsRequest) (*GetQueueStatsResponse, error)
+	// SetRetryPolicy sets the retry policy for a queue
+	SetRetryPolicy(context.Context, *SetRetryPolicyRequest) (*SetRetryPolicyResponse, error)
+	// GetRetryPolicy gets the retry policy for a queue
+	GetRetryPolicy(context.Context, *GetRetryPolicyRequest) (*GetRetryPolicyResponse, error)
+	// ListDLQJobs lists jobs in the dead-letter queue
+	ListDLQJobs(context.Context, *ListDLQJobsRequest) (*ListDLQJobsResponse, error)
+	// ReplayDLQJob replays a job from DLQ back to the main queue
+	ReplayDLQJob(context.Context, *ReplayDLQJobRequest) (*ReplayDLQJobResponse, error)
 	mustEmbedUnimplementedQueueServiceServer()
 }
 
@@ -660,6 +720,18 @@ func (UnimplementedQueueServiceServer) NACK(context.Context, *NACKRequest) (*NAC
 }
 func (UnimplementedQueueServiceServer) GetQueueStats(context.Context, *GetQueueStatsRequest) (*GetQueueStatsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetQueueStats not implemented")
+}
+func (UnimplementedQueueServiceServer) SetRetryPolicy(context.Context, *SetRetryPolicyRequest) (*SetRetryPolicyResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetRetryPolicy not implemented")
+}
+func (UnimplementedQueueServiceServer) GetRetryPolicy(context.Context, *GetRetryPolicyRequest) (*GetRetryPolicyResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetRetryPolicy not implemented")
+}
+func (UnimplementedQueueServiceServer) ListDLQJobs(context.Context, *ListDLQJobsRequest) (*ListDLQJobsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListDLQJobs not implemented")
+}
+func (UnimplementedQueueServiceServer) ReplayDLQJob(context.Context, *ReplayDLQJobRequest) (*ReplayDLQJobResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ReplayDLQJob not implemented")
 }
 func (UnimplementedQueueServiceServer) mustEmbedUnimplementedQueueServiceServer() {}
 func (UnimplementedQueueServiceServer) testEmbeddedByValue()                      {}
@@ -790,6 +862,78 @@ func _QueueService_GetQueueStats_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _QueueService_SetRetryPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetRetryPolicyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueueServiceServer).SetRetryPolicy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: QueueService_SetRetryPolicy_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueueServiceServer).SetRetryPolicy(ctx, req.(*SetRetryPolicyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _QueueService_GetRetryPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetRetryPolicyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueueServiceServer).GetRetryPolicy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: QueueService_GetRetryPolicy_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueueServiceServer).GetRetryPolicy(ctx, req.(*GetRetryPolicyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _QueueService_ListDLQJobs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListDLQJobsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueueServiceServer).ListDLQJobs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: QueueService_ListDLQJobs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueueServiceServer).ListDLQJobs(ctx, req.(*ListDLQJobsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _QueueService_ReplayDLQJob_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReplayDLQJobRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueueServiceServer).ReplayDLQJob(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: QueueService_ReplayDLQJob_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueueServiceServer).ReplayDLQJob(ctx, req.(*ReplayDLQJobRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // QueueService_ServiceDesc is the grpc.ServiceDesc for QueueService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -820,6 +964,22 @@ var QueueService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetQueueStats",
 			Handler:    _QueueService_GetQueueStats_Handler,
+		},
+		{
+			MethodName: "SetRetryPolicy",
+			Handler:    _QueueService_SetRetryPolicy_Handler,
+		},
+		{
+			MethodName: "GetRetryPolicy",
+			Handler:    _QueueService_GetRetryPolicy_Handler,
+		},
+		{
+			MethodName: "ListDLQJobs",
+			Handler:    _QueueService_ListDLQJobs_Handler,
+		},
+		{
+			MethodName: "ReplayDLQJob",
+			Handler:    _QueueService_ReplayDLQJob_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

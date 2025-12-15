@@ -289,6 +289,62 @@ message GetQueueStatsResponse {
   QueueStats stats = 2;                   // Queue statistics
 }
 
+// RetryPolicy represents a retry policy configuration
+message RetryPolicy {
+  int32 max_attempts = 1;                    // Maximum number of delivery attempts (0 = unlimited)
+  int64 initial_backoff_seconds = 2;         // Initial delay before retry in seconds
+  int64 max_backoff_seconds = 3;             // Maximum delay between retries in seconds
+  double backoff_multiplier = 4;             // Multiplier for exponential backoff
+  string backoff_strategy = 5;               // Strategy: "fixed", "linear", or "exponential"
+}
+
+// SetRetryPolicyRequest is a request to set a retry policy
+message SetRetryPolicyRequest {
+  ResourcePath resource_path = 1;            // Queue resource path
+  RetryPolicy policy = 2;                     // Retry policy configuration
+}
+
+// SetRetryPolicyResponse is a response to setting a retry policy
+message SetRetryPolicyResponse {
+  Status status = 1;                          // Operation status
+}
+
+// GetRetryPolicyRequest is a request to get a retry policy
+message GetRetryPolicyRequest {
+  ResourcePath resource_path = 1;            // Queue resource path
+}
+
+// GetRetryPolicyResponse is a response to getting a retry policy
+message GetRetryPolicyResponse {
+  Status status = 1;                          // Operation status
+  RetryPolicy policy = 2;                     // Retry policy configuration
+}
+
+// ListDLQJobsRequest is a request to list jobs in DLQ
+message ListDLQJobsRequest {
+  ResourcePath resource_path = 1;            // Queue resource path
+  int32 max_jobs = 2;                         // Maximum number of jobs to return
+}
+
+// ListDLQJobsResponse is a response to listing DLQ jobs
+message ListDLQJobsResponse {
+  Status status = 1;                          // Operation status
+  repeated Job jobs = 2;                      // List of jobs in DLQ
+}
+
+// ReplayDLQJobRequest is a request to replay a job from DLQ
+message ReplayDLQJobRequest {
+  ResourcePath resource_path = 1;            // Queue resource path
+  string job_id = 2;                          // Job ID in DLQ to replay
+}
+
+// ReplayDLQJobResponse is a response to replaying a DLQ job
+message ReplayDLQJobResponse {
+  Status status = 1;                          // Operation status
+  string job_id = 2;                          // New job ID in main queue
+  int64 seq = 3;                              // Sequence number in main queue
+}
+
 // QueueService provides operations for working with queues
 service QueueService {
   // Enqueue enqueues a job to a queue and returns job ID and sequence number
@@ -308,6 +364,18 @@ service QueueService {
 
   // GetQueueStats retrieves queue statistics (depth, in-flight, age, etc.)
   rpc GetQueueStats(GetQueueStatsRequest) returns (GetQueueStatsResponse);
+
+  // SetRetryPolicy sets the retry policy for a queue
+  rpc SetRetryPolicy(SetRetryPolicyRequest) returns (SetRetryPolicyResponse);
+
+  // GetRetryPolicy gets the retry policy for a queue
+  rpc GetRetryPolicy(GetRetryPolicyRequest) returns (GetRetryPolicyResponse);
+
+  // ListDLQJobs lists jobs in the dead-letter queue
+  rpc ListDLQJobs(ListDLQJobsRequest) returns (ListDLQJobsResponse);
+
+  // ReplayDLQJob replays a job from DLQ back to the main queue
+  rpc ReplayDLQJob(ReplayDLQJobRequest) returns (ReplayDLQJobResponse);
 }
 
 // SetRequest is a request to set a key-value pair

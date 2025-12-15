@@ -338,11 +338,11 @@ func (m *Manager) NACKWithDelay(ctx context.Context, resourcePath string, jobID 
 	}
 
 	state.mu.Lock()
-	defer state.mu.Unlock()
 
 	// Get job from InFlight
 	job, exists := state.InFlight[jobID]
 	if !exists {
+		state.mu.Unlock()
 		return JobNotFoundError{JobID: jobID, ResourcePath: resourcePath}
 	}
 
@@ -354,8 +354,18 @@ func (m *Manager) NACKWithDelay(ctx context.Context, resourcePath string, jobID 
 
 	// Check max attempts
 	if policy.MaxAttempts > 0 && job.Attempts >= policy.MaxAttempts {
-		// Max attempts exceeded - will be handled by scheduler/DLQ
-		delete(state.InFlight, jobID)
+		// Max attempts exceeded - move to DLQ
+		// Keep job in InFlight for MoveToDLQ to find it
+		state.mu.Unlock() // Release lock before calling MoveToDLQ (it will acquire its own locks)
+		err := m.MoveToDLQ(ctx, resourcePath, jobID)
+		if err != nil {
+			// If MoveToDLQ fails, ensure job is removed from InFlight
+			state.mu.Lock()
+			delete(state.InFlight, jobID)
+			state.mu.Unlock()
+			return fmt.Errorf("max attempts exceeded and failed to move to DLQ: %w", err)
+		}
+		// MoveToDLQ already removed the job from InFlight, so we're done
 		return MaxAttemptsExceededError{
 			JobID:        jobID,
 			ResourcePath: resourcePath,
@@ -363,6 +373,9 @@ func (m *Manager) NACKWithDelay(ctx context.Context, resourcePath string, jobID 
 			MaxAttempts:  policy.MaxAttempts,
 		}
 	}
+
+	// Continue with normal NACK processing (lock still held)
+	defer state.mu.Unlock()
 
 	// Calculate backoff
 	if delay == 0 {
@@ -412,6 +425,330 @@ func (m *Manager) calculateBackoff(attempts int32, policy *RetryPolicy) time.Dur
 	}
 
 	return delay
+}
+
+// SetRetryPolicy sets the retry policy for a queue
+func (m *Manager) SetRetryPolicy(ctx context.Context, resourcePath string, policy RetryPolicy) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+
+	// Validate queue exists
+	_, err := m.metaStore.GetResource(resourcePath)
+	if err != nil {
+		if _, ok := err.(metastore.ResourceNotFoundError); ok {
+			return QueueNotFoundError{ResourcePath: resourcePath}
+		}
+		return fmt.Errorf("failed to get resource: %w", err)
+	}
+
+	// Convert RetryPolicy to RetryPolicyConfig
+	retryPolicyConfig := &metastore.RetryPolicyConfig{
+		MaxAttempts:           policy.MaxAttempts,
+		InitialBackoffSeconds: int64(policy.InitialBackoff.Seconds()),
+		MaxBackoffSeconds:     int64(policy.MaxBackoff.Seconds()),
+		BackoffMultiplier:     policy.BackoffMultiplier,
+		BackoffStrategy:       string(policy.BackoffStrategy),
+	}
+
+	// Update resource config using updater function
+	if err := m.metaStore.UpdateResource(resourcePath, func(config *metastore.ResourceConfig) error {
+		config.RetryPolicy = retryPolicyConfig
+		return nil
+	}); err != nil {
+		return fmt.Errorf("failed to update resource: %w", err)
+	}
+
+	// Update in-memory retry policy
+	m.mu.Lock()
+	m.retryPolicies[resourcePath] = &policy
+	m.mu.Unlock()
+
+	m.log.Info().
+		Str("resource", resourcePath).
+		Int32("max_attempts", policy.MaxAttempts).
+		Str("strategy", string(policy.BackoffStrategy)).
+		Msg("Retry policy set")
+
+	return nil
+}
+
+// GetRetryPolicy gets the retry policy for a queue
+func (m *Manager) GetRetryPolicy(ctx context.Context, resourcePath string) (*RetryPolicy, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+
+	// Check in-memory cache first
+	m.mu.RLock()
+	if policy, exists := m.retryPolicies[resourcePath]; exists {
+		m.mu.RUnlock()
+		return policy, nil
+	}
+	m.mu.RUnlock()
+
+	// Load from resource config
+	config, err := m.metaStore.GetResource(resourcePath)
+	if err != nil {
+		if _, ok := err.(metastore.ResourceNotFoundError); ok {
+			return nil, QueueNotFoundError{ResourcePath: resourcePath}
+		}
+		return nil, fmt.Errorf("failed to get resource: %w", err)
+	}
+
+	// Convert RetryPolicyConfig to RetryPolicy
+	var policy *RetryPolicy
+	if config.RetryPolicy != nil {
+		policy = &RetryPolicy{
+			MaxAttempts:       config.RetryPolicy.MaxAttempts,
+			InitialBackoff:    time.Duration(config.RetryPolicy.InitialBackoffSeconds) * time.Second,
+			MaxBackoff:        time.Duration(config.RetryPolicy.MaxBackoffSeconds) * time.Second,
+			BackoffMultiplier: config.RetryPolicy.BackoffMultiplier,
+			BackoffStrategy:   BackoffStrategy(config.RetryPolicy.BackoffStrategy),
+		}
+	} else {
+		// Return default policy
+		defaultPolicy := DefaultRetryPolicy()
+		policy = &defaultPolicy
+	}
+
+	// Cache in memory
+	m.mu.Lock()
+	m.retryPolicies[resourcePath] = policy
+	m.mu.Unlock()
+
+	return policy, nil
+}
+
+// GetDLQPath gets or creates the DLQ path for a queue
+func (m *Manager) GetDLQPath(ctx context.Context, resourcePath string) (string, error) {
+	select {
+	case <-ctx.Done():
+		return "", ctx.Err()
+	default:
+	}
+
+	// Get queue config
+	config, err := m.metaStore.GetResource(resourcePath)
+	if err != nil {
+		if _, ok := err.(metastore.ResourceNotFoundError); ok {
+			return "", QueueNotFoundError{ResourcePath: resourcePath}
+		}
+		return "", fmt.Errorf("failed to get resource: %w", err)
+	}
+
+	// Check if DLQ path is configured
+	if config.DLQ != nil && config.DLQ.Enabled && config.DLQ.DLQPath != "" {
+		return config.DLQ.DLQPath, nil
+	}
+
+	// Auto-generate DLQ path: {queuePath}-dlq
+	dlqPath := resourcePath + "-dlq"
+
+	// Create DLQ queue if it doesn't exist
+	_, err = m.metaStore.GetResource(dlqPath)
+	if err != nil {
+		if _, ok := err.(metastore.ResourceNotFoundError); ok {
+			// Create DLQ queue
+			dlqConfig := &metastore.ResourceConfig{
+				Tenant:     config.Tenant,
+				Namespace:  config.Namespace,
+				Name:       config.Name + "-dlq",
+				Type:       metastore.ResourceQueue,
+				Partitions: config.Partitions,
+				CreatedAt:  time.Now(),
+			}
+
+			if err := dlqConfig.Validate(); err != nil {
+				return "", fmt.Errorf("failed to validate DLQ config: %w", err)
+			}
+
+			if err := m.metaStore.CreateResource(dlqConfig); err != nil {
+				return "", fmt.Errorf("failed to create DLQ queue: %w", err)
+			}
+
+			// Update original queue config to store DLQ path
+			if config.DLQ == nil {
+				config.DLQ = &metastore.DLQConfig{
+					Enabled: true,
+				}
+			}
+			config.DLQ.DLQPath = dlqPath
+
+			if err := m.metaStore.UpdateResource(resourcePath, func(c *metastore.ResourceConfig) error {
+				c.DLQ = config.DLQ
+				return nil
+			}); err != nil {
+				m.log.Warn().Err(err).Str("resource", resourcePath).Msg("Failed to update DLQ path in config")
+			}
+
+			m.log.Info().
+				Str("queue", resourcePath).
+				Str("dlq", dlqPath).
+				Msg("DLQ queue created")
+		} else {
+			return "", fmt.Errorf("failed to check DLQ existence: %w", err)
+		}
+	}
+
+	return dlqPath, nil
+}
+
+// MoveToDLQ moves a job to the dead-letter queue
+func (m *Manager) MoveToDLQ(ctx context.Context, resourcePath string, jobID string) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+
+	// Get queue state
+	m.mu.RLock()
+	state, exists := m.queueStates[resourcePath]
+	m.mu.RUnlock()
+
+	if !exists {
+		return QueueNotFoundError{ResourcePath: resourcePath}
+	}
+
+	state.mu.Lock()
+	job, exists := state.InFlight[jobID]
+	if !exists {
+		// Job might be in ReadyHeap - try to find it there
+		allJobs := state.ReadyHeap.GetAll()
+		for _, j := range allJobs {
+			if j.ID == jobID {
+				job = j
+				// Remove from ReadyHeap
+				state.ReadyHeap.Remove(jobID)
+				break
+			}
+		}
+		if job == nil {
+			state.mu.Unlock()
+			return JobNotFoundError{JobID: jobID, ResourcePath: resourcePath}
+		}
+	} else {
+		// Remove from InFlight
+		delete(state.InFlight, jobID)
+	}
+	state.mu.Unlock()
+
+	// Get DLQ path
+	dlqPath, err := m.GetDLQPath(ctx, resourcePath)
+	if err != nil {
+		return fmt.Errorf("failed to get DLQ path: %w", err)
+	}
+
+	// Read job payload and headers directly from log using the job metadata we have
+	payload := []byte{}
+	headers := make(map[string]string)
+	reader, err := log.NewSegmentReader(job.PayloadPos.File)
+	if err == nil {
+		// Try to read payload and headers from log
+		for {
+			data, offset, readErr := reader.ReadEntry()
+			if readErr != nil {
+				if errors.Is(readErr, io.EOF) {
+					break
+				}
+				break
+			}
+			if offset == job.PayloadPos.Offset {
+				msg, decodeErr := log.DecodeMessage(data)
+				if decodeErr == nil && msg.ID == jobID {
+					payload = msg.Payload
+					headers = msg.Headers
+					if headers == nil {
+						headers = make(map[string]string)
+					}
+					// Add DLQ metadata
+					headers["x-flowmesh-original-queue"] = resourcePath
+					headers["x-flowmesh-original-job-id"] = jobID
+					headers["x-flowmesh-failed-at"] = time.Now().Format(time.RFC3339)
+					headers["x-flowmesh-attempts"] = fmt.Sprintf("%d", job.Attempts)
+				}
+				break
+			}
+			if offset > job.PayloadPos.Offset {
+				break
+			}
+		}
+		reader.Close()
+	}
+
+	if len(payload) == 0 {
+		return fmt.Errorf("failed to read job payload from log")
+	}
+
+	// Enqueue to DLQ
+	_, _, err = m.Enqueue(dlqPath, payload, EnqueueOptions{
+		Headers: headers,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to enqueue to DLQ: %w", err)
+	}
+
+	// Job was already removed from InFlight earlier, no need to remove again
+
+	m.log.Info().
+		Str("queue", resourcePath).
+		Str("job_id", jobID).
+		Str("dlq", dlqPath).
+		Int32("attempts", job.Attempts).
+		Msg("Job moved to DLQ")
+
+	return nil
+}
+
+// ListDLQJobs lists jobs in the DLQ
+func (m *Manager) ListDLQJobs(ctx context.Context, resourcePath string, maxJobs int) ([]*JobMetadata, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+
+	// Get DLQ path
+	dlqPath, err := m.GetDLQPath(ctx, resourcePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get DLQ path: %w", err)
+	}
+
+	// Initialize DLQ queue if not already initialized
+	m.mu.RLock()
+	_, exists := m.queueStates[dlqPath]
+	m.mu.RUnlock()
+
+	if !exists {
+		if err := m.InitializeQueue(dlqPath); err != nil {
+			return nil, fmt.Errorf("failed to initialize DLQ queue: %w", err)
+		}
+	}
+
+	// Get DLQ queue state
+	state := m.getOrCreateQueueState(dlqPath)
+
+	state.mu.RLock()
+	defer state.mu.RUnlock()
+
+	// Collect jobs from ReadyHeap (need to copy to avoid modifying original)
+	jobs := make([]*JobMetadata, 0, maxJobs)
+	heapCopy := state.ReadyHeap.Copy()
+
+	// Pop jobs from copy (doesn't affect original heap)
+	for i := 0; i < maxJobs && heapCopy.Len() > 0; i++ {
+		job := heapCopy.PopJob()
+		if job != nil {
+			jobs = append(jobs, job)
+		}
+	}
+
+	return jobs, nil
 }
 
 // requeueJob requeues a job with backoff

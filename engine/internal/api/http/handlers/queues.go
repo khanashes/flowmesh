@@ -8,11 +8,14 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
+	"github.com/flowmesh/engine/api/proto/flowmeshpb"
 	"github.com/flowmesh/engine/internal/api/validation"
 	"github.com/flowmesh/engine/internal/storage"
 	"github.com/flowmesh/engine/internal/storage/log"
+	"github.com/flowmesh/engine/internal/storage/queues"
 	queueerrors "github.com/flowmesh/engine/internal/storage/queues"
 )
 
@@ -680,4 +683,301 @@ func (h *QueueHandlers) writeError(w http.ResponseWriter, err error, resourcePat
 	default:
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+}
+
+// SetRetryPolicyRequest represents a request to set retry policy
+type SetRetryPolicyRequest struct {
+	MaxAttempts           int32   `json:"max_attempts"`
+	InitialBackoffSeconds int64   `json:"initial_backoff_seconds"`
+	MaxBackoffSeconds     int64   `json:"max_backoff_seconds"`
+	BackoffMultiplier     float64 `json:"backoff_multiplier"`
+	BackoffStrategy       string  `json:"backoff_strategy"`
+}
+
+// SetRetryPolicyResponse represents a response to setting retry policy
+type SetRetryPolicyResponse struct {
+	Status  string `json:"status"`
+	Message string `json:"message,omitempty"`
+}
+
+// GetRetryPolicyResponse represents a response to getting retry policy
+type GetRetryPolicyResponse struct {
+	Status  string                 `json:"status"`
+	Message string                 `json:"message,omitempty"`
+	Policy  *SetRetryPolicyRequest `json:"policy,omitempty"`
+}
+
+// ListDLQJobsResponse represents a response to listing DLQ jobs
+type ListDLQJobsResponse struct {
+	Status  string `json:"status"`
+	Message string `json:"message,omitempty"`
+	Jobs    []*Job `json:"jobs"`
+}
+
+// ReplayDLQJobResponse represents a response to replaying a DLQ job
+type ReplayDLQJobResponse struct {
+	Status  string `json:"status"`
+	Message string `json:"message,omitempty"`
+	JobID   string `json:"job_id"`
+	Seq     int64  `json:"seq"`
+}
+
+// SetRetryPolicy handles PUT /api/v1/queues/{tenant}/{namespace}/{name}/retry-policy
+func (h *QueueHandlers) SetRetryPolicy(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Extract path parameters
+	tenant, namespace, name, err := extractQueuePathParams(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Build resource path
+	resourcePath, err := validation.BuildResourcePath(tenant, namespace, "queue", name)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Parse request body
+	var req SetRetryPolicyRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Convert to proto RetryPolicy for validation
+	protoPolicy := &flowmeshpb.RetryPolicy{
+		MaxAttempts:           req.MaxAttempts,
+		InitialBackoffSeconds: req.InitialBackoffSeconds,
+		MaxBackoffSeconds:     req.MaxBackoffSeconds,
+		BackoffMultiplier:     req.BackoffMultiplier,
+		BackoffStrategy:       req.BackoffStrategy,
+	}
+
+	// Validate retry policy
+	if err := validation.ValidateRetryPolicy(protoPolicy); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Convert to storage RetryPolicy
+	queueMgr := h.storage.QueueManager()
+	policy := queues.RetryPolicy{
+		MaxAttempts:       req.MaxAttempts,
+		InitialBackoff:    time.Duration(req.InitialBackoffSeconds) * time.Second,
+		MaxBackoff:        time.Duration(req.MaxBackoffSeconds) * time.Second,
+		BackoffMultiplier: req.BackoffMultiplier,
+		BackoffStrategy:   queues.BackoffStrategy(req.BackoffStrategy),
+	}
+
+	// Set retry policy
+	ctx := r.Context()
+	if err := queueMgr.SetRetryPolicy(ctx, resourcePath, policy); err != nil {
+		h.writeError(w, err, resourcePath)
+		return
+	}
+
+	// Return success response
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(SetRetryPolicyResponse{
+		Status:  "ok",
+		Message: "retry policy set successfully",
+	})
+}
+
+// GetRetryPolicy handles GET /api/v1/queues/{tenant}/{namespace}/{name}/retry-policy
+func (h *QueueHandlers) GetRetryPolicy(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Extract path parameters
+	tenant, namespace, name, err := extractQueuePathParams(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Build resource path
+	resourcePath, err := validation.BuildResourcePath(tenant, namespace, "queue", name)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Get retry policy
+	ctx := r.Context()
+	queueMgr := h.storage.QueueManager()
+	policy, err := queueMgr.GetRetryPolicy(ctx, resourcePath)
+	if err != nil {
+		h.writeError(w, err, resourcePath)
+		return
+	}
+
+	// Convert to response format
+	resp := GetRetryPolicyResponse{
+		Status: "ok",
+		Policy: &SetRetryPolicyRequest{
+			MaxAttempts:           policy.MaxAttempts,
+			InitialBackoffSeconds: int64(policy.InitialBackoff.Seconds()),
+			MaxBackoffSeconds:     int64(policy.MaxBackoff.Seconds()),
+			BackoffMultiplier:     policy.BackoffMultiplier,
+			BackoffStrategy:       string(policy.BackoffStrategy),
+		},
+	}
+
+	// Return response
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(resp)
+}
+
+// ListDLQJobs handles GET /api/v1/queues/{tenant}/{namespace}/{name}/dlq/jobs
+func (h *QueueHandlers) ListDLQJobs(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Extract path parameters
+	tenant, namespace, name, err := extractQueuePathParams(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Build resource path
+	resourcePath, err := validation.BuildResourcePath(tenant, namespace, "queue", name)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Parse max_jobs query parameter
+	maxJobs := 100 // Default
+	if maxJobsStr := r.URL.Query().Get("max_jobs"); maxJobsStr != "" {
+		if val, err := strconv.Atoi(maxJobsStr); err == nil && val > 0 {
+			maxJobs = val
+		}
+	}
+	if maxJobs > 100 {
+		maxJobs = 100
+	}
+
+	// List DLQ jobs
+	ctx := r.Context()
+	queueMgr := h.storage.QueueManager()
+	dlqJobs, err := queueMgr.ListDLQJobs(ctx, resourcePath, maxJobs)
+	if err != nil {
+		h.writeError(w, err, resourcePath)
+		return
+	}
+
+	// Get DLQ path to read jobs from
+	dlqPath, err := queueMgr.GetDLQPath(ctx, resourcePath)
+	if err != nil {
+		h.writeError(w, err, resourcePath)
+		return
+	}
+
+	// Convert to response format
+	jobs := make([]*Job, 0, len(dlqJobs))
+	for _, job := range dlqJobs {
+		payload, err := queueMgr.GetJobPayload(ctx, dlqPath, job.ID)
+		if err != nil {
+			continue // Skip jobs we can't read
+		}
+
+		jobs = append(jobs, &Job{
+			ID:        job.ID,
+			Seq:       job.Seq,
+			Payload:   payload,
+			Attempts:  job.Attempts,
+			CreatedAt: job.CreatedAt.Unix(),
+		})
+	}
+
+	// Return response
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(ListDLQJobsResponse{
+		Status: "ok",
+		Jobs:   jobs,
+	})
+}
+
+// ReplayDLQJob handles POST /api/v1/queues/{tenant}/{namespace}/{name}/dlq/jobs/{job_id}/replay
+func (h *QueueHandlers) ReplayDLQJob(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Extract path parameters
+	tenant, namespace, name, err := extractQueuePathParams(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Extract job_id from path (format: /dlq/jobs/{job_id}/replay)
+	pathParts := strings.Split(r.URL.Path, "/")
+	jobID := ""
+	for i, part := range pathParts {
+		if part == "jobs" && i+1 < len(pathParts) {
+			jobID = pathParts[i+1]
+			break
+		}
+	}
+	if jobID == "" {
+		http.Error(w, "job_id is required", http.StatusBadRequest)
+		return
+	}
+
+	// Build resource path
+	resourcePath, err := validation.BuildResourcePath(tenant, namespace, "queue", name)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Get DLQ path
+	ctx := r.Context()
+	queueMgr := h.storage.QueueManager()
+	dlqPath, err := queueMgr.GetDLQPath(ctx, resourcePath)
+	if err != nil {
+		h.writeError(w, err, resourcePath)
+		return
+	}
+
+	// Get job payload from DLQ
+	payload, err := queueMgr.GetJobPayload(ctx, dlqPath, jobID)
+	if err != nil {
+		h.writeError(w, err, dlqPath)
+		return
+	}
+
+	// Enqueue back to main queue
+	newJobID, seq, err := queueMgr.Enqueue(ctx, resourcePath, payload, storage.QueueEnqueueOptions{})
+	if err != nil {
+		h.writeError(w, err, resourcePath)
+		return
+	}
+
+	// Return response
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(ReplayDLQJobResponse{
+		Status:  "ok",
+		Message: "job replayed successfully",
+		JobID:   newJobID,
+		Seq:     seq,
+	})
 }

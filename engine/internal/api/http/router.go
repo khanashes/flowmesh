@@ -145,6 +145,30 @@ func (r *Router) handleQueueRoutes(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// PUT /api/v1/queues/{tenant}/{namespace}/{name}/retry-policy
+	if req.Method == http.MethodPut && matchPattern(path, "/retry-policy") {
+		r.queueHandlers.SetRetryPolicy(w, req)
+		return
+	}
+
+	// GET /api/v1/queues/{tenant}/{namespace}/{name}/retry-policy
+	if req.Method == http.MethodGet && matchPattern(path, "/retry-policy") {
+		r.queueHandlers.GetRetryPolicy(w, req)
+		return
+	}
+
+	// GET /api/v1/queues/{tenant}/{namespace}/{name}/dlq/jobs
+	if req.Method == http.MethodGet && matchPattern(path, "/dlq/jobs") {
+		r.queueHandlers.ListDLQJobs(w, req)
+		return
+	}
+
+	// POST /api/v1/queues/{tenant}/{namespace}/{name}/dlq/jobs/{job_id}/replay
+	if req.Method == http.MethodPost && matchPattern(path, "/dlq/jobs/", "/replay") {
+		r.queueHandlers.ReplayDLQJob(w, req)
+		return
+	}
+
 	// No match found
 	http.NotFound(w, req)
 }
