@@ -8,6 +8,7 @@ import (
 	"github.com/flowmesh/engine/internal/api/http/middleware"
 	"github.com/flowmesh/engine/internal/logger"
 	"github.com/flowmesh/engine/internal/storage"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 // Router manages HTTP routes and middleware
@@ -18,6 +19,7 @@ type Router struct {
 	queueHandlers  *handlers.QueueHandlers
 	kvHandlers     *handlers.KVHandlers
 	schemaHandlers *handlers.SchemaHandlers
+	metricsHandler http.Handler
 }
 
 // NewRouter creates a new router
@@ -29,6 +31,21 @@ func NewRouter(storage storage.StorageBackend) *Router {
 		queueHandlers:  handlers.NewQueueHandlers(storage),
 		kvHandlers:     handlers.NewKVHandlers(storage),
 		schemaHandlers: handlers.NewSchemaHandlers(storage),
+	}
+
+	// Set up metrics handler with custom registry if available
+	if storage != nil {
+		if metricsCollector := storage.MetricsCollector(); metricsCollector != nil {
+			if registry := metricsCollector.GetRegistry(); registry != nil {
+				r.metricsHandler = promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
+			} else {
+				r.metricsHandler = promhttp.Handler()
+			}
+		} else {
+			r.metricsHandler = promhttp.Handler()
+		}
+	} else {
+		r.metricsHandler = promhttp.Handler()
 	}
 
 	r.setupRoutes()
@@ -49,6 +66,9 @@ func (r *Router) setupRoutes() {
 	r.mux.Handle("/health", chain(http.HandlerFunc(handlers.HealthCheck)))
 	r.mux.Handle("/ready", chain(http.HandlerFunc(handlers.ReadinessCheck(r.storage))))
 
+	// Metrics endpoint (no auth required, standard Prometheus pattern)
+	r.mux.Handle("/metrics", r.metricsHandler)
+
 	// Stream API endpoints
 	r.mux.Handle("/api/v1/streams/", chain(http.HandlerFunc(r.handleStreamRoutes)))
 
@@ -60,10 +80,6 @@ func (r *Router) setupRoutes() {
 
 	// Schema API endpoints
 	r.mux.Handle("/api/v1/schemas/", chain(http.HandlerFunc(r.handleSchemaRoutes)))
-
-	// Resource schema endpoints
-	r.mux.Handle("/api/v1/streams/", chain(http.HandlerFunc(r.handleStreamSchemaRoutes)))
-	r.mux.Handle("/api/v1/queues/", chain(http.HandlerFunc(r.handleQueueSchemaRoutes)))
 
 	// Default API v1 route (for unmatched paths)
 	r.mux.Handle("/api/v1/", chain(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {

@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/flowmesh/engine/internal/logger"
+	"github.com/flowmesh/engine/internal/metrics"
 	"github.com/flowmesh/engine/internal/storage/metastore"
 	"github.com/rs/zerolog"
 )
@@ -29,20 +31,25 @@ type Manager struct {
 	offsets          map[string]*ConsumerOffset // key: offsetKey(stream, group, partition)
 	mu               sync.RWMutex
 	log              zerolog.Logger
-	latestOffsetFunc LatestOffsetFunc // Function to get latest offset for lag calculation
+	latestOffsetFunc LatestOffsetFunc              // Function to get latest offset for lag calculation
+	metrics          *metrics.ConsumerGroupMetrics // Optional metrics collector
 	ready            bool
 }
 
 // NewManager creates a new consumer group manager
-func NewManager(metaStore *metastore.Store, metadataDir string, latestOffsetFunc LatestOffsetFunc) *Manager {
+func NewManager(metaStore *metastore.Store, metadataDir string, latestOffsetFunc LatestOffsetFunc, consumerMetrics ...*metrics.ConsumerGroupMetrics) *Manager {
 	filePath := filepath.Join(metadataDir, DefaultConsumersFile)
-
+	var cm *metrics.ConsumerGroupMetrics
+	if len(consumerMetrics) > 0 && consumerMetrics[0] != nil {
+		cm = consumerMetrics[0]
+	}
 	return &Manager{
 		metaStore:        metaStore,
 		filePath:         filePath,
 		offsets:          make(map[string]*ConsumerOffset),
 		log:              logger.WithComponent("consumers"),
 		latestOffsetFunc: latestOffsetFunc,
+		metrics:          cm,
 		ready:            false,
 	}
 }
@@ -143,6 +150,19 @@ func (m *Manager) CommitOffset(ctx context.Context, stream, group string, partit
 		Int64("offset", offset).
 		Msg("Offset committed")
 
+	// Record metrics
+	if m.metrics != nil {
+		// Extract tenant/namespace from stream path (format: tenant/namespaces/namespace/streams/name)
+		parts := strings.Split(stream, "/")
+		if len(parts) >= 4 {
+			tenant := parts[0]
+			namespace := parts[2]
+			streamName := parts[4]
+			m.metrics.RecordOffsetCommit(tenant, namespace, streamName, group, partition)
+			m.metrics.UpdateCommittedOffset(tenant, namespace, streamName, group, partition, offset)
+		}
+	}
+
 	return nil
 }
 
@@ -209,6 +229,18 @@ func (m *Manager) GetConsumerGroupState(ctx context.Context, stream, group strin
 		CommittedOffset: committedOffset,
 		LatestOffset:    latestOffset,
 		Lag:             lag,
+	}
+
+	// Update metrics
+	if m.metrics != nil && lag >= 0 {
+		// Extract tenant/namespace from stream path (format: tenant/namespaces/namespace/streams/name)
+		parts := strings.Split(stream, "/")
+		if len(parts) >= 4 {
+			tenant := parts[0]
+			namespace := parts[2]
+			streamName := parts[4]
+			m.metrics.UpdateLag(tenant, namespace, streamName, group, partition, lag)
+		}
 	}
 
 	return state, nil

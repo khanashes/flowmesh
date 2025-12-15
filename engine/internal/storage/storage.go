@@ -6,6 +6,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/flowmesh/engine/internal/metrics"
 	"github.com/flowmesh/engine/internal/storage/consumers"
 	"github.com/flowmesh/engine/internal/storage/kv"
 	logpkg "github.com/flowmesh/engine/internal/storage/log"
@@ -13,6 +14,7 @@ import (
 	"github.com/flowmesh/engine/internal/storage/queues"
 	"github.com/flowmesh/engine/internal/storage/schema"
 	"github.com/flowmesh/engine/internal/storage/streams"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
 )
 
@@ -27,6 +29,8 @@ type Storage struct {
 	kvManager            *kv.Manager
 	consumerGroupManager *consumers.Manager
 	schemaRegistry       *schema.Registry
+	metricsCollector     *metrics.Collector
+	nodeMetrics          *metrics.NodeMetrics
 	log                  zerolog.Logger
 	mu                   sync.RWMutex
 	closed               bool
@@ -75,6 +79,14 @@ func (s *Storage) ConsumerGroupManager() ConsumerGroupManager {
 // SchemaRegistry returns the schema registry
 func (s *Storage) SchemaRegistry() SchemaRegistry {
 	return &schemaRegistryWrapper{Registry: s.schemaRegistry}
+}
+
+// MetricsCollector returns the metrics collector
+func (s *Storage) MetricsCollector() interface{ GetRegistry() *prometheus.Registry } {
+	if s.metricsCollector == nil {
+		return nil
+	}
+	return s.metricsCollector
 }
 
 // Paths returns the storage paths

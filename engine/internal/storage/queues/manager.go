@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/flowmesh/engine/internal/logger"
+	"github.com/flowmesh/engine/internal/metrics"
 	"github.com/flowmesh/engine/internal/storage/log"
 	"github.com/flowmesh/engine/internal/storage/metastore"
 	"github.com/flowmesh/engine/internal/storage/schema"
@@ -37,13 +38,18 @@ type Manager struct {
 	queueStates    map[string]*QueueState
 	workers        map[string]map[string]*WorkerInfo // queuePath -> workerID -> WorkerInfo
 	retryPolicies  map[string]*RetryPolicy           // queuePath -> RetryPolicy
+	metrics        *metrics.QueueMetrics             // Optional metrics collector
 	log            zerolog.Logger
 	mu             sync.RWMutex
 	scheduler      *Scheduler
 }
 
 // NewManager creates a new queue manager
-func NewManager(metaStore *metastore.Store, logManager *log.Manager, metadataDir string) *Manager {
+func NewManager(metaStore *metastore.Store, logManager *log.Manager, metadataDir string, queueMetrics ...*metrics.QueueMetrics) *Manager {
+	var qm *metrics.QueueMetrics
+	if len(queueMetrics) > 0 && queueMetrics[0] != nil {
+		qm = queueMetrics[0]
+	}
 	mgr := &Manager{
 		metaStore:      metaStore,
 		logManager:     logManager,
@@ -53,6 +59,7 @@ func NewManager(metaStore *metastore.Store, logManager *log.Manager, metadataDir
 		queueStates:    make(map[string]*QueueState),
 		workers:        make(map[string]map[string]*WorkerInfo),
 		retryPolicies:  make(map[string]*RetryPolicy),
+		metrics:        qm,
 		log:            logger.WithComponent("queues"),
 		scheduler:      NewScheduler(metaStore, logManager),
 	}
@@ -96,6 +103,7 @@ func (m *Manager) getOrCreateQueueState(resourcePath string) *QueueState {
 
 // Enqueue enqueues a job to a queue and returns job ID and sequence number
 func (m *Manager) Enqueue(resourcePath string, payload []byte, options EnqueueOptions) (string, int64, error) {
+	startTime := time.Now()
 	// Validate queue exists and get config
 	config, err := m.metaStore.GetResource(resourcePath)
 	if err != nil {
@@ -237,6 +245,12 @@ func (m *Manager) Enqueue(resourcePath string, payload []byte, options EnqueueOp
 		Time("visible_at", visibleAt).
 		Msg("Job enqueued")
 
+	// Record metrics
+	if m.metrics != nil {
+		duration := time.Since(startTime)
+		m.metrics.RecordEnqueue(config.Tenant, config.Namespace, config.Name, duration)
+	}
+
 	return jobID, seq, nil
 }
 
@@ -322,7 +336,14 @@ func (m *Manager) ACK(ctx context.Context, resourcePath string, jobID string) er
 		return ctx.Err()
 	default:
 	}
-	return m.RemoveFromInFlight(resourcePath, jobID)
+	err := m.RemoveFromInFlight(resourcePath, jobID)
+	if err == nil && m.metrics != nil {
+		// Get config for tenant/namespace/queue labels
+		if config, configErr := m.metaStore.GetResource(resourcePath); configErr == nil {
+			m.metrics.RecordJobCompleted(config.Tenant, config.Namespace, config.Name)
+		}
+	}
+	return err
 }
 
 // RemoveFromInFlight removes a job from InFlight (used for ACK)
@@ -407,6 +428,12 @@ func (m *Manager) NACKWithDelay(ctx context.Context, resourcePath string, jobID 
 			return fmt.Errorf("max attempts exceeded and failed to move to DLQ: %w", err)
 		}
 		// MoveToDLQ already removed the job from InFlight, so we're done
+		// Record failed job metric
+		if m.metrics != nil {
+			if config, configErr := m.metaStore.GetResource(resourcePath); configErr == nil {
+				m.metrics.RecordJobFailed(config.Tenant, config.Namespace, config.Name)
+			}
+		}
 		return MaxAttemptsExceededError{
 			JobID:        jobID,
 			ResourcePath: resourcePath,
@@ -647,6 +674,15 @@ func (m *Manager) MoveToDLQ(ctx context.Context, resourcePath string, jobID stri
 	default:
 	}
 
+	// Get config for metrics
+	config, configErr := m.metaStore.GetResource(resourcePath)
+	if configErr != nil {
+		if _, ok := configErr.(metastore.ResourceNotFoundError); ok {
+			return QueueNotFoundError{ResourcePath: resourcePath}
+		}
+		return fmt.Errorf("failed to get resource config: %w", configErr)
+	}
+
 	// Get queue state
 	m.mu.RLock()
 	state, exists := m.queueStates[resourcePath]
@@ -742,6 +778,16 @@ func (m *Manager) MoveToDLQ(ctx context.Context, resourcePath string, jobID stri
 		Str("dlq", dlqPath).
 		Int32("attempts", job.Attempts).
 		Msg("Job moved to DLQ")
+
+	// Update DLQ metrics
+	if m.metrics != nil {
+		// Get DLQ stats to update metrics
+		if dlqStats, err := m.GetQueueStats(ctx, dlqPath); err == nil {
+			// Extract tenant/namespace from dlqPath (format: tenant/namespaces/namespace/queues/name-dlq)
+			// For now, use the original queue's tenant/namespace
+			m.metrics.UpdateDLQJobs(config.Tenant, config.Namespace, config.Name, dlqStats.PendingJobs+dlqStats.InFlightJobs)
+		}
+	}
 
 	return nil
 }
@@ -934,6 +980,7 @@ func (m *Manager) InitializeQueue(resourcePath string) error {
 
 // Reserve reserves a job from the queue with visibility timeout
 func (m *Manager) Reserve(ctx context.Context, resourcePath string, options ReserveOptions) (*JobMetadata, error) {
+	startTime := time.Now()
 	// Check context first
 	select {
 	case <-ctx.Done():
@@ -942,7 +989,7 @@ func (m *Manager) Reserve(ctx context.Context, resourcePath string, options Rese
 	}
 
 	// Validate queue exists
-	_, err := m.metaStore.GetResource(resourcePath)
+	config, err := m.metaStore.GetResource(resourcePath)
 	if err != nil {
 		if _, ok := err.(metastore.ResourceNotFoundError); ok {
 			return nil, QueueNotFoundError{ResourcePath: resourcePath}
@@ -1010,6 +1057,12 @@ func (m *Manager) Reserve(ctx context.Context, resourcePath string, options Rese
 		Str("job_id", job.ID).
 		Time("reserve_until", job.ReserveUntil).
 		Msg("Job reserved")
+
+	// Record metrics
+	if m.metrics != nil && job != nil {
+		duration := time.Since(startTime)
+		m.metrics.RecordReserve(config.Tenant, config.Namespace, config.Name, duration)
+	}
 
 	return job, nil
 }
@@ -1430,6 +1483,13 @@ func (m *Manager) GetQueueStats(ctx context.Context, resourcePath string) (*Queu
 			}
 		}
 		stats.OldestJobAge = now.Sub(oldest.CreatedAt)
+	}
+
+	// Update metrics
+	if m.metrics != nil {
+		if config, configErr := m.metaStore.GetResource(resourcePath); configErr == nil {
+			m.metrics.UpdateQueueStats(config.Tenant, config.Namespace, config.Name, stats.PendingJobs, stats.InFlightJobs, stats.OldestJobAge.Seconds())
+		}
 	}
 
 	return stats, nil

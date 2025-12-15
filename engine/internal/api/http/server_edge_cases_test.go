@@ -13,6 +13,7 @@ import (
 	"github.com/flowmesh/engine/internal/logger"
 	"github.com/flowmesh/engine/internal/storage"
 	"github.com/flowmesh/engine/internal/storage/metastore"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -336,5 +337,8 @@ func (m *mockStorageBackendWithMutex) QueueManager() storage.QueueManager       
 func (m *mockStorageBackendWithMutex) KVManager() storage.KVManager                       { return nil }
 func (m *mockStorageBackendWithMutex) ConsumerGroupManager() storage.ConsumerGroupManager { return nil }
 func (m *mockStorageBackendWithMutex) SchemaRegistry() storage.SchemaRegistry             { return nil }
-func (m *mockStorageBackendWithMutex) Paths() *storage.StoragePaths                       { return nil }
-func (m *mockStorageBackendWithMutex) Validate(ctx context.Context) error                 { return nil }
+func (m *mockStorageBackendWithMutex) MetricsCollector() interface{ GetRegistry() *prometheus.Registry } {
+	return nil
+}
+func (m *mockStorageBackendWithMutex) Paths() *storage.StoragePaths       { return nil }
+func (m *mockStorageBackendWithMutex) Validate(ctx context.Context) error { return nil }

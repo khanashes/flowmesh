@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/flowmesh/engine/internal/logger"
+	"github.com/flowmesh/engine/internal/metrics"
 	"github.com/flowmesh/engine/internal/storage/log"
 	"github.com/flowmesh/engine/internal/storage/metastore"
 	"github.com/flowmesh/engine/internal/storage/schema"
@@ -40,12 +41,17 @@ type Manager struct {
 	validator      *schema.Validator
 	streamStates   map[string]*StreamState
 	indexes        map[string]*OffsetIndex
+	metrics        *metrics.StreamMetrics // Optional metrics collector
 	log            zerolog.Logger
 	mu             sync.RWMutex
 }
 
 // NewManager creates a new stream manager
-func NewManager(metaStore *metastore.Store, logManager *log.Manager, metadataDir string) *Manager {
+func NewManager(metaStore *metastore.Store, logManager *log.Manager, metadataDir string, streamMetrics ...*metrics.StreamMetrics) *Manager {
+	var sm *metrics.StreamMetrics
+	if len(streamMetrics) > 0 && streamMetrics[0] != nil {
+		sm = streamMetrics[0]
+	}
 	return &Manager{
 		metaStore:      metaStore,
 		logManager:     logManager,
@@ -54,6 +60,7 @@ func NewManager(metaStore *metastore.Store, logManager *log.Manager, metadataDir
 		validator:      schema.NewValidator(),
 		streamStates:   make(map[string]*StreamState),
 		indexes:        make(map[string]*OffsetIndex),
+		metrics:        sm,
 		log:            logger.WithComponent("streams"),
 	}
 }
@@ -91,6 +98,7 @@ func (m *Manager) getOrCreateIndex(resourcePath string) *OffsetIndex {
 
 // WriteEvents writes events to a stream and returns assigned offsets
 func (m *Manager) WriteEvents(resourcePath string, events []Event) ([]int64, error) {
+	startTime := time.Now()
 	// Validate stream exists and get config
 	config, err := m.metaStore.GetResource(resourcePath)
 	if err != nil {
@@ -229,13 +237,28 @@ func (m *Manager) WriteEvents(resourcePath string, events []Event) ([]int64, err
 		Int64("end_offset", offsets[len(offsets)-1]).
 		Msg("Events written to stream")
 
+	// Record metrics
+	if m.metrics != nil && len(offsets) > 0 {
+		duration := time.Since(startTime)
+		// Calculate total bytes written
+		var totalBytes int64
+		for _, event := range events {
+			totalBytes += int64(len(event.Payload))
+		}
+		partition := int32(0)
+		m.metrics.RecordWrite(config.Tenant, config.Namespace, config.Name, partition, len(events), totalBytes, duration)
+		// Update offset gauge
+		m.metrics.UpdateOffset(config.Tenant, config.Namespace, config.Name, partition, offsets[len(offsets)-1])
+	}
+
 	return offsets, nil
 }
 
 // ReadFromOffset reads messages from a stream starting at the given offset
 func (m *Manager) ReadFromOffset(resourcePath string, partition int32, offset int64, maxMessages int) ([]*log.Message, error) {
+	startTime := time.Now()
 	// Validate stream exists
-	_, err := m.metaStore.GetResource(resourcePath)
+	config, err := m.metaStore.GetResource(resourcePath)
 	if err != nil {
 		if _, ok := err.(metastore.ResourceNotFoundError); ok {
 			return nil, StreamNotFoundError{ResourcePath: resourcePath}
@@ -310,6 +333,17 @@ func (m *Manager) ReadFromOffset(resourcePath string, partition int32, offset in
 		}
 
 		reader.Close()
+	}
+
+	// Record metrics
+	if m.metrics != nil {
+		duration := time.Since(startTime)
+		// Calculate total bytes read
+		var totalBytes int64
+		for _, msg := range messages {
+			totalBytes += int64(len(msg.Payload))
+		}
+		m.metrics.RecordRead(config.Tenant, config.Namespace, config.Name, partition, len(messages), totalBytes, duration)
 	}
 
 	return messages, nil

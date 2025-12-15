@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/flowmesh/engine/internal/logger"
+	"github.com/flowmesh/engine/internal/metrics"
 	"github.com/flowmesh/engine/internal/storage/consumers"
 	"github.com/flowmesh/engine/internal/storage/kv"
 	logpkg "github.com/flowmesh/engine/internal/storage/log"
@@ -103,10 +104,25 @@ func (b *Builder) Build() (*Storage, error) {
 		b.logManager = logpkg.NewManager(paths.BaseDir)
 	}
 
+	// Initialize metrics if enabled
+	var metricsCollector *metrics.Collector
+	var queueMetrics *metrics.QueueMetrics
+	var streamMetrics *metrics.StreamMetrics
+	var consumerMetrics *metrics.ConsumerGroupMetrics
+	var nodeMetrics *metrics.NodeMetrics
+
+	if b.config.EnableMetrics {
+		metricsCollector = metrics.NewCollector()
+		queueMetrics = metrics.NewQueueMetrics(metricsCollector)
+		streamMetrics = metrics.NewStreamMetrics(metricsCollector)
+		consumerMetrics = metrics.NewConsumerGroupMetrics(metricsCollector)
+		nodeMetrics = metrics.NewNodeMetrics(metricsCollector)
+	}
+
 	// Initialize stream manager if not provided
 	var streamMgr *streams.Manager
 	if b.streamMgr == nil {
-		streamMgr = streams.NewManager(b.metaStore, b.logManager, paths.MetadataDir)
+		streamMgr = streams.NewManager(b.metaStore, b.logManager, paths.MetadataDir, streamMetrics)
 	} else {
 		streamMgr = b.streamMgr
 	}
@@ -114,7 +130,7 @@ func (b *Builder) Build() (*Storage, error) {
 	// Initialize queue manager if not provided
 	var queueMgr *queues.Manager
 	if b.queueMgr == nil {
-		queueMgr = queues.NewManager(b.metaStore, b.logManager, paths.MetadataDir)
+		queueMgr = queues.NewManager(b.metaStore, b.logManager, paths.MetadataDir, queueMetrics)
 	} else {
 		queueMgr = b.queueMgr
 	}
@@ -127,7 +143,7 @@ func (b *Builder) Build() (*Storage, error) {
 	latestOffsetFunc := func(stream string, partition int32) (int64, error) {
 		return streamMgr.GetLatestOffset(stream, partition)
 	}
-	consumerGroupMgr := consumers.NewManager(b.metaStore, paths.MetadataDir, latestOffsetFunc)
+	consumerGroupMgr := consumers.NewManager(b.metaStore, paths.MetadataDir, latestOffsetFunc, consumerMetrics)
 
 	// Initialize schema registry
 	schemaReg := schema.NewRegistry(b.metaStore)
@@ -141,6 +157,8 @@ func (b *Builder) Build() (*Storage, error) {
 		kvManager:            kvMgr,
 		consumerGroupManager: consumerGroupMgr,
 		schemaRegistry:       schemaReg,
+		metricsCollector:     metricsCollector,
+		nodeMetrics:          nodeMetrics,
 		log:                  b.log,
 		closed:               false,
 		ready:                false,

@@ -8,6 +8,7 @@ import (
 	"github.com/flowmesh/engine/internal/storage/metastore"
 	"github.com/flowmesh/engine/internal/storage/queues"
 	"github.com/flowmesh/engine/internal/storage/schema"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 // Lifecycle manages component lifecycle
@@ -191,6 +192,8 @@ type StorageBackend interface {
 	ConsumerGroupManager() ConsumerGroupManager
 	// SchemaRegistry returns the schema registry
 	SchemaRegistry() SchemaRegistry
+	// MetricsCollector returns the metrics collector (if enabled, may return nil)
+	MetricsCollector() interface{ GetRegistry() *prometheus.Registry }
 	// Paths returns the storage paths
 	Paths() *StoragePaths
 	// Validate validates the storage system integrity
