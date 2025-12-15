@@ -22,6 +22,7 @@ type Server struct {
 	mu         sync.RWMutex
 	healthSvc  *HealthService
 	streamSvc  *StreamService
+	queueSvc   *QueueService
 }
 
 // NewServer creates a new gRPC server
@@ -32,6 +33,7 @@ func NewServer(addr string, storage storage.StorageBackend) *Server {
 		log:       logger.WithComponent("grpc"),
 		healthSvc: NewHealthService(storage),
 		streamSvc: NewStreamService(storage),
+		queueSvc:  NewQueueService(storage),
 	}
 
 	// Create gRPC server with interceptors
@@ -121,4 +123,7 @@ func (s *Server) registerServices() {
 
 	// Register stream service
 	flowmeshpb.RegisterStreamServiceServer(s.grpcServer, s.streamSvc)
+
+	// Register queue service
+	flowmeshpb.RegisterQueueServiceServer(s.grpcServer, s.queueSvc)
 }

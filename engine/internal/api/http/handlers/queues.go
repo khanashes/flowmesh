@@ -1,0 +1,683 @@
+package handlers
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"strconv"
+	"time"
+
+	"github.com/flowmesh/engine/internal/api/validation"
+	"github.com/flowmesh/engine/internal/storage"
+	"github.com/flowmesh/engine/internal/storage/log"
+	queueerrors "github.com/flowmesh/engine/internal/storage/queues"
+)
+
+// QueueHandlers provides HTTP handlers for queue operations
+type QueueHandlers struct {
+	storage storage.StorageBackend
+}
+
+// NewQueueHandlers creates new queue handlers
+func NewQueueHandlers(storage storage.StorageBackend) *QueueHandlers {
+	return &QueueHandlers{
+		storage: storage,
+	}
+}
+
+// EnqueueRequest represents a request to enqueue a job
+type EnqueueRequest struct {
+	Payload      []byte            `json:"payload"`
+	DelaySeconds int64             `json:"delay_seconds,omitempty"`
+	Headers      map[string]string `json:"headers,omitempty"`
+}
+
+// EnqueueResponse represents a response to enqueueing a job
+type EnqueueResponse struct {
+	Status  string `json:"status"`
+	Message string `json:"message,omitempty"`
+	JobID   string `json:"job_id"`
+	Seq     int64  `json:"seq"`
+}
+
+// ReserveRequest represents a request to reserve a job
+type ReserveRequest struct {
+	VisibilityTimeoutSeconds int64 `json:"visibility_timeout_seconds,omitempty"`
+	LongPollTimeoutSeconds   int64 `json:"long_poll_timeout_seconds,omitempty"`
+}
+
+// ReserveResponse represents a response to reserving a job
+type ReserveResponse struct {
+	Status  string `json:"status"`
+	Message string `json:"message,omitempty"`
+	Job     *Job   `json:"job,omitempty"`
+}
+
+// ReceiveRequest represents a request to receive jobs
+type ReceiveRequest struct {
+	MaxJobs                  int32 `json:"max_jobs,omitempty"`
+	VisibilityTimeoutSeconds int64 `json:"visibility_timeout_seconds,omitempty"`
+	LongPollTimeoutSeconds   int64 `json:"long_poll_timeout_seconds,omitempty"`
+}
+
+// ReceiveResponse represents a response to receiving jobs
+type ReceiveResponse struct {
+	Status  string `json:"status"`
+	Message string `json:"message,omitempty"`
+	Jobs    []*Job `json:"jobs"`
+}
+
+// ACKRequest represents a request to acknowledge a job
+type ACKRequest struct {
+	JobID string `json:"job_id"`
+}
+
+// ACKResponse represents a response to acknowledging a job
+type ACKResponse struct {
+	Status  string `json:"status"`
+	Message string `json:"message,omitempty"`
+}
+
+// NACKRequest represents a request to NACK a job
+type NACKRequest struct {
+	JobID        string `json:"job_id"`
+	DelaySeconds int64  `json:"delay_seconds,omitempty"`
+}
+
+// NACKResponse represents a response to NACKing a job
+type NACKResponse struct {
+	Status  string `json:"status"`
+	Message string `json:"message,omitempty"`
+}
+
+// QueueStatsResponse represents queue statistics
+type QueueStatsResponse struct {
+	Status  string      `json:"status"`
+	Message string      `json:"message,omitempty"`
+	Stats   *QueueStats `json:"stats"`
+}
+
+// QueueStats represents queue statistics
+type QueueStats struct {
+	TotalJobs           int64 `json:"total_jobs"`
+	PendingJobs         int64 `json:"pending_jobs"`
+	InFlightJobs        int64 `json:"in_flight_jobs"`
+	CompletedJobs       int64 `json:"completed_jobs"`
+	FailedJobs          int64 `json:"failed_jobs"`
+	OldestJobAgeSeconds int64 `json:"oldest_job_age_seconds"`
+}
+
+// Job represents a job
+type Job struct {
+	ID           string            `json:"id"`
+	ResourcePath string            `json:"resource_path"`
+	Seq          int64             `json:"seq"`
+	Payload      []byte            `json:"payload"`
+	Headers      map[string]string `json:"headers,omitempty"`
+	CreatedAt    int64             `json:"created_at"`
+	VisibleAt    int64             `json:"visible_at"`
+	ReserveUntil int64             `json:"reserve_until,omitempty"`
+	Attempts     int32             `json:"attempts"`
+}
+
+// WriteEvents handles POST /api/v1/queues/{tenant}/{namespace}/{name}/jobs
+func (h *QueueHandlers) Enqueue(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Extract path parameters
+	tenant, namespace, name, err := extractQueuePathParams(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Build resource path
+	resourcePath, err := validation.BuildResourcePath(tenant, namespace, "queue", name)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Parse request body
+	var req EnqueueRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if len(req.Payload) == 0 {
+		http.Error(w, "payload cannot be empty", http.StatusBadRequest)
+		return
+	}
+
+	// Convert delay
+	delay := time.Duration(req.DelaySeconds) * time.Second
+	if delay < 0 {
+		http.Error(w, "delay_seconds cannot be negative", http.StatusBadRequest)
+		return
+	}
+
+	// Enqueue job
+	queueMgr := h.storage.QueueManager()
+	jobID, seq, err := queueMgr.Enqueue(r.Context(), resourcePath, req.Payload, storage.QueueEnqueueOptions{
+		Delay:   delay,
+		Headers: req.Headers,
+	})
+	if err != nil {
+		h.writeError(w, err, resourcePath)
+		return
+	}
+
+	// Write response
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(EnqueueResponse{
+		Status:  "success",
+		Message: "job enqueued successfully",
+		JobID:   jobID,
+		Seq:     seq,
+	})
+}
+
+// Reserve handles POST /api/v1/queues/{tenant}/{namespace}/{name}/reserve
+func (h *QueueHandlers) Reserve(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Extract path parameters
+	tenant, namespace, name, err := extractQueuePathParams(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Build resource path
+	resourcePath, err := validation.BuildResourcePath(tenant, namespace, "queue", name)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Parse request body (optional)
+	var req ReserveRequest
+	if r.ContentLength > 0 {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "invalid request body: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+
+	// Parse query parameters (override body if present)
+	if visibilityTimeoutStr := r.URL.Query().Get("visibility_timeout"); visibilityTimeoutStr != "" {
+		if val, err := strconv.ParseInt(visibilityTimeoutStr, 10, 64); err == nil {
+			req.VisibilityTimeoutSeconds = val
+		}
+	}
+	if longPollStr := r.URL.Query().Get("long_poll_timeout"); longPollStr != "" {
+		if val, err := strconv.ParseInt(longPollStr, 10, 64); err == nil {
+			req.LongPollTimeoutSeconds = val
+		}
+	}
+
+	// Convert visibility timeout (default 30 seconds)
+	visibilityTimeout := time.Duration(req.VisibilityTimeoutSeconds) * time.Second
+	if visibilityTimeout <= 0 {
+		visibilityTimeout = 30 * time.Second
+	}
+	if visibilityTimeout > 12*time.Hour {
+		http.Error(w, "visibility_timeout_seconds cannot exceed 43200 (12 hours)", http.StatusBadRequest)
+		return
+	}
+
+	// Reserve job
+	queueMgr := h.storage.QueueManager()
+	job, err := queueMgr.Reserve(r.Context(), resourcePath, visibilityTimeout)
+	if err != nil {
+		h.writeError(w, err, resourcePath)
+		return
+	}
+
+	// If no job available, return empty response
+	if job == nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(ReserveResponse{
+			Status:  "success",
+			Message: "no jobs available",
+		})
+		return
+	}
+
+	// Get job payload and headers
+	payload, headers, err := h.getJobPayloadAndHeaders(r.Context(), queueMgr, resourcePath, job.ID)
+	if err != nil {
+		// Log warning but continue
+		payload = []byte{}
+		headers = make(map[string]string)
+	}
+
+	// Convert to response job
+	protoJob := &Job{
+		ID:           job.ID,
+		ResourcePath: resourcePath,
+		Seq:          job.Seq,
+		Payload:      payload,
+		Headers:      headers,
+		CreatedAt:    job.CreatedAt.UnixNano(),
+		VisibleAt:    job.VisibleAt.UnixNano(),
+		Attempts:     job.Attempts,
+	}
+
+	if !job.ReserveUntil.IsZero() {
+		protoJob.ReserveUntil = job.ReserveUntil.UnixNano()
+	}
+
+	// Write response
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(ReserveResponse{
+		Status:  "success",
+		Message: "job reserved successfully",
+		Job:     protoJob,
+	})
+}
+
+// Receive handles POST /api/v1/queues/{tenant}/{namespace}/{name}/receive
+func (h *QueueHandlers) Receive(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Extract path parameters
+	tenant, namespace, name, err := extractQueuePathParams(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Build resource path
+	resourcePath, err := validation.BuildResourcePath(tenant, namespace, "queue", name)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Parse request body (optional)
+	var req ReceiveRequest
+	if r.ContentLength > 0 {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "invalid request body: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+
+	// Parse query parameters (override body if present)
+	if maxJobsStr := r.URL.Query().Get("max_jobs"); maxJobsStr != "" {
+		if val, err := strconv.ParseInt(maxJobsStr, 10, 32); err == nil {
+			req.MaxJobs = int32(val)
+		}
+	}
+	if visibilityTimeoutStr := r.URL.Query().Get("visibility_timeout"); visibilityTimeoutStr != "" {
+		if val, err := strconv.ParseInt(visibilityTimeoutStr, 10, 64); err == nil {
+			req.VisibilityTimeoutSeconds = val
+		}
+	}
+	if longPollStr := r.URL.Query().Get("long_poll_timeout"); longPollStr != "" {
+		if val, err := strconv.ParseInt(longPollStr, 10, 64); err == nil {
+			req.LongPollTimeoutSeconds = val
+		}
+	}
+
+	// Validate max jobs
+	maxJobs := int(req.MaxJobs)
+	if maxJobs <= 0 {
+		maxJobs = 1
+	}
+	if maxJobs > 100 {
+		maxJobs = 100
+	}
+
+	// Convert visibility timeout (default 30 seconds)
+	visibilityTimeout := time.Duration(req.VisibilityTimeoutSeconds) * time.Second
+	if visibilityTimeout <= 0 {
+		visibilityTimeout = 30 * time.Second
+	}
+	if visibilityTimeout > 12*time.Hour {
+		http.Error(w, "visibility_timeout_seconds cannot exceed 43200 (12 hours)", http.StatusBadRequest)
+		return
+	}
+
+	// Convert long poll timeout
+	longPollTimeout := time.Duration(req.LongPollTimeoutSeconds) * time.Second
+
+	// Receive jobs
+	queueMgr := h.storage.QueueManager()
+	queueJobs, err := queueMgr.Receive(r.Context(), resourcePath, maxJobs, storage.QueueReserveOptions{
+		VisibilityTimeout: visibilityTimeout,
+		LongPollTimeout:   longPollTimeout,
+		MaxWaitTime:       20 * time.Second,
+	})
+	if err != nil {
+		h.writeError(w, err, resourcePath)
+		return
+	}
+
+	// Convert to response jobs
+	jobs := make([]*Job, 0, len(queueJobs))
+	for _, job := range queueJobs {
+		// Get job payload and headers
+		payload, headers, err := h.getJobPayloadAndHeaders(r.Context(), queueMgr, resourcePath, job.ID)
+		if err != nil {
+			payload = []byte{}
+			headers = make(map[string]string)
+		}
+
+		protoJob := &Job{
+			ID:           job.ID,
+			ResourcePath: resourcePath,
+			Seq:          job.Seq,
+			Payload:      payload,
+			Headers:      headers,
+			CreatedAt:    job.CreatedAt.UnixNano(),
+			VisibleAt:    job.VisibleAt.UnixNano(),
+			Attempts:     job.Attempts,
+		}
+
+		if !job.ReserveUntil.IsZero() {
+			protoJob.ReserveUntil = job.ReserveUntil.UnixNano()
+		}
+
+		jobs = append(jobs, protoJob)
+	}
+
+	// Write response
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(ReceiveResponse{
+		Status:  "success",
+		Message: "jobs received successfully",
+		Jobs:    jobs,
+	})
+}
+
+// CommitOffset handles POST /api/v1/queues/{tenant}/{namespace}/{name}/jobs/{job_id}/ack
+func (h *QueueHandlers) ACK(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Extract path parameters
+	tenant, namespace, name, jobID, err := extractQueueJobPathParams(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Build resource path
+	resourcePath, err := validation.BuildResourcePath(tenant, namespace, "queue", name)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// ACK job
+	queueMgr := h.storage.QueueManager()
+	err = queueMgr.RemoveFromInFlight(r.Context(), resourcePath, jobID)
+	if err != nil {
+		h.writeError(w, err, resourcePath)
+		return
+	}
+
+	// Write response
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(ACKResponse{
+		Status:  "success",
+		Message: "job acknowledged successfully",
+	})
+}
+
+// NACK handles POST /api/v1/queues/{tenant}/{namespace}/{name}/jobs/{job_id}/nack
+func (h *QueueHandlers) NACK(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Extract path parameters
+	tenant, namespace, name, jobID, err := extractQueueJobPathParams(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Build resource path
+	resourcePath, err := validation.BuildResourcePath(tenant, namespace, "queue", name)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Parse request body (optional, for delay)
+	var req NACKRequest
+	if r.ContentLength > 0 {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "invalid request body: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+
+	// Convert delay (0 means use backoff)
+	var delay time.Duration
+	if req.DelaySeconds > 0 {
+		delay = time.Duration(req.DelaySeconds) * time.Second
+	}
+
+	// NACK job
+	queueMgr := h.storage.QueueManager()
+	if delay > 0 {
+		err = queueMgr.NACKWithDelay(r.Context(), resourcePath, jobID, delay)
+	} else {
+		err = queueMgr.NACK(r.Context(), resourcePath, jobID)
+	}
+	if err != nil {
+		h.writeError(w, err, resourcePath)
+		return
+	}
+
+	// Write response
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(NACKResponse{
+		Status:  "success",
+		Message: "job NACKed successfully",
+	})
+}
+
+// GetQueueStats handles GET /api/v1/queues/{tenant}/{namespace}/{name}/stats
+func (h *QueueHandlers) GetQueueStats(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Extract path parameters
+	tenant, namespace, name, err := extractQueuePathParams(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Build resource path
+	resourcePath, err := validation.BuildResourcePath(tenant, namespace, "queue", name)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Get queue stats
+	queueMgr := h.storage.QueueManager()
+	stats, err := queueMgr.GetQueueStats(r.Context(), resourcePath)
+	if err != nil {
+		h.writeError(w, err, resourcePath)
+		return
+	}
+
+	// Write response
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(QueueStatsResponse{
+		Status:  "success",
+		Message: "queue statistics retrieved successfully",
+		Stats: &QueueStats{
+			TotalJobs:           stats.TotalJobs,
+			PendingJobs:         stats.PendingJobs,
+			InFlightJobs:        stats.InFlightJobs,
+			CompletedJobs:       stats.CompletedJobs,
+			FailedJobs:          stats.FailedJobs,
+			OldestJobAgeSeconds: int64(stats.OldestJobAge.Seconds()),
+		},
+	})
+}
+
+// Helper methods
+
+// extractQueuePathParams extracts tenant, namespace, and name from URL path
+func extractQueuePathParams(r *http.Request) (tenant, namespace, name string, err error) {
+	// Path format: /api/v1/queues/{tenant}/{namespace}/{name}/...
+	parts := splitPath(r.URL.Path)
+	if len(parts) < 5 || parts[0] != "api" || parts[1] != "v1" || parts[2] != "queues" {
+		return "", "", "", http.ErrMissingFile
+	}
+	return parts[3], parts[4], parts[5], nil
+}
+
+// extractQueueJobPathParams extracts tenant, namespace, name, and job_id from URL path
+func extractQueueJobPathParams(r *http.Request) (tenant, namespace, name, jobID string, err error) {
+	// Path format: /api/v1/queues/{tenant}/{namespace}/{name}/jobs/{job_id}/ack or /nack
+	parts := splitPath(r.URL.Path)
+	if len(parts) < 8 || parts[0] != "api" || parts[1] != "v1" || parts[2] != "queues" || parts[6] != "jobs" {
+		return "", "", "", "", http.ErrMissingFile
+	}
+	return parts[3], parts[4], parts[5], parts[7], nil
+}
+
+// splitPath splits a URL path into components
+func splitPath(path string) []string {
+	var parts []string
+	var current string
+	for _, char := range path {
+		if char == '/' {
+			if current != "" {
+				parts = append(parts, current)
+				current = ""
+			}
+		} else {
+			current += string(char)
+		}
+	}
+	if current != "" {
+		parts = append(parts, current)
+	}
+	return parts
+}
+
+// getJobPayloadAndHeaders retrieves both payload and headers for a job
+func (h *QueueHandlers) getJobPayloadAndHeaders(ctx context.Context, queueMgr storage.QueueManager, resourcePath, jobID string) ([]byte, map[string]string, error) {
+	// Get job metadata to find the log position
+	job, err := queueMgr.GetInFlight(ctx, resourcePath, jobID)
+	if err != nil {
+		// Try to get payload only
+		payload, err := queueMgr.GetJobPayload(ctx, resourcePath, jobID)
+		if err != nil {
+			return nil, nil, err
+		}
+		return payload, make(map[string]string), nil
+	}
+
+	// Read full message from log to get headers
+	payload, headers, err := h.readJobMessageFromLog(ctx, job.PayloadPos.File, job.PayloadPos.Offset, jobID)
+	if err != nil {
+		// Fallback to GetJobPayload
+		payload, err = queueMgr.GetJobPayload(ctx, resourcePath, jobID)
+		if err != nil {
+			return nil, nil, err
+		}
+		return payload, make(map[string]string), nil
+	}
+
+	return payload, headers, nil
+}
+
+// readJobMessageFromLog reads the full job message from log segment
+func (h *QueueHandlers) readJobMessageFromLog(ctx context.Context, filePath string, offset int64, jobID string) ([]byte, map[string]string, error) {
+	reader, err := log.NewSegmentReader(filePath)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to open segment: %w", err)
+	}
+	defer reader.Close()
+
+	// Read entries until we find the one at the correct offset
+	for {
+		data, entryOffset, readErr := reader.ReadEntry()
+		if readErr != nil {
+			if errors.Is(readErr, io.EOF) {
+				break
+			}
+			return nil, nil, fmt.Errorf("failed to read entry: %w", readErr)
+		}
+
+		// Check if this is the entry we're looking for
+		if entryOffset == offset {
+			// Decode message
+			msg, decodeErr := log.DecodeMessage(data)
+			if decodeErr != nil {
+				return nil, nil, fmt.Errorf("failed to decode message: %w", decodeErr)
+			}
+
+			// Verify job ID matches
+			if msg.ID != jobID {
+				return nil, nil, fmt.Errorf("job ID mismatch: expected %s, got %s", jobID, msg.ID)
+			}
+
+			return msg.Payload, msg.Headers, nil
+		}
+
+		// If we've passed the offset, the entry wasn't found
+		if entryOffset > offset {
+			return nil, nil, fmt.Errorf("job entry not found at offset %d", offset)
+		}
+	}
+
+	return nil, nil, fmt.Errorf("job entry not found")
+}
+
+// writeError writes an error response
+func (h *QueueHandlers) writeError(w http.ResponseWriter, err error, resourcePath string) {
+	switch e := err.(type) {
+	case queueerrors.QueueNotFoundError:
+		http.Error(w, e.Error(), http.StatusNotFound)
+	case queueerrors.JobNotFoundError:
+		http.Error(w, e.Error(), http.StatusNotFound)
+	case queueerrors.InvalidVisibilityTimeoutError:
+		http.Error(w, e.Error(), http.StatusBadRequest)
+	case queueerrors.EnqueueError:
+		http.Error(w, e.Error(), http.StatusInternalServerError)
+	case queueerrors.NACKError:
+		http.Error(w, e.Error(), http.StatusInternalServerError)
+	case queueerrors.MaxAttemptsExceededError:
+		http.Error(w, e.Error(), http.StatusPreconditionFailed)
+	default:
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}

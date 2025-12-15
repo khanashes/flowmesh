@@ -190,3 +190,123 @@ service StreamService {
   rpc GetConsumerGroupState(GetConsumerGroupStateRequest) returns (GetConsumerGroupStateResponse);
 }
 
+// Job represents a job in a queue
+message Job {
+  string id = 1;                         // Unique job identifier
+  string resource_path = 2;              // Queue resource path
+  int64 seq = 3;                         // Sequence number in queue log
+  bytes payload = 4;                     // Job payload
+  map<string, string> headers = 5;      // Job headers/metadata
+  int64 created_at = 6;                  // Creation timestamp (Unix nanoseconds)
+  int64 visible_at = 7;                  // When job becomes visible (Unix nanoseconds)
+  int64 reserve_until = 8;              // When visibility timeout expires (Unix nanoseconds, 0 if not reserved)
+  int32 attempts = 9;                    // Number of delivery attempts
+}
+
+// EnqueueRequest is a request to enqueue a job to a queue
+message EnqueueRequest {
+  ResourcePath resource_path = 1;        // Queue resource path
+  bytes payload = 2;                     // Job payload
+  int64 delay_seconds = 3;               // Delay before job becomes visible (seconds, default: 0)
+  map<string, string> headers = 4;       // Job headers/metadata
+}
+
+// EnqueueResponse is a response to enqueueing a job
+message EnqueueResponse {
+  Status status = 1;                      // Operation status
+  string job_id = 2;                      // Assigned job ID
+  int64 seq = 3;                          // Sequence number
+}
+
+// ReserveRequest is a request to reserve a job from a queue
+message ReserveRequest {
+  ResourcePath resource_path = 1;        // Queue resource path
+  int64 visibility_timeout_seconds = 2;  // Visibility timeout in seconds (default: 30)
+  int64 long_poll_timeout_seconds = 3;   // Long poll timeout in seconds (0 = no wait, default: 0)
+}
+
+// ReserveResponse is a response to reserving a job
+message ReserveResponse {
+  Status status = 1;                      // Operation status
+  Job job = 2;                            // Reserved job (null if no jobs available)
+}
+
+// ReceiveRequest is a request to receive multiple jobs from a queue
+message ReceiveRequest {
+  ResourcePath resource_path = 1;        // Queue resource path
+  int32 max_jobs = 2;                     // Maximum number of jobs to receive (1-100, default: 1)
+  int64 visibility_timeout_seconds = 3;  // Visibility timeout in seconds (default: 30)
+  int64 long_poll_timeout_seconds = 4;   // Long poll timeout in seconds (0 = no wait, default: 0)
+}
+
+// ReceiveResponse is a response to receiving jobs
+message ReceiveResponse {
+  Status status = 1;                      // Operation status
+  repeated Job jobs = 2;                  // Received jobs
+}
+
+// ACKRequest is a request to acknowledge completion of a job
+message ACKRequest {
+  ResourcePath resource_path = 1;        // Queue resource path
+  string job_id = 2;                      // Job ID to acknowledge
+}
+
+// ACKResponse is a response to acknowledging a job
+message ACKResponse {
+  Status status = 1;                      // Operation status
+}
+
+// NACKRequest is a request to negatively acknowledge a job
+message NACKRequest {
+  ResourcePath resource_path = 1;        // Queue resource path
+  string job_id = 2;                      // Job ID to NACK
+  int64 delay_seconds = 3;               // Optional delay before requeue (seconds, 0 = use backoff)
+}
+
+// NACKResponse is a response to NACKing a job
+message NACKResponse {
+  Status status = 1;                      // Operation status
+}
+
+// QueueStats represents statistics for a queue
+message QueueStats {
+  int64 total_jobs = 1;                  // Total jobs ever enqueued
+  int64 pending_jobs = 2;                // Jobs in ready heap (waiting to be processed)
+  int64 in_flight_jobs = 3;              // Jobs currently being processed
+  int64 completed_jobs = 4;              // Successfully completed jobs
+  int64 failed_jobs = 5;                 // Failed jobs
+  int64 oldest_job_age_seconds = 6;      // Age of oldest pending job in seconds
+}
+
+// GetQueueStatsRequest is a request to get queue statistics
+message GetQueueStatsRequest {
+  ResourcePath resource_path = 1;        // Queue resource path
+}
+
+// GetQueueStatsResponse is a response to getting queue statistics
+message GetQueueStatsResponse {
+  Status status = 1;                      // Operation status
+  QueueStats stats = 2;                   // Queue statistics
+}
+
+// QueueService provides operations for working with queues
+service QueueService {
+  // Enqueue enqueues a job to a queue and returns job ID and sequence number
+  rpc Enqueue(EnqueueRequest) returns (EnqueueResponse);
+
+  // Reserve reserves a single job from the queue with visibility timeout
+  rpc Reserve(ReserveRequest) returns (ReserveResponse);
+
+  // Receive receives multiple jobs from the queue (batch receive)
+  rpc Receive(ReceiveRequest) returns (ReceiveResponse);
+
+  // ACK acknowledges completion of a job
+  rpc ACK(ACKRequest) returns (ACKResponse);
+
+  // NACK negatively acknowledges a job (requeue with backoff)
+  rpc NACK(NACKRequest) returns (NACKResponse);
+
+  // GetQueueStats retrieves queue statistics (depth, in-flight, age, etc.)
+  rpc GetQueueStats(GetQueueStatsRequest) returns (GetQueueStatsResponse);
+}
+

@@ -68,6 +68,33 @@ type QueueManager interface {
 	RemoveFromInFlight(ctx context.Context, resourcePath string, jobID string) error
 	// GetInFlight retrieves a job from InFlight
 	GetInFlight(ctx context.Context, resourcePath string, jobID string) (*QueueJob, error)
+	// NACK negatively acknowledges a job (requeue with backoff)
+	NACK(ctx context.Context, resourcePath string, jobID string) error
+	// NACKWithDelay negatively acknowledges a job with explicit delay
+	NACKWithDelay(ctx context.Context, resourcePath string, jobID string, delay time.Duration) error
+	// GetJobPayload retrieves the payload for a job from the log
+	GetJobPayload(ctx context.Context, resourcePath string, jobID string) ([]byte, error)
+	// GetQueueStats returns statistics for a queue
+	GetQueueStats(ctx context.Context, resourcePath string) (*QueueStats, error)
+	// Receive receives multiple jobs from the queue (batch receive)
+	Receive(ctx context.Context, resourcePath string, maxJobs int, options QueueReserveOptions) ([]*QueueJob, error)
+}
+
+// QueueStats represents statistics for a queue
+type QueueStats struct {
+	TotalJobs     int64
+	PendingJobs   int64
+	InFlightJobs  int64
+	CompletedJobs int64
+	FailedJobs    int64
+	OldestJobAge  time.Duration
+}
+
+// QueueReserveOptions specifies options for reserving/receiving jobs
+type QueueReserveOptions struct {
+	VisibilityTimeout time.Duration
+	LongPollTimeout   time.Duration
+	MaxWaitTime       time.Duration
 }
 
 // KVSetOptions specifies options for Set operations

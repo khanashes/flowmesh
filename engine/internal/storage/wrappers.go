@@ -163,6 +163,91 @@ func (w *queueManagerWrapper) PopReadyJob(ctx context.Context, resourcePath stri
 	}, nil
 }
 
+// NACK implements QueueManager interface
+func (w *queueManagerWrapper) NACK(ctx context.Context, resourcePath string, jobID string) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+	return w.Manager.NACK(ctx, resourcePath, jobID)
+}
+
+// NACKWithDelay implements QueueManager interface
+func (w *queueManagerWrapper) NACKWithDelay(ctx context.Context, resourcePath string, jobID string, delay time.Duration) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+	return w.Manager.NACKWithDelay(ctx, resourcePath, jobID, delay)
+}
+
+// GetJobPayload implements QueueManager interface
+func (w *queueManagerWrapper) GetJobPayload(ctx context.Context, resourcePath string, jobID string) ([]byte, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+	return w.Manager.GetJobPayload(ctx, resourcePath, jobID)
+}
+
+// GetQueueStats implements QueueManager interface
+func (w *queueManagerWrapper) GetQueueStats(ctx context.Context, resourcePath string) (*QueueStats, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+	stats, err := w.Manager.GetQueueStats(ctx, resourcePath)
+	if err != nil {
+		return nil, err
+	}
+	return &QueueStats{
+		TotalJobs:     stats.TotalJobs,
+		PendingJobs:   stats.PendingJobs,
+		InFlightJobs:  stats.InFlightJobs,
+		CompletedJobs: stats.CompletedJobs,
+		FailedJobs:    stats.FailedJobs,
+		OldestJobAge:  stats.OldestJobAge,
+	}, nil
+}
+
+// Receive implements QueueManager interface
+func (w *queueManagerWrapper) Receive(ctx context.Context, resourcePath string, maxJobs int, options QueueReserveOptions) ([]*QueueJob, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+	queueOptions := queues.ReserveOptions{
+		VisibilityTimeout: options.VisibilityTimeout,
+		LongPollTimeout:   options.LongPollTimeout,
+		MaxWaitTime:       options.MaxWaitTime,
+	}
+	jobs, err := w.Manager.Receive(ctx, resourcePath, maxJobs, queueOptions)
+	if err != nil {
+		return nil, err
+	}
+	if jobs == nil {
+		return nil, nil
+	}
+	result := make([]*QueueJob, 0, len(jobs))
+	for _, job := range jobs {
+		result = append(result, &QueueJob{
+			ID:           job.ID,
+			Seq:          job.Seq,
+			VisibleAt:    job.VisibleAt,
+			ReserveUntil: job.ReserveUntil,
+			PayloadPos:   job.PayloadPos,
+			Attempts:     job.Attempts,
+			CreatedAt:    job.CreatedAt,
+		})
+	}
+	return result, nil
+}
+
 // InitializeQueue implements QueueManager interface
 func (w *queueManagerWrapper) InitializeQueue(ctx context.Context, resourcePath string) error {
 	select {

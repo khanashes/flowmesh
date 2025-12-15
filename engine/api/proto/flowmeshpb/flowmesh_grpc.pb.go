@@ -517,3 +517,311 @@ var StreamService_ServiceDesc = grpc.ServiceDesc{
 	},
 	Metadata: "flowmesh.proto",
 }
+
+const (
+	QueueService_Enqueue_FullMethodName       = "/flowmesh.v1.QueueService/Enqueue"
+	QueueService_Reserve_FullMethodName       = "/flowmesh.v1.QueueService/Reserve"
+	QueueService_Receive_FullMethodName       = "/flowmesh.v1.QueueService/Receive"
+	QueueService_ACK_FullMethodName           = "/flowmesh.v1.QueueService/ACK"
+	QueueService_NACK_FullMethodName          = "/flowmesh.v1.QueueService/NACK"
+	QueueService_GetQueueStats_FullMethodName = "/flowmesh.v1.QueueService/GetQueueStats"
+)
+
+// QueueServiceClient is the client API for QueueService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// QueueService provides operations for working with queues
+type QueueServiceClient interface {
+	// Enqueue enqueues a job to a queue and returns job ID and sequence number
+	Enqueue(ctx context.Context, in *EnqueueRequest, opts ...grpc.CallOption) (*EnqueueResponse, error)
+	// Reserve reserves a single job from the queue with visibility timeout
+	Reserve(ctx context.Context, in *ReserveRequest, opts ...grpc.CallOption) (*ReserveResponse, error)
+	// Receive receives multiple jobs from the queue (batch receive)
+	Receive(ctx context.Context, in *ReceiveRequest, opts ...grpc.CallOption) (*ReceiveResponse, error)
+	// ACK acknowledges completion of a job
+	ACK(ctx context.Context, in *ACKRequest, opts ...grpc.CallOption) (*ACKResponse, error)
+	// NACK negatively acknowledges a job (requeue with backoff)
+	NACK(ctx context.Context, in *NACKRequest, opts ...grpc.CallOption) (*NACKResponse, error)
+	// GetQueueStats retrieves queue statistics (depth, in-flight, age, etc.)
+	GetQueueStats(ctx context.Context, in *GetQueueStatsRequest, opts ...grpc.CallOption) (*GetQueueStatsResponse, error)
+}
+
+type queueServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewQueueServiceClient(cc grpc.ClientConnInterface) QueueServiceClient {
+	return &queueServiceClient{cc}
+}
+
+func (c *queueServiceClient) Enqueue(ctx context.Context, in *EnqueueRequest, opts ...grpc.CallOption) (*EnqueueResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EnqueueResponse)
+	err := c.cc.Invoke(ctx, QueueService_Enqueue_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queueServiceClient) Reserve(ctx context.Context, in *ReserveRequest, opts ...grpc.CallOption) (*ReserveResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ReserveResponse)
+	err := c.cc.Invoke(ctx, QueueService_Reserve_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queueServiceClient) Receive(ctx context.Context, in *ReceiveRequest, opts ...grpc.CallOption) (*ReceiveResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ReceiveResponse)
+	err := c.cc.Invoke(ctx, QueueService_Receive_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queueServiceClient) ACK(ctx context.Context, in *ACKRequest, opts ...grpc.CallOption) (*ACKResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ACKResponse)
+	err := c.cc.Invoke(ctx, QueueService_ACK_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queueServiceClient) NACK(ctx context.Context, in *NACKRequest, opts ...grpc.CallOption) (*NACKResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(NACKResponse)
+	err := c.cc.Invoke(ctx, QueueService_NACK_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queueServiceClient) GetQueueStats(ctx context.Context, in *GetQueueStatsRequest, opts ...grpc.CallOption) (*GetQueueStatsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetQueueStatsResponse)
+	err := c.cc.Invoke(ctx, QueueService_GetQueueStats_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// QueueServiceServer is the server API for QueueService service.
+// All implementations must embed UnimplementedQueueServiceServer
+// for forward compatibility.
+//
+// QueueService provides operations for working with queues
+type QueueServiceServer interface {
+	// Enqueue enqueues a job to a queue and returns job ID and sequence number
+	Enqueue(context.Context, *EnqueueRequest) (*EnqueueResponse, error)
+	// Reserve reserves a single job from the queue with visibility timeout
+	Reserve(context.Context, *ReserveRequest) (*ReserveResponse, error)
+	// Receive receives multiple jobs from the queue (batch receive)
+	Receive(context.Context, *ReceiveRequest) (*ReceiveResponse, error)
+	// ACK acknowledges completion of a job
+	ACK(context.Context, *ACKRequest) (*ACKResponse, error)
+	// NACK negatively acknowledges a job (requeue with backoff)
+	NACK(context.Context, *NACKRequest) (*NACKResponse, error)
+	// GetQueueStats retrieves queue statistics (depth, in-flight, age, etc.)
+	GetQueueStats(context.Context, *GetQueueStatsRequest) (*GetQueueStatsResponse, error)
+	mustEmbedUnimplementedQueueServiceServer()
+}
+
+// UnimplementedQueueServiceServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedQueueServiceServer struct{}
+
+func (UnimplementedQueueServiceServer) Enqueue(context.Context, *EnqueueRequest) (*EnqueueResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Enqueue not implemented")
+}
+func (UnimplementedQueueServiceServer) Reserve(context.Context, *ReserveRequest) (*ReserveResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Reserve not implemented")
+}
+func (UnimplementedQueueServiceServer) Receive(context.Context, *ReceiveRequest) (*ReceiveResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Receive not implemented")
+}
+func (UnimplementedQueueServiceServer) ACK(context.Context, *ACKRequest) (*ACKResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ACK not implemented")
+}
+func (UnimplementedQueueServiceServer) NACK(context.Context, *NACKRequest) (*NACKResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method NACK not implemented")
+}
+func (UnimplementedQueueServiceServer) GetQueueStats(context.Context, *GetQueueStatsRequest) (*GetQueueStatsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetQueueStats not implemented")
+}
+func (UnimplementedQueueServiceServer) mustEmbedUnimplementedQueueServiceServer() {}
+func (UnimplementedQueueServiceServer) testEmbeddedByValue()                      {}
+
+// UnsafeQueueServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to QueueServiceServer will
+// result in compilation errors.
+type UnsafeQueueServiceServer interface {
+	mustEmbedUnimplementedQueueServiceServer()
+}
+
+func RegisterQueueServiceServer(s grpc.ServiceRegistrar, srv QueueServiceServer) {
+	// If the following call panics, it indicates UnimplementedQueueServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&QueueService_ServiceDesc, srv)
+}
+
+func _QueueService_Enqueue_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EnqueueRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueueServiceServer).Enqueue(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: QueueService_Enqueue_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueueServiceServer).Enqueue(ctx, req.(*EnqueueRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _QueueService_Reserve_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReserveRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueueServiceServer).Reserve(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: QueueService_Reserve_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueueServiceServer).Reserve(ctx, req.(*ReserveRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _QueueService_Receive_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReceiveRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueueServiceServer).Receive(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: QueueService_Receive_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueueServiceServer).Receive(ctx, req.(*ReceiveRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _QueueService_ACK_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ACKRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueueServiceServer).ACK(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: QueueService_ACK_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueueServiceServer).ACK(ctx, req.(*ACKRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _QueueService_NACK_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(NACKRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueueServiceServer).NACK(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: QueueService_NACK_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueueServiceServer).NACK(ctx, req.(*NACKRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _QueueService_GetQueueStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetQueueStatsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueueServiceServer).GetQueueStats(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: QueueService_GetQueueStats_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueueServiceServer).GetQueueStats(ctx, req.(*GetQueueStatsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// QueueService_ServiceDesc is the grpc.ServiceDesc for QueueService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var QueueService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "flowmesh.v1.QueueService",
+	HandlerType: (*QueueServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Enqueue",
+			Handler:    _QueueService_Enqueue_Handler,
+		},
+		{
+			MethodName: "Reserve",
+			Handler:    _QueueService_Reserve_Handler,
+		},
+		{
+			MethodName: "Receive",
+			Handler:    _QueueService_Receive_Handler,
+		},
+		{
+			MethodName: "ACK",
+			Handler:    _QueueService_ACK_Handler,
+		},
+		{
+			MethodName: "NACK",
+			Handler:    _QueueService_NACK_Handler,
+		},
+		{
+			MethodName: "GetQueueStats",
+			Handler:    _QueueService_GetQueueStats_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "flowmesh.proto",
+}

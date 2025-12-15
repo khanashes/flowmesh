@@ -14,6 +14,7 @@ type Router struct {
 	mux            *http.ServeMux
 	storage        storage.StorageBackend
 	streamHandlers *handlers.StreamHandlers
+	queueHandlers  *handlers.QueueHandlers
 }
 
 // NewRouter creates a new router
@@ -22,6 +23,7 @@ func NewRouter(storage storage.StorageBackend) *Router {
 		mux:            http.NewServeMux(),
 		storage:        storage,
 		streamHandlers: handlers.NewStreamHandlers(storage),
+		queueHandlers:  handlers.NewQueueHandlers(storage),
 	}
 
 	r.setupRoutes()
@@ -44,6 +46,9 @@ func (r *Router) setupRoutes() {
 
 	// Stream API endpoints
 	r.mux.Handle("/api/v1/streams/", chain(http.HandlerFunc(r.handleStreamRoutes)))
+
+	// Queue API endpoints
+	r.mux.Handle("/api/v1/queues/", chain(http.HandlerFunc(r.handleQueueRoutes)))
 
 	// Default API v1 route (for unmatched paths)
 	r.mux.Handle("/api/v1/", chain(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -88,6 +93,50 @@ func (r *Router) handleStreamRoutes(w http.ResponseWriter, req *http.Request) {
 	// GET /api/v1/streams/{tenant}/{namespace}/{name}/consumer-groups/{group}/state
 	if req.Method == http.MethodGet && matchPattern(path, "/consumer-groups/", "/state") {
 		r.streamHandlers.GetConsumerGroupState(w, req)
+		return
+	}
+
+	// No match found
+	http.NotFound(w, req)
+}
+
+// handleQueueRoutes routes queue-related requests to appropriate handlers
+func (r *Router) handleQueueRoutes(w http.ResponseWriter, req *http.Request) {
+	path := req.URL.Path
+
+	// POST /api/v1/queues/{tenant}/{namespace}/{name}/jobs
+	if req.Method == http.MethodPost && matchPattern(path, "/jobs") {
+		r.queueHandlers.Enqueue(w, req)
+		return
+	}
+
+	// POST /api/v1/queues/{tenant}/{namespace}/{name}/reserve
+	if req.Method == http.MethodPost && matchPattern(path, "/reserve") {
+		r.queueHandlers.Reserve(w, req)
+		return
+	}
+
+	// POST /api/v1/queues/{tenant}/{namespace}/{name}/receive
+	if req.Method == http.MethodPost && matchPattern(path, "/receive") {
+		r.queueHandlers.Receive(w, req)
+		return
+	}
+
+	// POST /api/v1/queues/{tenant}/{namespace}/{name}/jobs/{job_id}/ack
+	if req.Method == http.MethodPost && matchPattern(path, "/jobs/", "/ack") {
+		r.queueHandlers.ACK(w, req)
+		return
+	}
+
+	// POST /api/v1/queues/{tenant}/{namespace}/{name}/jobs/{job_id}/nack
+	if req.Method == http.MethodPost && matchPattern(path, "/jobs/", "/nack") {
+		r.queueHandlers.NACK(w, req)
+		return
+	}
+
+	// GET /api/v1/queues/{tenant}/{namespace}/{name}/stats
+	if req.Method == http.MethodGet && matchPattern(path, "/stats") {
+		r.queueHandlers.GetQueueStats(w, req)
 		return
 	}
 

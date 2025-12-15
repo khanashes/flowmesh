@@ -1360,6 +1360,868 @@ func (x *GetConsumerGroupStateResponse) GetState() *ConsumerGroupState {
 	return nil
 }
 
+// Job represents a job in a queue
+type Job struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`                                                                                     // Unique job identifier
+	ResourcePath  string                 `protobuf:"bytes,2,opt,name=resource_path,json=resourcePath,proto3" json:"resource_path,omitempty"`                                             // Queue resource path
+	Seq           int64                  `protobuf:"varint,3,opt,name=seq,proto3" json:"seq,omitempty"`                                                                                  // Sequence number in queue log
+	Payload       []byte                 `protobuf:"bytes,4,opt,name=payload,proto3" json:"payload,omitempty"`                                                                           // Job payload
+	Headers       map[string]string      `protobuf:"bytes,5,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // Job headers/metadata
+	CreatedAt     int64                  `protobuf:"varint,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`                                                     // Creation timestamp (Unix nanoseconds)
+	VisibleAt     int64                  `protobuf:"varint,7,opt,name=visible_at,json=visibleAt,proto3" json:"visible_at,omitempty"`                                                     // When job becomes visible (Unix nanoseconds)
+	ReserveUntil  int64                  `protobuf:"varint,8,opt,name=reserve_until,json=reserveUntil,proto3" json:"reserve_until,omitempty"`                                            // When visibility timeout expires (Unix nanoseconds, 0 if not reserved)
+	Attempts      int32                  `protobuf:"varint,9,opt,name=attempts,proto3" json:"attempts,omitempty"`                                                                        // Number of delivery attempts
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Job) Reset() {
+	*x = Job{}
+	mi := &file_flowmesh_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Job) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Job) ProtoMessage() {}
+
+func (x *Job) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Job.ProtoReflect.Descriptor instead.
+func (*Job) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *Job) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *Job) GetResourcePath() string {
+	if x != nil {
+		return x.ResourcePath
+	}
+	return ""
+}
+
+func (x *Job) GetSeq() int64 {
+	if x != nil {
+		return x.Seq
+	}
+	return 0
+}
+
+func (x *Job) GetPayload() []byte {
+	if x != nil {
+		return x.Payload
+	}
+	return nil
+}
+
+func (x *Job) GetHeaders() map[string]string {
+	if x != nil {
+		return x.Headers
+	}
+	return nil
+}
+
+func (x *Job) GetCreatedAt() int64 {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return 0
+}
+
+func (x *Job) GetVisibleAt() int64 {
+	if x != nil {
+		return x.VisibleAt
+	}
+	return 0
+}
+
+func (x *Job) GetReserveUntil() int64 {
+	if x != nil {
+		return x.ReserveUntil
+	}
+	return 0
+}
+
+func (x *Job) GetAttempts() int32 {
+	if x != nil {
+		return x.Attempts
+	}
+	return 0
+}
+
+// EnqueueRequest is a request to enqueue a job to a queue
+type EnqueueRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ResourcePath  *ResourcePath          `protobuf:"bytes,1,opt,name=resource_path,json=resourcePath,proto3" json:"resource_path,omitempty"`                                             // Queue resource path
+	Payload       []byte                 `protobuf:"bytes,2,opt,name=payload,proto3" json:"payload,omitempty"`                                                                           // Job payload
+	DelaySeconds  int64                  `protobuf:"varint,3,opt,name=delay_seconds,json=delaySeconds,proto3" json:"delay_seconds,omitempty"`                                            // Delay before job becomes visible (seconds, default: 0)
+	Headers       map[string]string      `protobuf:"bytes,4,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // Job headers/metadata
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EnqueueRequest) Reset() {
+	*x = EnqueueRequest{}
+	mi := &file_flowmesh_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EnqueueRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EnqueueRequest) ProtoMessage() {}
+
+func (x *EnqueueRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EnqueueRequest.ProtoReflect.Descriptor instead.
+func (*EnqueueRequest) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *EnqueueRequest) GetResourcePath() *ResourcePath {
+	if x != nil {
+		return x.ResourcePath
+	}
+	return nil
+}
+
+func (x *EnqueueRequest) GetPayload() []byte {
+	if x != nil {
+		return x.Payload
+	}
+	return nil
+}
+
+func (x *EnqueueRequest) GetDelaySeconds() int64 {
+	if x != nil {
+		return x.DelaySeconds
+	}
+	return 0
+}
+
+func (x *EnqueueRequest) GetHeaders() map[string]string {
+	if x != nil {
+		return x.Headers
+	}
+	return nil
+}
+
+// EnqueueResponse is a response to enqueueing a job
+type EnqueueResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        *Status                `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`            // Operation status
+	JobId         string                 `protobuf:"bytes,2,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"` // Assigned job ID
+	Seq           int64                  `protobuf:"varint,3,opt,name=seq,proto3" json:"seq,omitempty"`                 // Sequence number
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EnqueueResponse) Reset() {
+	*x = EnqueueResponse{}
+	mi := &file_flowmesh_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EnqueueResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EnqueueResponse) ProtoMessage() {}
+
+func (x *EnqueueResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EnqueueResponse.ProtoReflect.Descriptor instead.
+func (*EnqueueResponse) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *EnqueueResponse) GetStatus() *Status {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
+func (x *EnqueueResponse) GetJobId() string {
+	if x != nil {
+		return x.JobId
+	}
+	return ""
+}
+
+func (x *EnqueueResponse) GetSeq() int64 {
+	if x != nil {
+		return x.Seq
+	}
+	return 0
+}
+
+// ReserveRequest is a request to reserve a job from a queue
+type ReserveRequest struct {
+	state                    protoimpl.MessageState `protogen:"open.v1"`
+	ResourcePath             *ResourcePath          `protobuf:"bytes,1,opt,name=resource_path,json=resourcePath,proto3" json:"resource_path,omitempty"`                                        // Queue resource path
+	VisibilityTimeoutSeconds int64                  `protobuf:"varint,2,opt,name=visibility_timeout_seconds,json=visibilityTimeoutSeconds,proto3" json:"visibility_timeout_seconds,omitempty"` // Visibility timeout in seconds (default: 30)
+	LongPollTimeoutSeconds   int64                  `protobuf:"varint,3,opt,name=long_poll_timeout_seconds,json=longPollTimeoutSeconds,proto3" json:"long_poll_timeout_seconds,omitempty"`     // Long poll timeout in seconds (0 = no wait, default: 0)
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
+}
+
+func (x *ReserveRequest) Reset() {
+	*x = ReserveRequest{}
+	mi := &file_flowmesh_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReserveRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReserveRequest) ProtoMessage() {}
+
+func (x *ReserveRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReserveRequest.ProtoReflect.Descriptor instead.
+func (*ReserveRequest) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *ReserveRequest) GetResourcePath() *ResourcePath {
+	if x != nil {
+		return x.ResourcePath
+	}
+	return nil
+}
+
+func (x *ReserveRequest) GetVisibilityTimeoutSeconds() int64 {
+	if x != nil {
+		return x.VisibilityTimeoutSeconds
+	}
+	return 0
+}
+
+func (x *ReserveRequest) GetLongPollTimeoutSeconds() int64 {
+	if x != nil {
+		return x.LongPollTimeoutSeconds
+	}
+	return 0
+}
+
+// ReserveResponse is a response to reserving a job
+type ReserveResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        *Status                `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"` // Operation status
+	Job           *Job                   `protobuf:"bytes,2,opt,name=job,proto3" json:"job,omitempty"`       // Reserved job (null if no jobs available)
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReserveResponse) Reset() {
+	*x = ReserveResponse{}
+	mi := &file_flowmesh_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReserveResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReserveResponse) ProtoMessage() {}
+
+func (x *ReserveResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReserveResponse.ProtoReflect.Descriptor instead.
+func (*ReserveResponse) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *ReserveResponse) GetStatus() *Status {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
+func (x *ReserveResponse) GetJob() *Job {
+	if x != nil {
+		return x.Job
+	}
+	return nil
+}
+
+// ReceiveRequest is a request to receive multiple jobs from a queue
+type ReceiveRequest struct {
+	state                    protoimpl.MessageState `protogen:"open.v1"`
+	ResourcePath             *ResourcePath          `protobuf:"bytes,1,opt,name=resource_path,json=resourcePath,proto3" json:"resource_path,omitempty"`                                        // Queue resource path
+	MaxJobs                  int32                  `protobuf:"varint,2,opt,name=max_jobs,json=maxJobs,proto3" json:"max_jobs,omitempty"`                                                      // Maximum number of jobs to receive (1-100, default: 1)
+	VisibilityTimeoutSeconds int64                  `protobuf:"varint,3,opt,name=visibility_timeout_seconds,json=visibilityTimeoutSeconds,proto3" json:"visibility_timeout_seconds,omitempty"` // Visibility timeout in seconds (default: 30)
+	LongPollTimeoutSeconds   int64                  `protobuf:"varint,4,opt,name=long_poll_timeout_seconds,json=longPollTimeoutSeconds,proto3" json:"long_poll_timeout_seconds,omitempty"`     // Long poll timeout in seconds (0 = no wait, default: 0)
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
+}
+
+func (x *ReceiveRequest) Reset() {
+	*x = ReceiveRequest{}
+	mi := &file_flowmesh_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReceiveRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReceiveRequest) ProtoMessage() {}
+
+func (x *ReceiveRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReceiveRequest.ProtoReflect.Descriptor instead.
+func (*ReceiveRequest) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *ReceiveRequest) GetResourcePath() *ResourcePath {
+	if x != nil {
+		return x.ResourcePath
+	}
+	return nil
+}
+
+func (x *ReceiveRequest) GetMaxJobs() int32 {
+	if x != nil {
+		return x.MaxJobs
+	}
+	return 0
+}
+
+func (x *ReceiveRequest) GetVisibilityTimeoutSeconds() int64 {
+	if x != nil {
+		return x.VisibilityTimeoutSeconds
+	}
+	return 0
+}
+
+func (x *ReceiveRequest) GetLongPollTimeoutSeconds() int64 {
+	if x != nil {
+		return x.LongPollTimeoutSeconds
+	}
+	return 0
+}
+
+// ReceiveResponse is a response to receiving jobs
+type ReceiveResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        *Status                `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"` // Operation status
+	Jobs          []*Job                 `protobuf:"bytes,2,rep,name=jobs,proto3" json:"jobs,omitempty"`     // Received jobs
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReceiveResponse) Reset() {
+	*x = ReceiveResponse{}
+	mi := &file_flowmesh_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReceiveResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReceiveResponse) ProtoMessage() {}
+
+func (x *ReceiveResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReceiveResponse.ProtoReflect.Descriptor instead.
+func (*ReceiveResponse) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *ReceiveResponse) GetStatus() *Status {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
+func (x *ReceiveResponse) GetJobs() []*Job {
+	if x != nil {
+		return x.Jobs
+	}
+	return nil
+}
+
+// ACKRequest is a request to acknowledge completion of a job
+type ACKRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ResourcePath  *ResourcePath          `protobuf:"bytes,1,opt,name=resource_path,json=resourcePath,proto3" json:"resource_path,omitempty"` // Queue resource path
+	JobId         string                 `protobuf:"bytes,2,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`                      // Job ID to acknowledge
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ACKRequest) Reset() {
+	*x = ACKRequest{}
+	mi := &file_flowmesh_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ACKRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ACKRequest) ProtoMessage() {}
+
+func (x *ACKRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ACKRequest.ProtoReflect.Descriptor instead.
+func (*ACKRequest) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{30}
+}
+
+func (x *ACKRequest) GetResourcePath() *ResourcePath {
+	if x != nil {
+		return x.ResourcePath
+	}
+	return nil
+}
+
+func (x *ACKRequest) GetJobId() string {
+	if x != nil {
+		return x.JobId
+	}
+	return ""
+}
+
+// ACKResponse is a response to acknowledging a job
+type ACKResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        *Status                `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"` // Operation status
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ACKResponse) Reset() {
+	*x = ACKResponse{}
+	mi := &file_flowmesh_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ACKResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ACKResponse) ProtoMessage() {}
+
+func (x *ACKResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ACKResponse.ProtoReflect.Descriptor instead.
+func (*ACKResponse) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *ACKResponse) GetStatus() *Status {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
+// NACKRequest is a request to negatively acknowledge a job
+type NACKRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ResourcePath  *ResourcePath          `protobuf:"bytes,1,opt,name=resource_path,json=resourcePath,proto3" json:"resource_path,omitempty"`  // Queue resource path
+	JobId         string                 `protobuf:"bytes,2,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`                       // Job ID to NACK
+	DelaySeconds  int64                  `protobuf:"varint,3,opt,name=delay_seconds,json=delaySeconds,proto3" json:"delay_seconds,omitempty"` // Optional delay before requeue (seconds, 0 = use backoff)
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NACKRequest) Reset() {
+	*x = NACKRequest{}
+	mi := &file_flowmesh_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NACKRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NACKRequest) ProtoMessage() {}
+
+func (x *NACKRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NACKRequest.ProtoReflect.Descriptor instead.
+func (*NACKRequest) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *NACKRequest) GetResourcePath() *ResourcePath {
+	if x != nil {
+		return x.ResourcePath
+	}
+	return nil
+}
+
+func (x *NACKRequest) GetJobId() string {
+	if x != nil {
+		return x.JobId
+	}
+	return ""
+}
+
+func (x *NACKRequest) GetDelaySeconds() int64 {
+	if x != nil {
+		return x.DelaySeconds
+	}
+	return 0
+}
+
+// NACKResponse is a response to NACKing a job
+type NACKResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        *Status                `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"` // Operation status
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NACKResponse) Reset() {
+	*x = NACKResponse{}
+	mi := &file_flowmesh_proto_msgTypes[33]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NACKResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NACKResponse) ProtoMessage() {}
+
+func (x *NACKResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[33]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NACKResponse.ProtoReflect.Descriptor instead.
+func (*NACKResponse) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *NACKResponse) GetStatus() *Status {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
+// QueueStats represents statistics for a queue
+type QueueStats struct {
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	TotalJobs           int64                  `protobuf:"varint,1,opt,name=total_jobs,json=totalJobs,proto3" json:"total_jobs,omitempty"`                                   // Total jobs ever enqueued
+	PendingJobs         int64                  `protobuf:"varint,2,opt,name=pending_jobs,json=pendingJobs,proto3" json:"pending_jobs,omitempty"`                             // Jobs in ready heap (waiting to be processed)
+	InFlightJobs        int64                  `protobuf:"varint,3,opt,name=in_flight_jobs,json=inFlightJobs,proto3" json:"in_flight_jobs,omitempty"`                        // Jobs currently being processed
+	CompletedJobs       int64                  `protobuf:"varint,4,opt,name=completed_jobs,json=completedJobs,proto3" json:"completed_jobs,omitempty"`                       // Successfully completed jobs
+	FailedJobs          int64                  `protobuf:"varint,5,opt,name=failed_jobs,json=failedJobs,proto3" json:"failed_jobs,omitempty"`                                // Failed jobs
+	OldestJobAgeSeconds int64                  `protobuf:"varint,6,opt,name=oldest_job_age_seconds,json=oldestJobAgeSeconds,proto3" json:"oldest_job_age_seconds,omitempty"` // Age of oldest pending job in seconds
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *QueueStats) Reset() {
+	*x = QueueStats{}
+	mi := &file_flowmesh_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueueStats) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueueStats) ProtoMessage() {}
+
+func (x *QueueStats) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueueStats.ProtoReflect.Descriptor instead.
+func (*QueueStats) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *QueueStats) GetTotalJobs() int64 {
+	if x != nil {
+		return x.TotalJobs
+	}
+	return 0
+}
+
+func (x *QueueStats) GetPendingJobs() int64 {
+	if x != nil {
+		return x.PendingJobs
+	}
+	return 0
+}
+
+func (x *QueueStats) GetInFlightJobs() int64 {
+	if x != nil {
+		return x.InFlightJobs
+	}
+	return 0
+}
+
+func (x *QueueStats) GetCompletedJobs() int64 {
+	if x != nil {
+		return x.CompletedJobs
+	}
+	return 0
+}
+
+func (x *QueueStats) GetFailedJobs() int64 {
+	if x != nil {
+		return x.FailedJobs
+	}
+	return 0
+}
+
+func (x *QueueStats) GetOldestJobAgeSeconds() int64 {
+	if x != nil {
+		return x.OldestJobAgeSeconds
+	}
+	return 0
+}
+
+// GetQueueStatsRequest is a request to get queue statistics
+type GetQueueStatsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ResourcePath  *ResourcePath          `protobuf:"bytes,1,opt,name=resource_path,json=resourcePath,proto3" json:"resource_path,omitempty"` // Queue resource path
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetQueueStatsRequest) Reset() {
+	*x = GetQueueStatsRequest{}
+	mi := &file_flowmesh_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetQueueStatsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetQueueStatsRequest) ProtoMessage() {}
+
+func (x *GetQueueStatsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetQueueStatsRequest.ProtoReflect.Descriptor instead.
+func (*GetQueueStatsRequest) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *GetQueueStatsRequest) GetResourcePath() *ResourcePath {
+	if x != nil {
+		return x.ResourcePath
+	}
+	return nil
+}
+
+// GetQueueStatsResponse is a response to getting queue statistics
+type GetQueueStatsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        *Status                `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"` // Operation status
+	Stats         *QueueStats            `protobuf:"bytes,2,opt,name=stats,proto3" json:"stats,omitempty"`   // Queue statistics
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetQueueStatsResponse) Reset() {
+	*x = GetQueueStatsResponse{}
+	mi := &file_flowmesh_proto_msgTypes[36]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetQueueStatsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetQueueStatsResponse) ProtoMessage() {}
+
+func (x *GetQueueStatsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[36]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetQueueStatsResponse.ProtoReflect.Descriptor instead.
+func (*GetQueueStatsResponse) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{36}
+}
+
+func (x *GetQueueStatsResponse) GetStatus() *Status {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
+func (x *GetQueueStatsResponse) GetStats() *QueueStats {
+	if x != nil {
+		return x.Stats
+	}
+	return nil
+}
+
 var File_flowmesh_proto protoreflect.FileDescriptor
 
 const file_flowmesh_proto_rawDesc = "" +
@@ -1455,7 +2317,76 @@ const file_flowmesh_proto_rawDesc = "" +
 	"\tpartition\x18\x03 \x01(\x05R\tpartition\"\x83\x01\n" +
 	"\x1dGetConsumerGroupStateResponse\x12+\n" +
 	"\x06status\x18\x01 \x01(\v2\x13.flowmesh.v1.StatusR\x06status\x125\n" +
-	"\x05state\x18\x02 \x01(\v2\x1f.flowmesh.v1.ConsumerGroupStateR\x05state2\xbc\x01\n" +
+	"\x05state\x18\x02 \x01(\v2\x1f.flowmesh.v1.ConsumerGroupStateR\x05state\"\xda\x02\n" +
+	"\x03Job\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12#\n" +
+	"\rresource_path\x18\x02 \x01(\tR\fresourcePath\x12\x10\n" +
+	"\x03seq\x18\x03 \x01(\x03R\x03seq\x12\x18\n" +
+	"\apayload\x18\x04 \x01(\fR\apayload\x127\n" +
+	"\aheaders\x18\x05 \x03(\v2\x1d.flowmesh.v1.Job.HeadersEntryR\aheaders\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\x06 \x01(\x03R\tcreatedAt\x12\x1d\n" +
+	"\n" +
+	"visible_at\x18\a \x01(\x03R\tvisibleAt\x12#\n" +
+	"\rreserve_until\x18\b \x01(\x03R\freserveUntil\x12\x1a\n" +
+	"\battempts\x18\t \x01(\x05R\battempts\x1a:\n" +
+	"\fHeadersEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x8f\x02\n" +
+	"\x0eEnqueueRequest\x12>\n" +
+	"\rresource_path\x18\x01 \x01(\v2\x19.flowmesh.v1.ResourcePathR\fresourcePath\x12\x18\n" +
+	"\apayload\x18\x02 \x01(\fR\apayload\x12#\n" +
+	"\rdelay_seconds\x18\x03 \x01(\x03R\fdelaySeconds\x12B\n" +
+	"\aheaders\x18\x04 \x03(\v2(.flowmesh.v1.EnqueueRequest.HeadersEntryR\aheaders\x1a:\n" +
+	"\fHeadersEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"g\n" +
+	"\x0fEnqueueResponse\x12+\n" +
+	"\x06status\x18\x01 \x01(\v2\x13.flowmesh.v1.StatusR\x06status\x12\x15\n" +
+	"\x06job_id\x18\x02 \x01(\tR\x05jobId\x12\x10\n" +
+	"\x03seq\x18\x03 \x01(\x03R\x03seq\"\xc9\x01\n" +
+	"\x0eReserveRequest\x12>\n" +
+	"\rresource_path\x18\x01 \x01(\v2\x19.flowmesh.v1.ResourcePathR\fresourcePath\x12<\n" +
+	"\x1avisibility_timeout_seconds\x18\x02 \x01(\x03R\x18visibilityTimeoutSeconds\x129\n" +
+	"\x19long_poll_timeout_seconds\x18\x03 \x01(\x03R\x16longPollTimeoutSeconds\"b\n" +
+	"\x0fReserveResponse\x12+\n" +
+	"\x06status\x18\x01 \x01(\v2\x13.flowmesh.v1.StatusR\x06status\x12\"\n" +
+	"\x03job\x18\x02 \x01(\v2\x10.flowmesh.v1.JobR\x03job\"\xe4\x01\n" +
+	"\x0eReceiveRequest\x12>\n" +
+	"\rresource_path\x18\x01 \x01(\v2\x19.flowmesh.v1.ResourcePathR\fresourcePath\x12\x19\n" +
+	"\bmax_jobs\x18\x02 \x01(\x05R\amaxJobs\x12<\n" +
+	"\x1avisibility_timeout_seconds\x18\x03 \x01(\x03R\x18visibilityTimeoutSeconds\x129\n" +
+	"\x19long_poll_timeout_seconds\x18\x04 \x01(\x03R\x16longPollTimeoutSeconds\"d\n" +
+	"\x0fReceiveResponse\x12+\n" +
+	"\x06status\x18\x01 \x01(\v2\x13.flowmesh.v1.StatusR\x06status\x12$\n" +
+	"\x04jobs\x18\x02 \x03(\v2\x10.flowmesh.v1.JobR\x04jobs\"c\n" +
+	"\n" +
+	"ACKRequest\x12>\n" +
+	"\rresource_path\x18\x01 \x01(\v2\x19.flowmesh.v1.ResourcePathR\fresourcePath\x12\x15\n" +
+	"\x06job_id\x18\x02 \x01(\tR\x05jobId\":\n" +
+	"\vACKResponse\x12+\n" +
+	"\x06status\x18\x01 \x01(\v2\x13.flowmesh.v1.StatusR\x06status\"\x89\x01\n" +
+	"\vNACKRequest\x12>\n" +
+	"\rresource_path\x18\x01 \x01(\v2\x19.flowmesh.v1.ResourcePathR\fresourcePath\x12\x15\n" +
+	"\x06job_id\x18\x02 \x01(\tR\x05jobId\x12#\n" +
+	"\rdelay_seconds\x18\x03 \x01(\x03R\fdelaySeconds\";\n" +
+	"\fNACKResponse\x12+\n" +
+	"\x06status\x18\x01 \x01(\v2\x13.flowmesh.v1.StatusR\x06status\"\xf1\x01\n" +
+	"\n" +
+	"QueueStats\x12\x1d\n" +
+	"\n" +
+	"total_jobs\x18\x01 \x01(\x03R\ttotalJobs\x12!\n" +
+	"\fpending_jobs\x18\x02 \x01(\x03R\vpendingJobs\x12$\n" +
+	"\x0ein_flight_jobs\x18\x03 \x01(\x03R\finFlightJobs\x12%\n" +
+	"\x0ecompleted_jobs\x18\x04 \x01(\x03R\rcompletedJobs\x12\x1f\n" +
+	"\vfailed_jobs\x18\x05 \x01(\x03R\n" +
+	"failedJobs\x123\n" +
+	"\x16oldest_job_age_seconds\x18\x06 \x01(\x03R\x13oldestJobAgeSeconds\"V\n" +
+	"\x14GetQueueStatsRequest\x12>\n" +
+	"\rresource_path\x18\x01 \x01(\v2\x19.flowmesh.v1.ResourcePathR\fresourcePath\"s\n" +
+	"\x15GetQueueStatsResponse\x12+\n" +
+	"\x06status\x18\x01 \x01(\v2\x13.flowmesh.v1.StatusR\x06status\x12-\n" +
+	"\x05stats\x18\x02 \x01(\v2\x17.flowmesh.v1.QueueStatsR\x05stats2\xbc\x01\n" +
 	"\rHealthService\x12P\n" +
 	"\vHealthCheck\x12\x1f.flowmesh.v1.HealthCheckRequest\x1a .flowmesh.v1.HealthCheckResponse\x12Y\n" +
 	"\x0eReadinessCheck\x12\".flowmesh.v1.ReadinessCheckRequest\x1a#.flowmesh.v1.ReadinessCheckResponse2\xed\x04\n" +
@@ -1467,7 +2398,14 @@ const file_flowmesh_proto_rawDesc = "" +
 	"\fCommitOffset\x12 .flowmesh.v1.CommitOffsetRequest\x1a!.flowmesh.v1.CommitOffsetResponse\x12J\n" +
 	"\tGetOffset\x12\x1d.flowmesh.v1.GetOffsetRequest\x1a\x1e.flowmesh.v1.GetOffsetResponse\x12\\\n" +
 	"\x0fGetLatestOffset\x12#.flowmesh.v1.GetLatestOffsetRequest\x1a$.flowmesh.v1.GetLatestOffsetResponse\x12n\n" +
-	"\x15GetConsumerGroupState\x12).flowmesh.v1.GetConsumerGroupStateRequest\x1a*.flowmesh.v1.GetConsumerGroupStateResponseB1Z/github.com/flowmesh/engine/api/proto/flowmeshpbb\x06proto3"
+	"\x15GetConsumerGroupState\x12).flowmesh.v1.GetConsumerGroupStateRequest\x1a*.flowmesh.v1.GetConsumerGroupStateResponse2\xaf\x03\n" +
+	"\fQueueService\x12D\n" +
+	"\aEnqueue\x12\x1b.flowmesh.v1.EnqueueRequest\x1a\x1c.flowmesh.v1.EnqueueResponse\x12D\n" +
+	"\aReserve\x12\x1b.flowmesh.v1.ReserveRequest\x1a\x1c.flowmesh.v1.ReserveResponse\x12D\n" +
+	"\aReceive\x12\x1b.flowmesh.v1.ReceiveRequest\x1a\x1c.flowmesh.v1.ReceiveResponse\x128\n" +
+	"\x03ACK\x12\x17.flowmesh.v1.ACKRequest\x1a\x18.flowmesh.v1.ACKResponse\x12;\n" +
+	"\x04NACK\x12\x18.flowmesh.v1.NACKRequest\x1a\x19.flowmesh.v1.NACKResponse\x12V\n" +
+	"\rGetQueueStats\x12!.flowmesh.v1.GetQueueStatsRequest\x1a\".flowmesh.v1.GetQueueStatsResponseB1Z/github.com/flowmesh/engine/api/proto/flowmeshpbb\x06proto3"
 
 var (
 	file_flowmesh_proto_rawDescOnce sync.Once
@@ -1481,7 +2419,7 @@ func file_flowmesh_proto_rawDescGZIP() []byte {
 	return file_flowmesh_proto_rawDescData
 }
 
-var file_flowmesh_proto_msgTypes = make([]protoimpl.MessageInfo, 25)
+var file_flowmesh_proto_msgTypes = make([]protoimpl.MessageInfo, 41)
 var file_flowmesh_proto_goTypes = []any{
 	(*ResourcePath)(nil),                  // 0: flowmesh.v1.ResourcePath
 	(*Status)(nil),                        // 1: flowmesh.v1.Status
@@ -1506,14 +2444,30 @@ var file_flowmesh_proto_goTypes = []any{
 	(*ConsumerGroupState)(nil),            // 20: flowmesh.v1.ConsumerGroupState
 	(*GetConsumerGroupStateRequest)(nil),  // 21: flowmesh.v1.GetConsumerGroupStateRequest
 	(*GetConsumerGroupStateResponse)(nil), // 22: flowmesh.v1.GetConsumerGroupStateResponse
-	nil,                                   // 23: flowmesh.v1.Event.HeadersEntry
-	nil,                                   // 24: flowmesh.v1.Message.HeadersEntry
+	(*Job)(nil),                           // 23: flowmesh.v1.Job
+	(*EnqueueRequest)(nil),                // 24: flowmesh.v1.EnqueueRequest
+	(*EnqueueResponse)(nil),               // 25: flowmesh.v1.EnqueueResponse
+	(*ReserveRequest)(nil),                // 26: flowmesh.v1.ReserveRequest
+	(*ReserveResponse)(nil),               // 27: flowmesh.v1.ReserveResponse
+	(*ReceiveRequest)(nil),                // 28: flowmesh.v1.ReceiveRequest
+	(*ReceiveResponse)(nil),               // 29: flowmesh.v1.ReceiveResponse
+	(*ACKRequest)(nil),                    // 30: flowmesh.v1.ACKRequest
+	(*ACKResponse)(nil),                   // 31: flowmesh.v1.ACKResponse
+	(*NACKRequest)(nil),                   // 32: flowmesh.v1.NACKRequest
+	(*NACKResponse)(nil),                  // 33: flowmesh.v1.NACKResponse
+	(*QueueStats)(nil),                    // 34: flowmesh.v1.QueueStats
+	(*GetQueueStatsRequest)(nil),          // 35: flowmesh.v1.GetQueueStatsRequest
+	(*GetQueueStatsResponse)(nil),         // 36: flowmesh.v1.GetQueueStatsResponse
+	nil,                                   // 37: flowmesh.v1.Event.HeadersEntry
+	nil,                                   // 38: flowmesh.v1.Message.HeadersEntry
+	nil,                                   // 39: flowmesh.v1.Job.HeadersEntry
+	nil,                                   // 40: flowmesh.v1.EnqueueRequest.HeadersEntry
 }
 var file_flowmesh_proto_depIdxs = []int32{
 	1,  // 0: flowmesh.v1.HealthCheckResponse.status:type_name -> flowmesh.v1.Status
 	1,  // 1: flowmesh.v1.ReadinessCheckResponse.status:type_name -> flowmesh.v1.Status
-	23, // 2: flowmesh.v1.Event.headers:type_name -> flowmesh.v1.Event.HeadersEntry
-	24, // 3: flowmesh.v1.Message.headers:type_name -> flowmesh.v1.Message.HeadersEntry
+	37, // 2: flowmesh.v1.Event.headers:type_name -> flowmesh.v1.Event.HeadersEntry
+	38, // 3: flowmesh.v1.Message.headers:type_name -> flowmesh.v1.Message.HeadersEntry
 	0,  // 4: flowmesh.v1.WriteEventsRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
 	6,  // 5: flowmesh.v1.WriteEventsRequest.events:type_name -> flowmesh.v1.Event
 	1,  // 6: flowmesh.v1.WriteEventsResponse.status:type_name -> flowmesh.v1.Status
@@ -1532,29 +2486,58 @@ var file_flowmesh_proto_depIdxs = []int32{
 	0,  // 19: flowmesh.v1.GetConsumerGroupStateRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
 	1,  // 20: flowmesh.v1.GetConsumerGroupStateResponse.status:type_name -> flowmesh.v1.Status
 	20, // 21: flowmesh.v1.GetConsumerGroupStateResponse.state:type_name -> flowmesh.v1.ConsumerGroupState
-	2,  // 22: flowmesh.v1.HealthService.HealthCheck:input_type -> flowmesh.v1.HealthCheckRequest
-	4,  // 23: flowmesh.v1.HealthService.ReadinessCheck:input_type -> flowmesh.v1.ReadinessCheckRequest
-	8,  // 24: flowmesh.v1.StreamService.WriteEvents:input_type -> flowmesh.v1.WriteEventsRequest
-	10, // 25: flowmesh.v1.StreamService.ReadStream:input_type -> flowmesh.v1.ReadStreamRequest
-	12, // 26: flowmesh.v1.StreamService.Subscribe:input_type -> flowmesh.v1.SubscribeRequest
-	14, // 27: flowmesh.v1.StreamService.CommitOffset:input_type -> flowmesh.v1.CommitOffsetRequest
-	16, // 28: flowmesh.v1.StreamService.GetOffset:input_type -> flowmesh.v1.GetOffsetRequest
-	18, // 29: flowmesh.v1.StreamService.GetLatestOffset:input_type -> flowmesh.v1.GetLatestOffsetRequest
-	21, // 30: flowmesh.v1.StreamService.GetConsumerGroupState:input_type -> flowmesh.v1.GetConsumerGroupStateRequest
-	3,  // 31: flowmesh.v1.HealthService.HealthCheck:output_type -> flowmesh.v1.HealthCheckResponse
-	5,  // 32: flowmesh.v1.HealthService.ReadinessCheck:output_type -> flowmesh.v1.ReadinessCheckResponse
-	9,  // 33: flowmesh.v1.StreamService.WriteEvents:output_type -> flowmesh.v1.WriteEventsResponse
-	11, // 34: flowmesh.v1.StreamService.ReadStream:output_type -> flowmesh.v1.ReadStreamResponse
-	13, // 35: flowmesh.v1.StreamService.Subscribe:output_type -> flowmesh.v1.SubscribeResponse
-	15, // 36: flowmesh.v1.StreamService.CommitOffset:output_type -> flowmesh.v1.CommitOffsetResponse
-	17, // 37: flowmesh.v1.StreamService.GetOffset:output_type -> flowmesh.v1.GetOffsetResponse
-	19, // 38: flowmesh.v1.StreamService.GetLatestOffset:output_type -> flowmesh.v1.GetLatestOffsetResponse
-	22, // 39: flowmesh.v1.StreamService.GetConsumerGroupState:output_type -> flowmesh.v1.GetConsumerGroupStateResponse
-	31, // [31:40] is the sub-list for method output_type
-	22, // [22:31] is the sub-list for method input_type
-	22, // [22:22] is the sub-list for extension type_name
-	22, // [22:22] is the sub-list for extension extendee
-	0,  // [0:22] is the sub-list for field type_name
+	39, // 22: flowmesh.v1.Job.headers:type_name -> flowmesh.v1.Job.HeadersEntry
+	0,  // 23: flowmesh.v1.EnqueueRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	40, // 24: flowmesh.v1.EnqueueRequest.headers:type_name -> flowmesh.v1.EnqueueRequest.HeadersEntry
+	1,  // 25: flowmesh.v1.EnqueueResponse.status:type_name -> flowmesh.v1.Status
+	0,  // 26: flowmesh.v1.ReserveRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	1,  // 27: flowmesh.v1.ReserveResponse.status:type_name -> flowmesh.v1.Status
+	23, // 28: flowmesh.v1.ReserveResponse.job:type_name -> flowmesh.v1.Job
+	0,  // 29: flowmesh.v1.ReceiveRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	1,  // 30: flowmesh.v1.ReceiveResponse.status:type_name -> flowmesh.v1.Status
+	23, // 31: flowmesh.v1.ReceiveResponse.jobs:type_name -> flowmesh.v1.Job
+	0,  // 32: flowmesh.v1.ACKRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	1,  // 33: flowmesh.v1.ACKResponse.status:type_name -> flowmesh.v1.Status
+	0,  // 34: flowmesh.v1.NACKRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	1,  // 35: flowmesh.v1.NACKResponse.status:type_name -> flowmesh.v1.Status
+	0,  // 36: flowmesh.v1.GetQueueStatsRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	1,  // 37: flowmesh.v1.GetQueueStatsResponse.status:type_name -> flowmesh.v1.Status
+	34, // 38: flowmesh.v1.GetQueueStatsResponse.stats:type_name -> flowmesh.v1.QueueStats
+	2,  // 39: flowmesh.v1.HealthService.HealthCheck:input_type -> flowmesh.v1.HealthCheckRequest
+	4,  // 40: flowmesh.v1.HealthService.ReadinessCheck:input_type -> flowmesh.v1.ReadinessCheckRequest
+	8,  // 41: flowmesh.v1.StreamService.WriteEvents:input_type -> flowmesh.v1.WriteEventsRequest
+	10, // 42: flowmesh.v1.StreamService.ReadStream:input_type -> flowmesh.v1.ReadStreamRequest
+	12, // 43: flowmesh.v1.StreamService.Subscribe:input_type -> flowmesh.v1.SubscribeRequest
+	14, // 44: flowmesh.v1.StreamService.CommitOffset:input_type -> flowmesh.v1.CommitOffsetRequest
+	16, // 45: flowmesh.v1.StreamService.GetOffset:input_type -> flowmesh.v1.GetOffsetRequest
+	18, // 46: flowmesh.v1.StreamService.GetLatestOffset:input_type -> flowmesh.v1.GetLatestOffsetRequest
+	21, // 47: flowmesh.v1.StreamService.GetConsumerGroupState:input_type -> flowmesh.v1.GetConsumerGroupStateRequest
+	24, // 48: flowmesh.v1.QueueService.Enqueue:input_type -> flowmesh.v1.EnqueueRequest
+	26, // 49: flowmesh.v1.QueueService.Reserve:input_type -> flowmesh.v1.ReserveRequest
+	28, // 50: flowmesh.v1.QueueService.Receive:input_type -> flowmesh.v1.ReceiveRequest
+	30, // 51: flowmesh.v1.QueueService.ACK:input_type -> flowmesh.v1.ACKRequest
+	32, // 52: flowmesh.v1.QueueService.NACK:input_type -> flowmesh.v1.NACKRequest
+	35, // 53: flowmesh.v1.QueueService.GetQueueStats:input_type -> flowmesh.v1.GetQueueStatsRequest
+	3,  // 54: flowmesh.v1.HealthService.HealthCheck:output_type -> flowmesh.v1.HealthCheckResponse
+	5,  // 55: flowmesh.v1.HealthService.ReadinessCheck:output_type -> flowmesh.v1.ReadinessCheckResponse
+	9,  // 56: flowmesh.v1.StreamService.WriteEvents:output_type -> flowmesh.v1.WriteEventsResponse
+	11, // 57: flowmesh.v1.StreamService.ReadStream:output_type -> flowmesh.v1.ReadStreamResponse
+	13, // 58: flowmesh.v1.StreamService.Subscribe:output_type -> flowmesh.v1.SubscribeResponse
+	15, // 59: flowmesh.v1.StreamService.CommitOffset:output_type -> flowmesh.v1.CommitOffsetResponse
+	17, // 60: flowmesh.v1.StreamService.GetOffset:output_type -> flowmesh.v1.GetOffsetResponse
+	19, // 61: flowmesh.v1.StreamService.GetLatestOffset:output_type -> flowmesh.v1.GetLatestOffsetResponse
+	22, // 62: flowmesh.v1.StreamService.GetConsumerGroupState:output_type -> flowmesh.v1.GetConsumerGroupStateResponse
+	25, // 63: flowmesh.v1.QueueService.Enqueue:output_type -> flowmesh.v1.EnqueueResponse
+	27, // 64: flowmesh.v1.QueueService.Reserve:output_type -> flowmesh.v1.ReserveResponse
+	29, // 65: flowmesh.v1.QueueService.Receive:output_type -> flowmesh.v1.ReceiveResponse
+	31, // 66: flowmesh.v1.QueueService.ACK:output_type -> flowmesh.v1.ACKResponse
+	33, // 67: flowmesh.v1.QueueService.NACK:output_type -> flowmesh.v1.NACKResponse
+	36, // 68: flowmesh.v1.QueueService.GetQueueStats:output_type -> flowmesh.v1.GetQueueStatsResponse
+	54, // [54:69] is the sub-list for method output_type
+	39, // [39:54] is the sub-list for method input_type
+	39, // [39:39] is the sub-list for extension type_name
+	39, // [39:39] is the sub-list for extension extendee
+	0,  // [0:39] is the sub-list for field type_name
 }
 
 func init() { file_flowmesh_proto_init() }
@@ -1568,9 +2551,9 @@ func file_flowmesh_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_flowmesh_proto_rawDesc), len(file_flowmesh_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   25,
+			NumMessages:   41,
 			NumExtensions: 0,
-			NumServices:   2,
+			NumServices:   3,
 		},
 		GoTypes:           file_flowmesh_proto_goTypes,
 		DependencyIndexes: file_flowmesh_proto_depIdxs,
