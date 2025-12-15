@@ -21,6 +21,7 @@ type Server struct {
 	ready      bool
 	mu         sync.RWMutex
 	healthSvc  *HealthService
+	streamSvc  *StreamService
 }
 
 // NewServer creates a new gRPC server
@@ -30,6 +31,7 @@ func NewServer(addr string, storage storage.StorageBackend) *Server {
 		addr:      addr,
 		log:       logger.WithComponent("grpc"),
 		healthSvc: NewHealthService(storage),
+		streamSvc: NewStreamService(storage),
 	}
 
 	// Create gRPC server with interceptors
@@ -116,4 +118,7 @@ func (s *Server) Ready() bool {
 func (s *Server) registerServices() {
 	// Register health service
 	flowmeshpb.RegisterHealthServiceServer(s.grpcServer, s.healthSvc)
+
+	// Register stream service
+	flowmeshpb.RegisterStreamServiceServer(s.grpcServer, s.streamSvc)
 }

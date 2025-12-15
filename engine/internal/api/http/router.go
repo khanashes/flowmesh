@@ -11,15 +11,17 @@ import (
 
 // Router manages HTTP routes and middleware
 type Router struct {
-	mux     *http.ServeMux
-	storage storage.StorageBackend
+	mux            *http.ServeMux
+	storage        storage.StorageBackend
+	streamHandlers *handlers.StreamHandlers
 }
 
 // NewRouter creates a new router
 func NewRouter(storage storage.StorageBackend) *Router {
 	r := &Router{
-		mux:     http.NewServeMux(),
-		storage: storage,
+		mux:            http.NewServeMux(),
+		storage:        storage,
+		streamHandlers: handlers.NewStreamHandlers(storage),
 	}
 
 	r.setupRoutes()
@@ -40,8 +42,89 @@ func (r *Router) setupRoutes() {
 	r.mux.Handle("/health", chain(http.HandlerFunc(handlers.HealthCheck)))
 	r.mux.Handle("/ready", chain(http.HandlerFunc(handlers.ReadinessCheck(r.storage))))
 
-	// API v1 routes
+	// Stream API endpoints
+	r.mux.Handle("/api/v1/streams/", chain(http.HandlerFunc(r.handleStreamRoutes)))
+
+	// Default API v1 route (for unmatched paths)
 	r.mux.Handle("/api/v1/", chain(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		http.NotFound(w, req)
 	})))
+}
+
+// handleStreamRoutes routes stream-related requests to appropriate handlers
+func (r *Router) handleStreamRoutes(w http.ResponseWriter, req *http.Request) {
+	path := req.URL.Path
+
+	// POST /api/v1/streams/{tenant}/{namespace}/{name}/events
+	if req.Method == http.MethodPost && matchPattern(path, "/events") {
+		r.streamHandlers.WriteEvents(w, req)
+		return
+	}
+
+	// GET /api/v1/streams/{tenant}/{namespace}/{name}/messages
+	if req.Method == http.MethodGet && matchPattern(path, "/messages") {
+		r.streamHandlers.ReadStream(w, req)
+		return
+	}
+
+	// GET /api/v1/streams/{tenant}/{namespace}/{name}/offsets/latest
+	if req.Method == http.MethodGet && matchPattern(path, "/offsets/latest") {
+		r.streamHandlers.GetLatestOffset(w, req)
+		return
+	}
+
+	// POST /api/v1/streams/{tenant}/{namespace}/{name}/consumer-groups/{group}/offsets
+	if req.Method == http.MethodPost && matchPattern(path, "/consumer-groups/", "/offsets") {
+		r.streamHandlers.CommitOffset(w, req)
+		return
+	}
+
+	// GET /api/v1/streams/{tenant}/{namespace}/{name}/consumer-groups/{group}/offsets
+	if req.Method == http.MethodGet && matchPattern(path, "/consumer-groups/", "/offsets") {
+		r.streamHandlers.GetOffset(w, req)
+		return
+	}
+
+	// GET /api/v1/streams/{tenant}/{namespace}/{name}/consumer-groups/{group}/state
+	if req.Method == http.MethodGet && matchPattern(path, "/consumer-groups/", "/state") {
+		r.streamHandlers.GetConsumerGroupState(w, req)
+		return
+	}
+
+	// No match found
+	http.NotFound(w, req)
+}
+
+// matchPattern checks if a path matches a pattern with required segments
+// For example: matchPattern("/api/v1/streams/tenant/ns/name/consumer-groups/group/offsets", "/consumer-groups/", "/offsets")
+// returns true if the path contains both segments in order
+func matchPattern(path string, segments ...string) bool {
+	if len(segments) == 0 {
+		return true
+	}
+
+	lastIndex := 0
+	for _, segment := range segments {
+		idx := findSegment(path, segment, lastIndex)
+		if idx == -1 {
+			return false
+		}
+		lastIndex = idx + len(segment)
+	}
+
+	return true
+}
+
+// findSegment finds a segment in a path starting from a given index
+func findSegment(path, segment string, startIndex int) int {
+	if startIndex >= len(path) {
+		return -1
+	}
+	subPath := path[startIndex:]
+	for i := 0; i <= len(subPath)-len(segment); i++ {
+		if subPath[i:i+len(segment)] == segment {
+			return startIndex + i
+		}
+	}
+	return -1
 }

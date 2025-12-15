@@ -47,3 +47,146 @@ service HealthService {
   rpc ReadinessCheck(ReadinessCheckRequest) returns (ReadinessCheckResponse);
 }
 
+// Event represents an event to be written to a stream
+message Event {
+  bytes payload = 1;                    // Event payload
+  map<string, string> headers = 2;      // Event headers/metadata
+}
+
+// Message represents a message read from a stream
+message Message {
+  string id = 1;                         // Globally unique message ID
+  string resource_path = 2;              // Resource path
+  int32 partition = 3;                   // Partition ID
+  int64 offset = 4;                      // Offset within partition
+  bytes payload = 5;                     // Message payload
+  map<string, string> headers = 6;      // Message headers
+  int64 created_at = 7;                  // Creation timestamp (Unix nanoseconds)
+  int32 schema_version = 8;               // Schema version
+}
+
+// WriteEventsRequest is a request to write events to a stream
+message WriteEventsRequest {
+  ResourcePath resource_path = 1;        // Stream resource path
+  repeated Event events = 2;              // Events to write
+}
+
+// WriteEventsResponse is a response to writing events
+message WriteEventsResponse {
+  Status status = 1;                      // Operation status
+  repeated int64 offsets = 2;             // Assigned offsets for each event
+}
+
+// ReadStreamRequest is a request to read messages from a stream
+message ReadStreamRequest {
+  ResourcePath resource_path = 1;        // Stream resource path
+  int32 partition = 2;                   // Partition ID (default: 0)
+  int64 offset = 3;                      // Starting offset
+  int32 max_messages = 4;                 // Maximum number of messages to return
+}
+
+// ReadStreamResponse is a response to reading from a stream
+message ReadStreamResponse {
+  Status status = 1;                      // Operation status
+  repeated Message messages = 2;          // Messages read
+}
+
+// SubscribeRequest is a request to subscribe to a stream with consumer group
+message SubscribeRequest {
+  ResourcePath resource_path = 1;        // Stream resource path
+  string consumer_group = 2;             // Consumer group name
+  int32 partition = 3;                   // Partition ID (default: 0)
+  int64 start_offset = 4;                // Starting offset (-1 for committed offset, -2 for latest)
+}
+
+// SubscribeResponse is a streamed response for subscription
+message SubscribeResponse {
+  Message message = 1;                   // Streamed message
+  Status status = 2;                    // Status (only set on error)
+}
+
+// CommitOffsetRequest is a request to commit a consumer group offset
+message CommitOffsetRequest {
+  ResourcePath resource_path = 1;        // Stream resource path
+  string consumer_group = 2;             // Consumer group name
+  int32 partition = 3;                   // Partition ID (default: 0)
+  int64 offset = 4;                      // Offset to commit
+}
+
+// CommitOffsetResponse is a response to committing an offset
+message CommitOffsetResponse {
+  Status status = 1;                      // Operation status
+}
+
+// GetOffsetRequest is a request to get a committed offset
+message GetOffsetRequest {
+  ResourcePath resource_path = 1;        // Stream resource path
+  string consumer_group = 2;             // Consumer group name
+  int32 partition = 3;                   // Partition ID (default: 0)
+}
+
+// GetOffsetResponse is a response to getting an offset
+message GetOffsetResponse {
+  Status status = 1;                      // Operation status
+  int64 offset = 2;                      // Committed offset (-1 if no commits yet)
+}
+
+// GetLatestOffsetRequest is a request to get the latest offset for a stream
+message GetLatestOffsetRequest {
+  ResourcePath resource_path = 1;        // Stream resource path
+  int32 partition = 2;                   // Partition ID (default: 0)
+}
+
+// GetLatestOffsetResponse is a response to getting the latest offset
+message GetLatestOffsetResponse {
+  Status status = 1;                      // Operation status
+  int64 offset = 2;                      // Latest offset (-1 if no messages)
+}
+
+// ConsumerGroupState represents the state of a consumer group
+message ConsumerGroupState {
+  string stream = 1;                      // Stream resource path
+  string group = 2;                       // Consumer group name
+  int32 partition = 3;                    // Partition ID
+  int64 committed_offset = 4;             // Last committed offset (-1 if no commits)
+  int64 latest_offset = 5;                // Latest available offset (-1 if no messages)
+  int64 lag = 6;                          // Calculated lag
+}
+
+// GetConsumerGroupStateRequest is a request to get consumer group state
+message GetConsumerGroupStateRequest {
+  ResourcePath resource_path = 1;        // Stream resource path
+  string consumer_group = 2;             // Consumer group name
+  int32 partition = 3;                   // Partition ID (default: 0)
+}
+
+// GetConsumerGroupStateResponse is a response to getting consumer group state
+message GetConsumerGroupStateResponse {
+  Status status = 1;                      // Operation status
+  ConsumerGroupState state = 2;           // Consumer group state
+}
+
+// StreamService provides operations for working with streams
+service StreamService {
+  // WriteEvents writes multiple events to a stream and returns assigned offsets
+  rpc WriteEvents(WriteEventsRequest) returns (WriteEventsResponse);
+
+  // ReadStream reads messages from a stream starting at a specific offset
+  rpc ReadStream(ReadStreamRequest) returns (ReadStreamResponse);
+
+  // Subscribe subscribes to a stream with consumer group support (server-side streaming)
+  rpc Subscribe(SubscribeRequest) returns (stream SubscribeResponse);
+
+  // CommitOffset commits an offset for a consumer group
+  rpc CommitOffset(CommitOffsetRequest) returns (CommitOffsetResponse);
+
+  // GetOffset retrieves the committed offset for a consumer group
+  rpc GetOffset(GetOffsetRequest) returns (GetOffsetResponse);
+
+  // GetLatestOffset retrieves the latest offset for a stream partition
+  rpc GetLatestOffset(GetLatestOffsetRequest) returns (GetLatestOffsetResponse);
+
+  // GetConsumerGroupState retrieves the complete state of a consumer group including lag
+  rpc GetConsumerGroupState(GetConsumerGroupStateRequest) returns (GetConsumerGroupStateResponse);
+}
+

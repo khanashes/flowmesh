@@ -323,6 +323,1043 @@ func (x *ReadinessCheckResponse) GetReady() bool {
 	return false
 }
 
+// Event represents an event to be written to a stream
+type Event struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Payload       []byte                 `protobuf:"bytes,1,opt,name=payload,proto3" json:"payload,omitempty"`                                                                           // Event payload
+	Headers       map[string]string      `protobuf:"bytes,2,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // Event headers/metadata
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Event) Reset() {
+	*x = Event{}
+	mi := &file_flowmesh_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Event) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Event) ProtoMessage() {}
+
+func (x *Event) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Event.ProtoReflect.Descriptor instead.
+func (*Event) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *Event) GetPayload() []byte {
+	if x != nil {
+		return x.Payload
+	}
+	return nil
+}
+
+func (x *Event) GetHeaders() map[string]string {
+	if x != nil {
+		return x.Headers
+	}
+	return nil
+}
+
+// Message represents a message read from a stream
+type Message struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`                                                                                     // Globally unique message ID
+	ResourcePath  string                 `protobuf:"bytes,2,opt,name=resource_path,json=resourcePath,proto3" json:"resource_path,omitempty"`                                             // Resource path
+	Partition     int32                  `protobuf:"varint,3,opt,name=partition,proto3" json:"partition,omitempty"`                                                                      // Partition ID
+	Offset        int64                  `protobuf:"varint,4,opt,name=offset,proto3" json:"offset,omitempty"`                                                                            // Offset within partition
+	Payload       []byte                 `protobuf:"bytes,5,opt,name=payload,proto3" json:"payload,omitempty"`                                                                           // Message payload
+	Headers       map[string]string      `protobuf:"bytes,6,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // Message headers
+	CreatedAt     int64                  `protobuf:"varint,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`                                                     // Creation timestamp (Unix nanoseconds)
+	SchemaVersion int32                  `protobuf:"varint,8,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`                                         // Schema version
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Message) Reset() {
+	*x = Message{}
+	mi := &file_flowmesh_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Message) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Message) ProtoMessage() {}
+
+func (x *Message) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Message.ProtoReflect.Descriptor instead.
+func (*Message) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *Message) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *Message) GetResourcePath() string {
+	if x != nil {
+		return x.ResourcePath
+	}
+	return ""
+}
+
+func (x *Message) GetPartition() int32 {
+	if x != nil {
+		return x.Partition
+	}
+	return 0
+}
+
+func (x *Message) GetOffset() int64 {
+	if x != nil {
+		return x.Offset
+	}
+	return 0
+}
+
+func (x *Message) GetPayload() []byte {
+	if x != nil {
+		return x.Payload
+	}
+	return nil
+}
+
+func (x *Message) GetHeaders() map[string]string {
+	if x != nil {
+		return x.Headers
+	}
+	return nil
+}
+
+func (x *Message) GetCreatedAt() int64 {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return 0
+}
+
+func (x *Message) GetSchemaVersion() int32 {
+	if x != nil {
+		return x.SchemaVersion
+	}
+	return 0
+}
+
+// WriteEventsRequest is a request to write events to a stream
+type WriteEventsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ResourcePath  *ResourcePath          `protobuf:"bytes,1,opt,name=resource_path,json=resourcePath,proto3" json:"resource_path,omitempty"` // Stream resource path
+	Events        []*Event               `protobuf:"bytes,2,rep,name=events,proto3" json:"events,omitempty"`                                 // Events to write
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WriteEventsRequest) Reset() {
+	*x = WriteEventsRequest{}
+	mi := &file_flowmesh_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WriteEventsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WriteEventsRequest) ProtoMessage() {}
+
+func (x *WriteEventsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WriteEventsRequest.ProtoReflect.Descriptor instead.
+func (*WriteEventsRequest) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *WriteEventsRequest) GetResourcePath() *ResourcePath {
+	if x != nil {
+		return x.ResourcePath
+	}
+	return nil
+}
+
+func (x *WriteEventsRequest) GetEvents() []*Event {
+	if x != nil {
+		return x.Events
+	}
+	return nil
+}
+
+// WriteEventsResponse is a response to writing events
+type WriteEventsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        *Status                `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`           // Operation status
+	Offsets       []int64                `protobuf:"varint,2,rep,packed,name=offsets,proto3" json:"offsets,omitempty"` // Assigned offsets for each event
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WriteEventsResponse) Reset() {
+	*x = WriteEventsResponse{}
+	mi := &file_flowmesh_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WriteEventsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WriteEventsResponse) ProtoMessage() {}
+
+func (x *WriteEventsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WriteEventsResponse.ProtoReflect.Descriptor instead.
+func (*WriteEventsResponse) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *WriteEventsResponse) GetStatus() *Status {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
+func (x *WriteEventsResponse) GetOffsets() []int64 {
+	if x != nil {
+		return x.Offsets
+	}
+	return nil
+}
+
+// ReadStreamRequest is a request to read messages from a stream
+type ReadStreamRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ResourcePath  *ResourcePath          `protobuf:"bytes,1,opt,name=resource_path,json=resourcePath,proto3" json:"resource_path,omitempty"` // Stream resource path
+	Partition     int32                  `protobuf:"varint,2,opt,name=partition,proto3" json:"partition,omitempty"`                          // Partition ID (default: 0)
+	Offset        int64                  `protobuf:"varint,3,opt,name=offset,proto3" json:"offset,omitempty"`                                // Starting offset
+	MaxMessages   int32                  `protobuf:"varint,4,opt,name=max_messages,json=maxMessages,proto3" json:"max_messages,omitempty"`   // Maximum number of messages to return
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReadStreamRequest) Reset() {
+	*x = ReadStreamRequest{}
+	mi := &file_flowmesh_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReadStreamRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReadStreamRequest) ProtoMessage() {}
+
+func (x *ReadStreamRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReadStreamRequest.ProtoReflect.Descriptor instead.
+func (*ReadStreamRequest) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *ReadStreamRequest) GetResourcePath() *ResourcePath {
+	if x != nil {
+		return x.ResourcePath
+	}
+	return nil
+}
+
+func (x *ReadStreamRequest) GetPartition() int32 {
+	if x != nil {
+		return x.Partition
+	}
+	return 0
+}
+
+func (x *ReadStreamRequest) GetOffset() int64 {
+	if x != nil {
+		return x.Offset
+	}
+	return 0
+}
+
+func (x *ReadStreamRequest) GetMaxMessages() int32 {
+	if x != nil {
+		return x.MaxMessages
+	}
+	return 0
+}
+
+// ReadStreamResponse is a response to reading from a stream
+type ReadStreamResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        *Status                `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`     // Operation status
+	Messages      []*Message             `protobuf:"bytes,2,rep,name=messages,proto3" json:"messages,omitempty"` // Messages read
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReadStreamResponse) Reset() {
+	*x = ReadStreamResponse{}
+	mi := &file_flowmesh_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReadStreamResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReadStreamResponse) ProtoMessage() {}
+
+func (x *ReadStreamResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReadStreamResponse.ProtoReflect.Descriptor instead.
+func (*ReadStreamResponse) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *ReadStreamResponse) GetStatus() *Status {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
+func (x *ReadStreamResponse) GetMessages() []*Message {
+	if x != nil {
+		return x.Messages
+	}
+	return nil
+}
+
+// SubscribeRequest is a request to subscribe to a stream with consumer group
+type SubscribeRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ResourcePath  *ResourcePath          `protobuf:"bytes,1,opt,name=resource_path,json=resourcePath,proto3" json:"resource_path,omitempty"`    // Stream resource path
+	ConsumerGroup string                 `protobuf:"bytes,2,opt,name=consumer_group,json=consumerGroup,proto3" json:"consumer_group,omitempty"` // Consumer group name
+	Partition     int32                  `protobuf:"varint,3,opt,name=partition,proto3" json:"partition,omitempty"`                             // Partition ID (default: 0)
+	StartOffset   int64                  `protobuf:"varint,4,opt,name=start_offset,json=startOffset,proto3" json:"start_offset,omitempty"`      // Starting offset (-1 for committed offset, -2 for latest)
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SubscribeRequest) Reset() {
+	*x = SubscribeRequest{}
+	mi := &file_flowmesh_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SubscribeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SubscribeRequest) ProtoMessage() {}
+
+func (x *SubscribeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SubscribeRequest.ProtoReflect.Descriptor instead.
+func (*SubscribeRequest) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *SubscribeRequest) GetResourcePath() *ResourcePath {
+	if x != nil {
+		return x.ResourcePath
+	}
+	return nil
+}
+
+func (x *SubscribeRequest) GetConsumerGroup() string {
+	if x != nil {
+		return x.ConsumerGroup
+	}
+	return ""
+}
+
+func (x *SubscribeRequest) GetPartition() int32 {
+	if x != nil {
+		return x.Partition
+	}
+	return 0
+}
+
+func (x *SubscribeRequest) GetStartOffset() int64 {
+	if x != nil {
+		return x.StartOffset
+	}
+	return 0
+}
+
+// SubscribeResponse is a streamed response for subscription
+type SubscribeResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Message       *Message               `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"` // Streamed message
+	Status        *Status                `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`   // Status (only set on error)
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SubscribeResponse) Reset() {
+	*x = SubscribeResponse{}
+	mi := &file_flowmesh_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SubscribeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SubscribeResponse) ProtoMessage() {}
+
+func (x *SubscribeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SubscribeResponse.ProtoReflect.Descriptor instead.
+func (*SubscribeResponse) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *SubscribeResponse) GetMessage() *Message {
+	if x != nil {
+		return x.Message
+	}
+	return nil
+}
+
+func (x *SubscribeResponse) GetStatus() *Status {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
+// CommitOffsetRequest is a request to commit a consumer group offset
+type CommitOffsetRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ResourcePath  *ResourcePath          `protobuf:"bytes,1,opt,name=resource_path,json=resourcePath,proto3" json:"resource_path,omitempty"`    // Stream resource path
+	ConsumerGroup string                 `protobuf:"bytes,2,opt,name=consumer_group,json=consumerGroup,proto3" json:"consumer_group,omitempty"` // Consumer group name
+	Partition     int32                  `protobuf:"varint,3,opt,name=partition,proto3" json:"partition,omitempty"`                             // Partition ID (default: 0)
+	Offset        int64                  `protobuf:"varint,4,opt,name=offset,proto3" json:"offset,omitempty"`                                   // Offset to commit
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CommitOffsetRequest) Reset() {
+	*x = CommitOffsetRequest{}
+	mi := &file_flowmesh_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CommitOffsetRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CommitOffsetRequest) ProtoMessage() {}
+
+func (x *CommitOffsetRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CommitOffsetRequest.ProtoReflect.Descriptor instead.
+func (*CommitOffsetRequest) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *CommitOffsetRequest) GetResourcePath() *ResourcePath {
+	if x != nil {
+		return x.ResourcePath
+	}
+	return nil
+}
+
+func (x *CommitOffsetRequest) GetConsumerGroup() string {
+	if x != nil {
+		return x.ConsumerGroup
+	}
+	return ""
+}
+
+func (x *CommitOffsetRequest) GetPartition() int32 {
+	if x != nil {
+		return x.Partition
+	}
+	return 0
+}
+
+func (x *CommitOffsetRequest) GetOffset() int64 {
+	if x != nil {
+		return x.Offset
+	}
+	return 0
+}
+
+// CommitOffsetResponse is a response to committing an offset
+type CommitOffsetResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        *Status                `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"` // Operation status
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CommitOffsetResponse) Reset() {
+	*x = CommitOffsetResponse{}
+	mi := &file_flowmesh_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CommitOffsetResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CommitOffsetResponse) ProtoMessage() {}
+
+func (x *CommitOffsetResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CommitOffsetResponse.ProtoReflect.Descriptor instead.
+func (*CommitOffsetResponse) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *CommitOffsetResponse) GetStatus() *Status {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
+// GetOffsetRequest is a request to get a committed offset
+type GetOffsetRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ResourcePath  *ResourcePath          `protobuf:"bytes,1,opt,name=resource_path,json=resourcePath,proto3" json:"resource_path,omitempty"`    // Stream resource path
+	ConsumerGroup string                 `protobuf:"bytes,2,opt,name=consumer_group,json=consumerGroup,proto3" json:"consumer_group,omitempty"` // Consumer group name
+	Partition     int32                  `protobuf:"varint,3,opt,name=partition,proto3" json:"partition,omitempty"`                             // Partition ID (default: 0)
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetOffsetRequest) Reset() {
+	*x = GetOffsetRequest{}
+	mi := &file_flowmesh_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetOffsetRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetOffsetRequest) ProtoMessage() {}
+
+func (x *GetOffsetRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetOffsetRequest.ProtoReflect.Descriptor instead.
+func (*GetOffsetRequest) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *GetOffsetRequest) GetResourcePath() *ResourcePath {
+	if x != nil {
+		return x.ResourcePath
+	}
+	return nil
+}
+
+func (x *GetOffsetRequest) GetConsumerGroup() string {
+	if x != nil {
+		return x.ConsumerGroup
+	}
+	return ""
+}
+
+func (x *GetOffsetRequest) GetPartition() int32 {
+	if x != nil {
+		return x.Partition
+	}
+	return 0
+}
+
+// GetOffsetResponse is a response to getting an offset
+type GetOffsetResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        *Status                `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`  // Operation status
+	Offset        int64                  `protobuf:"varint,2,opt,name=offset,proto3" json:"offset,omitempty"` // Committed offset (-1 if no commits yet)
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetOffsetResponse) Reset() {
+	*x = GetOffsetResponse{}
+	mi := &file_flowmesh_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetOffsetResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetOffsetResponse) ProtoMessage() {}
+
+func (x *GetOffsetResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetOffsetResponse.ProtoReflect.Descriptor instead.
+func (*GetOffsetResponse) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *GetOffsetResponse) GetStatus() *Status {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
+func (x *GetOffsetResponse) GetOffset() int64 {
+	if x != nil {
+		return x.Offset
+	}
+	return 0
+}
+
+// GetLatestOffsetRequest is a request to get the latest offset for a stream
+type GetLatestOffsetRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ResourcePath  *ResourcePath          `protobuf:"bytes,1,opt,name=resource_path,json=resourcePath,proto3" json:"resource_path,omitempty"` // Stream resource path
+	Partition     int32                  `protobuf:"varint,2,opt,name=partition,proto3" json:"partition,omitempty"`                          // Partition ID (default: 0)
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetLatestOffsetRequest) Reset() {
+	*x = GetLatestOffsetRequest{}
+	mi := &file_flowmesh_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetLatestOffsetRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetLatestOffsetRequest) ProtoMessage() {}
+
+func (x *GetLatestOffsetRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetLatestOffsetRequest.ProtoReflect.Descriptor instead.
+func (*GetLatestOffsetRequest) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *GetLatestOffsetRequest) GetResourcePath() *ResourcePath {
+	if x != nil {
+		return x.ResourcePath
+	}
+	return nil
+}
+
+func (x *GetLatestOffsetRequest) GetPartition() int32 {
+	if x != nil {
+		return x.Partition
+	}
+	return 0
+}
+
+// GetLatestOffsetResponse is a response to getting the latest offset
+type GetLatestOffsetResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        *Status                `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`  // Operation status
+	Offset        int64                  `protobuf:"varint,2,opt,name=offset,proto3" json:"offset,omitempty"` // Latest offset (-1 if no messages)
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetLatestOffsetResponse) Reset() {
+	*x = GetLatestOffsetResponse{}
+	mi := &file_flowmesh_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetLatestOffsetResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetLatestOffsetResponse) ProtoMessage() {}
+
+func (x *GetLatestOffsetResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetLatestOffsetResponse.ProtoReflect.Descriptor instead.
+func (*GetLatestOffsetResponse) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *GetLatestOffsetResponse) GetStatus() *Status {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
+func (x *GetLatestOffsetResponse) GetOffset() int64 {
+	if x != nil {
+		return x.Offset
+	}
+	return 0
+}
+
+// ConsumerGroupState represents the state of a consumer group
+type ConsumerGroupState struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Stream          string                 `protobuf:"bytes,1,opt,name=stream,proto3" json:"stream,omitempty"`                                           // Stream resource path
+	Group           string                 `protobuf:"bytes,2,opt,name=group,proto3" json:"group,omitempty"`                                             // Consumer group name
+	Partition       int32                  `protobuf:"varint,3,opt,name=partition,proto3" json:"partition,omitempty"`                                    // Partition ID
+	CommittedOffset int64                  `protobuf:"varint,4,opt,name=committed_offset,json=committedOffset,proto3" json:"committed_offset,omitempty"` // Last committed offset (-1 if no commits)
+	LatestOffset    int64                  `protobuf:"varint,5,opt,name=latest_offset,json=latestOffset,proto3" json:"latest_offset,omitempty"`          // Latest available offset (-1 if no messages)
+	Lag             int64                  `protobuf:"varint,6,opt,name=lag,proto3" json:"lag,omitempty"`                                                // Calculated lag
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *ConsumerGroupState) Reset() {
+	*x = ConsumerGroupState{}
+	mi := &file_flowmesh_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ConsumerGroupState) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ConsumerGroupState) ProtoMessage() {}
+
+func (x *ConsumerGroupState) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ConsumerGroupState.ProtoReflect.Descriptor instead.
+func (*ConsumerGroupState) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *ConsumerGroupState) GetStream() string {
+	if x != nil {
+		return x.Stream
+	}
+	return ""
+}
+
+func (x *ConsumerGroupState) GetGroup() string {
+	if x != nil {
+		return x.Group
+	}
+	return ""
+}
+
+func (x *ConsumerGroupState) GetPartition() int32 {
+	if x != nil {
+		return x.Partition
+	}
+	return 0
+}
+
+func (x *ConsumerGroupState) GetCommittedOffset() int64 {
+	if x != nil {
+		return x.CommittedOffset
+	}
+	return 0
+}
+
+func (x *ConsumerGroupState) GetLatestOffset() int64 {
+	if x != nil {
+		return x.LatestOffset
+	}
+	return 0
+}
+
+func (x *ConsumerGroupState) GetLag() int64 {
+	if x != nil {
+		return x.Lag
+	}
+	return 0
+}
+
+// GetConsumerGroupStateRequest is a request to get consumer group state
+type GetConsumerGroupStateRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ResourcePath  *ResourcePath          `protobuf:"bytes,1,opt,name=resource_path,json=resourcePath,proto3" json:"resource_path,omitempty"`    // Stream resource path
+	ConsumerGroup string                 `protobuf:"bytes,2,opt,name=consumer_group,json=consumerGroup,proto3" json:"consumer_group,omitempty"` // Consumer group name
+	Partition     int32                  `protobuf:"varint,3,opt,name=partition,proto3" json:"partition,omitempty"`                             // Partition ID (default: 0)
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetConsumerGroupStateRequest) Reset() {
+	*x = GetConsumerGroupStateRequest{}
+	mi := &file_flowmesh_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetConsumerGroupStateRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetConsumerGroupStateRequest) ProtoMessage() {}
+
+func (x *GetConsumerGroupStateRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetConsumerGroupStateRequest.ProtoReflect.Descriptor instead.
+func (*GetConsumerGroupStateRequest) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *GetConsumerGroupStateRequest) GetResourcePath() *ResourcePath {
+	if x != nil {
+		return x.ResourcePath
+	}
+	return nil
+}
+
+func (x *GetConsumerGroupStateRequest) GetConsumerGroup() string {
+	if x != nil {
+		return x.ConsumerGroup
+	}
+	return ""
+}
+
+func (x *GetConsumerGroupStateRequest) GetPartition() int32 {
+	if x != nil {
+		return x.Partition
+	}
+	return 0
+}
+
+// GetConsumerGroupStateResponse is a response to getting consumer group state
+type GetConsumerGroupStateResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        *Status                `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"` // Operation status
+	State         *ConsumerGroupState    `protobuf:"bytes,2,opt,name=state,proto3" json:"state,omitempty"`   // Consumer group state
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetConsumerGroupStateResponse) Reset() {
+	*x = GetConsumerGroupStateResponse{}
+	mi := &file_flowmesh_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetConsumerGroupStateResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetConsumerGroupStateResponse) ProtoMessage() {}
+
+func (x *GetConsumerGroupStateResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetConsumerGroupStateResponse.ProtoReflect.Descriptor instead.
+func (*GetConsumerGroupStateResponse) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *GetConsumerGroupStateResponse) GetStatus() *Status {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
+func (x *GetConsumerGroupStateResponse) GetState() *ConsumerGroupState {
+	if x != nil {
+		return x.State
+	}
+	return nil
+}
+
 var File_flowmesh_proto protoreflect.FileDescriptor
 
 const file_flowmesh_proto_rawDesc = "" +
@@ -343,10 +1380,94 @@ const file_flowmesh_proto_rawDesc = "" +
 	"\x15ReadinessCheckRequest\"[\n" +
 	"\x16ReadinessCheckResponse\x12+\n" +
 	"\x06status\x18\x01 \x01(\v2\x13.flowmesh.v1.StatusR\x06status\x12\x14\n" +
-	"\x05ready\x18\x02 \x01(\bR\x05ready2\xbc\x01\n" +
+	"\x05ready\x18\x02 \x01(\bR\x05ready\"\x98\x01\n" +
+	"\x05Event\x12\x18\n" +
+	"\apayload\x18\x01 \x01(\fR\apayload\x129\n" +
+	"\aheaders\x18\x02 \x03(\v2\x1f.flowmesh.v1.Event.HeadersEntryR\aheaders\x1a:\n" +
+	"\fHeadersEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xcd\x02\n" +
+	"\aMessage\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12#\n" +
+	"\rresource_path\x18\x02 \x01(\tR\fresourcePath\x12\x1c\n" +
+	"\tpartition\x18\x03 \x01(\x05R\tpartition\x12\x16\n" +
+	"\x06offset\x18\x04 \x01(\x03R\x06offset\x12\x18\n" +
+	"\apayload\x18\x05 \x01(\fR\apayload\x12;\n" +
+	"\aheaders\x18\x06 \x03(\v2!.flowmesh.v1.Message.HeadersEntryR\aheaders\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\a \x01(\x03R\tcreatedAt\x12%\n" +
+	"\x0eschema_version\x18\b \x01(\x05R\rschemaVersion\x1a:\n" +
+	"\fHeadersEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x80\x01\n" +
+	"\x12WriteEventsRequest\x12>\n" +
+	"\rresource_path\x18\x01 \x01(\v2\x19.flowmesh.v1.ResourcePathR\fresourcePath\x12*\n" +
+	"\x06events\x18\x02 \x03(\v2\x12.flowmesh.v1.EventR\x06events\"\\\n" +
+	"\x13WriteEventsResponse\x12+\n" +
+	"\x06status\x18\x01 \x01(\v2\x13.flowmesh.v1.StatusR\x06status\x12\x18\n" +
+	"\aoffsets\x18\x02 \x03(\x03R\aoffsets\"\xac\x01\n" +
+	"\x11ReadStreamRequest\x12>\n" +
+	"\rresource_path\x18\x01 \x01(\v2\x19.flowmesh.v1.ResourcePathR\fresourcePath\x12\x1c\n" +
+	"\tpartition\x18\x02 \x01(\x05R\tpartition\x12\x16\n" +
+	"\x06offset\x18\x03 \x01(\x03R\x06offset\x12!\n" +
+	"\fmax_messages\x18\x04 \x01(\x05R\vmaxMessages\"s\n" +
+	"\x12ReadStreamResponse\x12+\n" +
+	"\x06status\x18\x01 \x01(\v2\x13.flowmesh.v1.StatusR\x06status\x120\n" +
+	"\bmessages\x18\x02 \x03(\v2\x14.flowmesh.v1.MessageR\bmessages\"\xba\x01\n" +
+	"\x10SubscribeRequest\x12>\n" +
+	"\rresource_path\x18\x01 \x01(\v2\x19.flowmesh.v1.ResourcePathR\fresourcePath\x12%\n" +
+	"\x0econsumer_group\x18\x02 \x01(\tR\rconsumerGroup\x12\x1c\n" +
+	"\tpartition\x18\x03 \x01(\x05R\tpartition\x12!\n" +
+	"\fstart_offset\x18\x04 \x01(\x03R\vstartOffset\"p\n" +
+	"\x11SubscribeResponse\x12.\n" +
+	"\amessage\x18\x01 \x01(\v2\x14.flowmesh.v1.MessageR\amessage\x12+\n" +
+	"\x06status\x18\x02 \x01(\v2\x13.flowmesh.v1.StatusR\x06status\"\xb2\x01\n" +
+	"\x13CommitOffsetRequest\x12>\n" +
+	"\rresource_path\x18\x01 \x01(\v2\x19.flowmesh.v1.ResourcePathR\fresourcePath\x12%\n" +
+	"\x0econsumer_group\x18\x02 \x01(\tR\rconsumerGroup\x12\x1c\n" +
+	"\tpartition\x18\x03 \x01(\x05R\tpartition\x12\x16\n" +
+	"\x06offset\x18\x04 \x01(\x03R\x06offset\"C\n" +
+	"\x14CommitOffsetResponse\x12+\n" +
+	"\x06status\x18\x01 \x01(\v2\x13.flowmesh.v1.StatusR\x06status\"\x97\x01\n" +
+	"\x10GetOffsetRequest\x12>\n" +
+	"\rresource_path\x18\x01 \x01(\v2\x19.flowmesh.v1.ResourcePathR\fresourcePath\x12%\n" +
+	"\x0econsumer_group\x18\x02 \x01(\tR\rconsumerGroup\x12\x1c\n" +
+	"\tpartition\x18\x03 \x01(\x05R\tpartition\"X\n" +
+	"\x11GetOffsetResponse\x12+\n" +
+	"\x06status\x18\x01 \x01(\v2\x13.flowmesh.v1.StatusR\x06status\x12\x16\n" +
+	"\x06offset\x18\x02 \x01(\x03R\x06offset\"v\n" +
+	"\x16GetLatestOffsetRequest\x12>\n" +
+	"\rresource_path\x18\x01 \x01(\v2\x19.flowmesh.v1.ResourcePathR\fresourcePath\x12\x1c\n" +
+	"\tpartition\x18\x02 \x01(\x05R\tpartition\"^\n" +
+	"\x17GetLatestOffsetResponse\x12+\n" +
+	"\x06status\x18\x01 \x01(\v2\x13.flowmesh.v1.StatusR\x06status\x12\x16\n" +
+	"\x06offset\x18\x02 \x01(\x03R\x06offset\"\xc2\x01\n" +
+	"\x12ConsumerGroupState\x12\x16\n" +
+	"\x06stream\x18\x01 \x01(\tR\x06stream\x12\x14\n" +
+	"\x05group\x18\x02 \x01(\tR\x05group\x12\x1c\n" +
+	"\tpartition\x18\x03 \x01(\x05R\tpartition\x12)\n" +
+	"\x10committed_offset\x18\x04 \x01(\x03R\x0fcommittedOffset\x12#\n" +
+	"\rlatest_offset\x18\x05 \x01(\x03R\flatestOffset\x12\x10\n" +
+	"\x03lag\x18\x06 \x01(\x03R\x03lag\"\xa3\x01\n" +
+	"\x1cGetConsumerGroupStateRequest\x12>\n" +
+	"\rresource_path\x18\x01 \x01(\v2\x19.flowmesh.v1.ResourcePathR\fresourcePath\x12%\n" +
+	"\x0econsumer_group\x18\x02 \x01(\tR\rconsumerGroup\x12\x1c\n" +
+	"\tpartition\x18\x03 \x01(\x05R\tpartition\"\x83\x01\n" +
+	"\x1dGetConsumerGroupStateResponse\x12+\n" +
+	"\x06status\x18\x01 \x01(\v2\x13.flowmesh.v1.StatusR\x06status\x125\n" +
+	"\x05state\x18\x02 \x01(\v2\x1f.flowmesh.v1.ConsumerGroupStateR\x05state2\xbc\x01\n" +
 	"\rHealthService\x12P\n" +
 	"\vHealthCheck\x12\x1f.flowmesh.v1.HealthCheckRequest\x1a .flowmesh.v1.HealthCheckResponse\x12Y\n" +
-	"\x0eReadinessCheck\x12\".flowmesh.v1.ReadinessCheckRequest\x1a#.flowmesh.v1.ReadinessCheckResponseB1Z/github.com/flowmesh/engine/api/proto/flowmeshpbb\x06proto3"
+	"\x0eReadinessCheck\x12\".flowmesh.v1.ReadinessCheckRequest\x1a#.flowmesh.v1.ReadinessCheckResponse2\xed\x04\n" +
+	"\rStreamService\x12P\n" +
+	"\vWriteEvents\x12\x1f.flowmesh.v1.WriteEventsRequest\x1a .flowmesh.v1.WriteEventsResponse\x12M\n" +
+	"\n" +
+	"ReadStream\x12\x1e.flowmesh.v1.ReadStreamRequest\x1a\x1f.flowmesh.v1.ReadStreamResponse\x12L\n" +
+	"\tSubscribe\x12\x1d.flowmesh.v1.SubscribeRequest\x1a\x1e.flowmesh.v1.SubscribeResponse0\x01\x12S\n" +
+	"\fCommitOffset\x12 .flowmesh.v1.CommitOffsetRequest\x1a!.flowmesh.v1.CommitOffsetResponse\x12J\n" +
+	"\tGetOffset\x12\x1d.flowmesh.v1.GetOffsetRequest\x1a\x1e.flowmesh.v1.GetOffsetResponse\x12\\\n" +
+	"\x0fGetLatestOffset\x12#.flowmesh.v1.GetLatestOffsetRequest\x1a$.flowmesh.v1.GetLatestOffsetResponse\x12n\n" +
+	"\x15GetConsumerGroupState\x12).flowmesh.v1.GetConsumerGroupStateRequest\x1a*.flowmesh.v1.GetConsumerGroupStateResponseB1Z/github.com/flowmesh/engine/api/proto/flowmeshpbb\x06proto3"
 
 var (
 	file_flowmesh_proto_rawDescOnce sync.Once
@@ -360,27 +1481,80 @@ func file_flowmesh_proto_rawDescGZIP() []byte {
 	return file_flowmesh_proto_rawDescData
 }
 
-var file_flowmesh_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_flowmesh_proto_msgTypes = make([]protoimpl.MessageInfo, 25)
 var file_flowmesh_proto_goTypes = []any{
-	(*ResourcePath)(nil),           // 0: flowmesh.v1.ResourcePath
-	(*Status)(nil),                 // 1: flowmesh.v1.Status
-	(*HealthCheckRequest)(nil),     // 2: flowmesh.v1.HealthCheckRequest
-	(*HealthCheckResponse)(nil),    // 3: flowmesh.v1.HealthCheckResponse
-	(*ReadinessCheckRequest)(nil),  // 4: flowmesh.v1.ReadinessCheckRequest
-	(*ReadinessCheckResponse)(nil), // 5: flowmesh.v1.ReadinessCheckResponse
+	(*ResourcePath)(nil),                  // 0: flowmesh.v1.ResourcePath
+	(*Status)(nil),                        // 1: flowmesh.v1.Status
+	(*HealthCheckRequest)(nil),            // 2: flowmesh.v1.HealthCheckRequest
+	(*HealthCheckResponse)(nil),           // 3: flowmesh.v1.HealthCheckResponse
+	(*ReadinessCheckRequest)(nil),         // 4: flowmesh.v1.ReadinessCheckRequest
+	(*ReadinessCheckResponse)(nil),        // 5: flowmesh.v1.ReadinessCheckResponse
+	(*Event)(nil),                         // 6: flowmesh.v1.Event
+	(*Message)(nil),                       // 7: flowmesh.v1.Message
+	(*WriteEventsRequest)(nil),            // 8: flowmesh.v1.WriteEventsRequest
+	(*WriteEventsResponse)(nil),           // 9: flowmesh.v1.WriteEventsResponse
+	(*ReadStreamRequest)(nil),             // 10: flowmesh.v1.ReadStreamRequest
+	(*ReadStreamResponse)(nil),            // 11: flowmesh.v1.ReadStreamResponse
+	(*SubscribeRequest)(nil),              // 12: flowmesh.v1.SubscribeRequest
+	(*SubscribeResponse)(nil),             // 13: flowmesh.v1.SubscribeResponse
+	(*CommitOffsetRequest)(nil),           // 14: flowmesh.v1.CommitOffsetRequest
+	(*CommitOffsetResponse)(nil),          // 15: flowmesh.v1.CommitOffsetResponse
+	(*GetOffsetRequest)(nil),              // 16: flowmesh.v1.GetOffsetRequest
+	(*GetOffsetResponse)(nil),             // 17: flowmesh.v1.GetOffsetResponse
+	(*GetLatestOffsetRequest)(nil),        // 18: flowmesh.v1.GetLatestOffsetRequest
+	(*GetLatestOffsetResponse)(nil),       // 19: flowmesh.v1.GetLatestOffsetResponse
+	(*ConsumerGroupState)(nil),            // 20: flowmesh.v1.ConsumerGroupState
+	(*GetConsumerGroupStateRequest)(nil),  // 21: flowmesh.v1.GetConsumerGroupStateRequest
+	(*GetConsumerGroupStateResponse)(nil), // 22: flowmesh.v1.GetConsumerGroupStateResponse
+	nil,                                   // 23: flowmesh.v1.Event.HeadersEntry
+	nil,                                   // 24: flowmesh.v1.Message.HeadersEntry
 }
 var file_flowmesh_proto_depIdxs = []int32{
-	1, // 0: flowmesh.v1.HealthCheckResponse.status:type_name -> flowmesh.v1.Status
-	1, // 1: flowmesh.v1.ReadinessCheckResponse.status:type_name -> flowmesh.v1.Status
-	2, // 2: flowmesh.v1.HealthService.HealthCheck:input_type -> flowmesh.v1.HealthCheckRequest
-	4, // 3: flowmesh.v1.HealthService.ReadinessCheck:input_type -> flowmesh.v1.ReadinessCheckRequest
-	3, // 4: flowmesh.v1.HealthService.HealthCheck:output_type -> flowmesh.v1.HealthCheckResponse
-	5, // 5: flowmesh.v1.HealthService.ReadinessCheck:output_type -> flowmesh.v1.ReadinessCheckResponse
-	4, // [4:6] is the sub-list for method output_type
-	2, // [2:4] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	1,  // 0: flowmesh.v1.HealthCheckResponse.status:type_name -> flowmesh.v1.Status
+	1,  // 1: flowmesh.v1.ReadinessCheckResponse.status:type_name -> flowmesh.v1.Status
+	23, // 2: flowmesh.v1.Event.headers:type_name -> flowmesh.v1.Event.HeadersEntry
+	24, // 3: flowmesh.v1.Message.headers:type_name -> flowmesh.v1.Message.HeadersEntry
+	0,  // 4: flowmesh.v1.WriteEventsRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	6,  // 5: flowmesh.v1.WriteEventsRequest.events:type_name -> flowmesh.v1.Event
+	1,  // 6: flowmesh.v1.WriteEventsResponse.status:type_name -> flowmesh.v1.Status
+	0,  // 7: flowmesh.v1.ReadStreamRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	1,  // 8: flowmesh.v1.ReadStreamResponse.status:type_name -> flowmesh.v1.Status
+	7,  // 9: flowmesh.v1.ReadStreamResponse.messages:type_name -> flowmesh.v1.Message
+	0,  // 10: flowmesh.v1.SubscribeRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	7,  // 11: flowmesh.v1.SubscribeResponse.message:type_name -> flowmesh.v1.Message
+	1,  // 12: flowmesh.v1.SubscribeResponse.status:type_name -> flowmesh.v1.Status
+	0,  // 13: flowmesh.v1.CommitOffsetRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	1,  // 14: flowmesh.v1.CommitOffsetResponse.status:type_name -> flowmesh.v1.Status
+	0,  // 15: flowmesh.v1.GetOffsetRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	1,  // 16: flowmesh.v1.GetOffsetResponse.status:type_name -> flowmesh.v1.Status
+	0,  // 17: flowmesh.v1.GetLatestOffsetRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	1,  // 18: flowmesh.v1.GetLatestOffsetResponse.status:type_name -> flowmesh.v1.Status
+	0,  // 19: flowmesh.v1.GetConsumerGroupStateRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	1,  // 20: flowmesh.v1.GetConsumerGroupStateResponse.status:type_name -> flowmesh.v1.Status
+	20, // 21: flowmesh.v1.GetConsumerGroupStateResponse.state:type_name -> flowmesh.v1.ConsumerGroupState
+	2,  // 22: flowmesh.v1.HealthService.HealthCheck:input_type -> flowmesh.v1.HealthCheckRequest
+	4,  // 23: flowmesh.v1.HealthService.ReadinessCheck:input_type -> flowmesh.v1.ReadinessCheckRequest
+	8,  // 24: flowmesh.v1.StreamService.WriteEvents:input_type -> flowmesh.v1.WriteEventsRequest
+	10, // 25: flowmesh.v1.StreamService.ReadStream:input_type -> flowmesh.v1.ReadStreamRequest
+	12, // 26: flowmesh.v1.StreamService.Subscribe:input_type -> flowmesh.v1.SubscribeRequest
+	14, // 27: flowmesh.v1.StreamService.CommitOffset:input_type -> flowmesh.v1.CommitOffsetRequest
+	16, // 28: flowmesh.v1.StreamService.GetOffset:input_type -> flowmesh.v1.GetOffsetRequest
+	18, // 29: flowmesh.v1.StreamService.GetLatestOffset:input_type -> flowmesh.v1.GetLatestOffsetRequest
+	21, // 30: flowmesh.v1.StreamService.GetConsumerGroupState:input_type -> flowmesh.v1.GetConsumerGroupStateRequest
+	3,  // 31: flowmesh.v1.HealthService.HealthCheck:output_type -> flowmesh.v1.HealthCheckResponse
+	5,  // 32: flowmesh.v1.HealthService.ReadinessCheck:output_type -> flowmesh.v1.ReadinessCheckResponse
+	9,  // 33: flowmesh.v1.StreamService.WriteEvents:output_type -> flowmesh.v1.WriteEventsResponse
+	11, // 34: flowmesh.v1.StreamService.ReadStream:output_type -> flowmesh.v1.ReadStreamResponse
+	13, // 35: flowmesh.v1.StreamService.Subscribe:output_type -> flowmesh.v1.SubscribeResponse
+	15, // 36: flowmesh.v1.StreamService.CommitOffset:output_type -> flowmesh.v1.CommitOffsetResponse
+	17, // 37: flowmesh.v1.StreamService.GetOffset:output_type -> flowmesh.v1.GetOffsetResponse
+	19, // 38: flowmesh.v1.StreamService.GetLatestOffset:output_type -> flowmesh.v1.GetLatestOffsetResponse
+	22, // 39: flowmesh.v1.StreamService.GetConsumerGroupState:output_type -> flowmesh.v1.GetConsumerGroupStateResponse
+	31, // [31:40] is the sub-list for method output_type
+	22, // [22:31] is the sub-list for method input_type
+	22, // [22:22] is the sub-list for extension type_name
+	22, // [22:22] is the sub-list for extension extendee
+	0,  // [0:22] is the sub-list for field type_name
 }
 
 func init() { file_flowmesh_proto_init() }
@@ -394,9 +1568,9 @@ func file_flowmesh_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_flowmesh_proto_rawDesc), len(file_flowmesh_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   25,
 			NumExtensions: 0,
-			NumServices:   1,
+			NumServices:   2,
 		},
 		GoTypes:           file_flowmesh_proto_goTypes,
 		DependencyIndexes: file_flowmesh_proto_depIdxs,

@@ -165,3 +165,355 @@ var HealthService_ServiceDesc = grpc.ServiceDesc{
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "flowmesh.proto",
 }
+
+const (
+	StreamService_WriteEvents_FullMethodName           = "/flowmesh.v1.StreamService/WriteEvents"
+	StreamService_ReadStream_FullMethodName            = "/flowmesh.v1.StreamService/ReadStream"
+	StreamService_Subscribe_FullMethodName             = "/flowmesh.v1.StreamService/Subscribe"
+	StreamService_CommitOffset_FullMethodName          = "/flowmesh.v1.StreamService/CommitOffset"
+	StreamService_GetOffset_FullMethodName             = "/flowmesh.v1.StreamService/GetOffset"
+	StreamService_GetLatestOffset_FullMethodName       = "/flowmesh.v1.StreamService/GetLatestOffset"
+	StreamService_GetConsumerGroupState_FullMethodName = "/flowmesh.v1.StreamService/GetConsumerGroupState"
+)
+
+// StreamServiceClient is the client API for StreamService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// StreamService provides operations for working with streams
+type StreamServiceClient interface {
+	// WriteEvents writes multiple events to a stream and returns assigned offsets
+	WriteEvents(ctx context.Context, in *WriteEventsRequest, opts ...grpc.CallOption) (*WriteEventsResponse, error)
+	// ReadStream reads messages from a stream starting at a specific offset
+	ReadStream(ctx context.Context, in *ReadStreamRequest, opts ...grpc.CallOption) (*ReadStreamResponse, error)
+	// Subscribe subscribes to a stream with consumer group support (server-side streaming)
+	Subscribe(ctx context.Context, in *SubscribeRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SubscribeResponse], error)
+	// CommitOffset commits an offset for a consumer group
+	CommitOffset(ctx context.Context, in *CommitOffsetRequest, opts ...grpc.CallOption) (*CommitOffsetResponse, error)
+	// GetOffset retrieves the committed offset for a consumer group
+	GetOffset(ctx context.Context, in *GetOffsetRequest, opts ...grpc.CallOption) (*GetOffsetResponse, error)
+	// GetLatestOffset retrieves the latest offset for a stream partition
+	GetLatestOffset(ctx context.Context, in *GetLatestOffsetRequest, opts ...grpc.CallOption) (*GetLatestOffsetResponse, error)
+	// GetConsumerGroupState retrieves the complete state of a consumer group including lag
+	GetConsumerGroupState(ctx context.Context, in *GetConsumerGroupStateRequest, opts ...grpc.CallOption) (*GetConsumerGroupStateResponse, error)
+}
+
+type streamServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewStreamServiceClient(cc grpc.ClientConnInterface) StreamServiceClient {
+	return &streamServiceClient{cc}
+}
+
+func (c *streamServiceClient) WriteEvents(ctx context.Context, in *WriteEventsRequest, opts ...grpc.CallOption) (*WriteEventsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(WriteEventsResponse)
+	err := c.cc.Invoke(ctx, StreamService_WriteEvents_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *streamServiceClient) ReadStream(ctx context.Context, in *ReadStreamRequest, opts ...grpc.CallOption) (*ReadStreamResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ReadStreamResponse)
+	err := c.cc.Invoke(ctx, StreamService_ReadStream_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *streamServiceClient) Subscribe(ctx context.Context, in *SubscribeRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SubscribeResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &StreamService_ServiceDesc.Streams[0], StreamService_Subscribe_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[SubscribeRequest, SubscribeResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type StreamService_SubscribeClient = grpc.ServerStreamingClient[SubscribeResponse]
+
+func (c *streamServiceClient) CommitOffset(ctx context.Context, in *CommitOffsetRequest, opts ...grpc.CallOption) (*CommitOffsetResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CommitOffsetResponse)
+	err := c.cc.Invoke(ctx, StreamService_CommitOffset_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *streamServiceClient) GetOffset(ctx context.Context, in *GetOffsetRequest, opts ...grpc.CallOption) (*GetOffsetResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetOffsetResponse)
+	err := c.cc.Invoke(ctx, StreamService_GetOffset_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *streamServiceClient) GetLatestOffset(ctx context.Context, in *GetLatestOffsetRequest, opts ...grpc.CallOption) (*GetLatestOffsetResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetLatestOffsetResponse)
+	err := c.cc.Invoke(ctx, StreamService_GetLatestOffset_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *streamServiceClient) GetConsumerGroupState(ctx context.Context, in *GetConsumerGroupStateRequest, opts ...grpc.CallOption) (*GetConsumerGroupStateResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetConsumerGroupStateResponse)
+	err := c.cc.Invoke(ctx, StreamService_GetConsumerGroupState_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// StreamServiceServer is the server API for StreamService service.
+// All implementations must embed UnimplementedStreamServiceServer
+// for forward compatibility.
+//
+// StreamService provides operations for working with streams
+type StreamServiceServer interface {
+	// WriteEvents writes multiple events to a stream and returns assigned offsets
+	WriteEvents(context.Context, *WriteEventsRequest) (*WriteEventsResponse, error)
+	// ReadStream reads messages from a stream starting at a specific offset
+	ReadStream(context.Context, *ReadStreamRequest) (*ReadStreamResponse, error)
+	// Subscribe subscribes to a stream with consumer group support (server-side streaming)
+	Subscribe(*SubscribeRequest, grpc.ServerStreamingServer[SubscribeResponse]) error
+	// CommitOffset commits an offset for a consumer group
+	CommitOffset(context.Context, *CommitOffsetRequest) (*CommitOffsetResponse, error)
+	// GetOffset retrieves the committed offset for a consumer group
+	GetOffset(context.Context, *GetOffsetRequest) (*GetOffsetResponse, error)
+	// GetLatestOffset retrieves the latest offset for a stream partition
+	GetLatestOffset(context.Context, *GetLatestOffsetRequest) (*GetLatestOffsetResponse, error)
+	// GetConsumerGroupState retrieves the complete state of a consumer group including lag
+	GetConsumerGroupState(context.Context, *GetConsumerGroupStateRequest) (*GetConsumerGroupStateResponse, error)
+	mustEmbedUnimplementedStreamServiceServer()
+}
+
+// UnimplementedStreamServiceServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedStreamServiceServer struct{}
+
+func (UnimplementedStreamServiceServer) WriteEvents(context.Context, *WriteEventsRequest) (*WriteEventsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method WriteEvents not implemented")
+}
+func (UnimplementedStreamServiceServer) ReadStream(context.Context, *ReadStreamRequest) (*ReadStreamResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ReadStream not implemented")
+}
+func (UnimplementedStreamServiceServer) Subscribe(*SubscribeRequest, grpc.ServerStreamingServer[SubscribeResponse]) error {
+	return status.Error(codes.Unimplemented, "method Subscribe not implemented")
+}
+func (UnimplementedStreamServiceServer) CommitOffset(context.Context, *CommitOffsetRequest) (*CommitOffsetResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CommitOffset not implemented")
+}
+func (UnimplementedStreamServiceServer) GetOffset(context.Context, *GetOffsetRequest) (*GetOffsetResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetOffset not implemented")
+}
+func (UnimplementedStreamServiceServer) GetLatestOffset(context.Context, *GetLatestOffsetRequest) (*GetLatestOffsetResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetLatestOffset not implemented")
+}
+func (UnimplementedStreamServiceServer) GetConsumerGroupState(context.Context, *GetConsumerGroupStateRequest) (*GetConsumerGroupStateResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetConsumerGroupState not implemented")
+}
+func (UnimplementedStreamServiceServer) mustEmbedUnimplementedStreamServiceServer() {}
+func (UnimplementedStreamServiceServer) testEmbeddedByValue()                       {}
+
+// UnsafeStreamServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to StreamServiceServer will
+// result in compilation errors.
+type UnsafeStreamServiceServer interface {
+	mustEmbedUnimplementedStreamServiceServer()
+}
+
+func RegisterStreamServiceServer(s grpc.ServiceRegistrar, srv StreamServiceServer) {
+	// If the following call panics, it indicates UnimplementedStreamServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&StreamService_ServiceDesc, srv)
+}
+
+func _StreamService_WriteEvents_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WriteEventsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StreamServiceServer).WriteEvents(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StreamService_WriteEvents_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StreamServiceServer).WriteEvents(ctx, req.(*WriteEventsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StreamService_ReadStream_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReadStreamRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StreamServiceServer).ReadStream(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StreamService_ReadStream_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StreamServiceServer).ReadStream(ctx, req.(*ReadStreamRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StreamService_Subscribe_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(SubscribeRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(StreamServiceServer).Subscribe(m, &grpc.GenericServerStream[SubscribeRequest, SubscribeResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type StreamService_SubscribeServer = grpc.ServerStreamingServer[SubscribeResponse]
+
+func _StreamService_CommitOffset_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CommitOffsetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StreamServiceServer).CommitOffset(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StreamService_CommitOffset_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StreamServiceServer).CommitOffset(ctx, req.(*CommitOffsetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StreamService_GetOffset_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetOffsetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StreamServiceServer).GetOffset(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StreamService_GetOffset_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StreamServiceServer).GetOffset(ctx, req.(*GetOffsetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StreamService_GetLatestOffset_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLatestOffsetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StreamServiceServer).GetLatestOffset(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StreamService_GetLatestOffset_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StreamServiceServer).GetLatestOffset(ctx, req.(*GetLatestOffsetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StreamService_GetConsumerGroupState_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetConsumerGroupStateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StreamServiceServer).GetConsumerGroupState(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StreamService_GetConsumerGroupState_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StreamServiceServer).GetConsumerGroupState(ctx, req.(*GetConsumerGroupStateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// StreamService_ServiceDesc is the grpc.ServiceDesc for StreamService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var StreamService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "flowmesh.v1.StreamService",
+	HandlerType: (*StreamServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "WriteEvents",
+			Handler:    _StreamService_WriteEvents_Handler,
+		},
+		{
+			MethodName: "ReadStream",
+			Handler:    _StreamService_ReadStream_Handler,
+		},
+		{
+			MethodName: "CommitOffset",
+			Handler:    _StreamService_CommitOffset_Handler,
+		},
+		{
+			MethodName: "GetOffset",
+			Handler:    _StreamService_GetOffset_Handler,
+		},
+		{
+			MethodName: "GetLatestOffset",
+			Handler:    _StreamService_GetLatestOffset_Handler,
+		},
+		{
+			MethodName: "GetConsumerGroupState",
+			Handler:    _StreamService_GetConsumerGroupState_Handler,
+		},
+	},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "Subscribe",
+			Handler:       _StreamService_Subscribe_Handler,
+			ServerStreams: true,
+		},
+	},
+	Metadata: "flowmesh.proto",
+}
