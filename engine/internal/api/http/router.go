@@ -58,6 +58,7 @@ func (r *Router) setupRoutes() {
 	// Create middleware chain
 	chain := middleware.Chain(
 		middleware.Recovery(logger.WithComponent("http.middleware")),
+		middleware.Tracing(), // Tracing middleware (extracts and creates spans)
 		middleware.Logging(logger.WithComponent("http.middleware")),
 		// Auth middleware will be added here when needed
 	)

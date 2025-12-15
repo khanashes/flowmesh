@@ -13,6 +13,7 @@ import (
 	"github.com/flowmesh/engine/internal/storage/queues"
 	"github.com/flowmesh/engine/internal/storage/schema"
 	"github.com/flowmesh/engine/internal/storage/streams"
+	"github.com/flowmesh/engine/internal/tracing"
 	"github.com/rs/zerolog"
 )
 
@@ -119,6 +120,27 @@ func (b *Builder) Build() (*Storage, error) {
 		nodeMetrics = metrics.NewNodeMetrics(metricsCollector)
 	}
 
+	// Initialize tracing if enabled
+	var tracerProvider *tracing.Provider
+	if b.config.EnableTracing {
+		tracingConfig := tracing.TracingConfig{
+			Enabled:        true,
+			ServiceName:    "flowmesh",
+			ServiceVersion: "0.1.0",
+			Endpoint:       "", // Will be set from config if available
+			Insecure:       false,
+			Headers:        make(map[string]string),
+			ExporterType:   "grpc",
+		}
+		// TODO: Load from config when available
+		var err error
+		tracerProvider, err = tracing.NewProvider(tracingConfig)
+		if err != nil {
+			b.log.Warn().Err(err).Msg("Failed to initialize tracing provider, continuing without tracing")
+			tracerProvider = nil
+		}
+	}
+
 	// Initialize stream manager if not provided
 	var streamMgr *streams.Manager
 	if b.streamMgr == nil {
@@ -159,6 +181,7 @@ func (b *Builder) Build() (*Storage, error) {
 		schemaRegistry:       schemaReg,
 		metricsCollector:     metricsCollector,
 		nodeMetrics:          nodeMetrics,
+		tracerProvider:       tracerProvider,
 		log:                  b.log,
 		closed:               false,
 		ready:                false,

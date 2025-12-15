@@ -14,9 +14,10 @@ import (
 // unaryInterceptorChain creates a chain of unary interceptors
 func (s *Server) unaryInterceptorChain() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		// Apply interceptors in order: logging, auth, error handling
-		wrappedHandler := s.loggingInterceptor(s.authInterceptor(s.errorInterceptor(handler)))
-		return wrappedHandler(ctx, req)
+		// Apply interceptors in order: tracing, logging, auth, error handling
+		tracingInterceptor := s.tracingInterceptorWithInfo(info)
+		loggingHandler := s.loggingInterceptor(s.authInterceptor(s.errorInterceptor(handler)))
+		return tracingInterceptor(ctx, req, info, loggingHandler)
 	}
 }
 

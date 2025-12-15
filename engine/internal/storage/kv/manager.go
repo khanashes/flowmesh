@@ -168,6 +168,10 @@ func decodeValue(data []byte) (*Value, error) {
 
 // Set sets a key-value pair in the KV store
 func (m *Manager) Set(ctx context.Context, resourcePath, key string, value []byte, options SetOptions) error {
+	// Start tracing span
+	ctx, span := StartSetSpan(ctx, resourcePath, key)
+	defer span.End()
+
 	if key == "" {
 		return InvalidKeyError{Key: key, Reason: "key cannot be empty"}
 	}
@@ -215,6 +219,7 @@ func (m *Manager) Set(ctx context.Context, resourcePath, key string, value []byt
 	// Write to Pebble
 	wo := &pebble.WriteOptions{}
 	if err := db.Set(encodedKey, encodedValue, wo); err != nil {
+		span.RecordError(err)
 		return fmt.Errorf("failed to set key: %w", err)
 	}
 
@@ -223,6 +228,10 @@ func (m *Manager) Set(ctx context.Context, resourcePath, key string, value []byt
 
 // Get retrieves a value by key from the KV store
 func (m *Manager) Get(ctx context.Context, resourcePath, key string) ([]byte, error) {
+	// Start tracing span
+	ctx, span := StartGetSpan(ctx, resourcePath, key)
+	defer span.End()
+
 	if key == "" {
 		return nil, InvalidKeyError{Key: key, Reason: "key cannot be empty"}
 	}
@@ -251,6 +260,7 @@ func (m *Manager) Get(ctx context.Context, resourcePath, key string) ([]byte, er
 		if errors.Is(err, pebble.ErrNotFound) {
 			return nil, KeyNotFoundError{ResourcePath: resourcePath, Key: key}
 		}
+		span.RecordError(err)
 		return nil, fmt.Errorf("failed to get key: %w", err)
 	}
 	defer closer.Close()
@@ -277,6 +287,10 @@ func (m *Manager) Get(ctx context.Context, resourcePath, key string) ([]byte, er
 
 // Delete deletes a key from the KV store
 func (m *Manager) Delete(ctx context.Context, resourcePath, key string) error {
+	// Start tracing span
+	ctx, span := StartDeleteSpan(ctx, resourcePath, key)
+	defer span.End()
+
 	if key == "" {
 		return InvalidKeyError{Key: key, Reason: "key cannot be empty"}
 	}
@@ -302,6 +316,7 @@ func (m *Manager) Delete(ctx context.Context, resourcePath, key string) error {
 	// Delete from Pebble
 	wo := &pebble.WriteOptions{}
 	if err := db.Delete(encodedKey, wo); err != nil {
+		span.RecordError(err)
 		return fmt.Errorf("failed to delete key: %w", err)
 	}
 

@@ -1,6 +1,7 @@
 package streams
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -57,7 +58,7 @@ func TestManager_WriteEvents(t *testing.T) {
 		{Payload: []byte("event3"), Headers: nil},
 	}
 
-	offsets, err := manager.WriteEvents(resourcePath, events)
+	offsets, err := manager.WriteEvents(context.Background(), resourcePath, events)
 	require.NoError(t, err)
 	require.Equal(t, 3, len(offsets))
 
@@ -75,7 +76,7 @@ func TestManager_WriteEvents_StreamNotFound(t *testing.T) {
 		{Payload: []byte("event1")},
 	}
 
-	_, err := manager.WriteEvents("nonexistent/stream", events)
+	_, err := manager.WriteEvents(context.Background(), "nonexistent/stream", events)
 	assert.Error(t, err)
 	assert.IsType(t, StreamNotFoundError{}, err)
 }
@@ -109,11 +110,11 @@ func TestManager_ReadFromOffset(t *testing.T) {
 		{Payload: []byte("event3"), Headers: nil},
 	}
 
-	_, err = manager.WriteEvents(resourcePath, events)
+	_, err = manager.WriteEvents(context.Background(), resourcePath, events)
 	require.NoError(t, err)
 
 	// Read from offset 0
-	messages, err := manager.ReadFromOffset(resourcePath, 0, 0, 10)
+	messages, err := manager.ReadFromOffset(context.Background(), resourcePath, 0, 0, 10)
 	require.NoError(t, err)
 	require.Equal(t, 3, len(messages))
 
@@ -156,11 +157,11 @@ func TestManager_ReadFromOffset_Limited(t *testing.T) {
 		events[i] = Event{Payload: []byte{byte('0' + i)}}
 	}
 
-	_, err = manager.WriteEvents(resourcePath, events)
+	_, err = manager.WriteEvents(context.Background(), resourcePath, events)
 	require.NoError(t, err)
 
 	// Read only 2 messages
-	messages, err := manager.ReadFromOffset(resourcePath, 0, 0, 2)
+	messages, err := manager.ReadFromOffset(context.Background(), resourcePath, 0, 0, 2)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(messages))
 
@@ -202,7 +203,7 @@ func TestManager_GetLatestOffset(t *testing.T) {
 		{Payload: []byte("event3")},
 	}
 
-	_, err = manager.WriteEvents(resourcePath, events)
+	_, err = manager.WriteEvents(context.Background(), resourcePath, events)
 	require.NoError(t, err)
 
 	// Latest offset should be 2 (last written)
@@ -239,7 +240,7 @@ func TestManager_InitializeStream(t *testing.T) {
 		{Payload: []byte("event2")},
 	}
 
-	_, err = manager.WriteEvents(resourcePath, events)
+	_, err = manager.WriteEvents(context.Background(), resourcePath, events)
 	require.NoError(t, err)
 
 	// Recreate manager to test recovery
@@ -280,7 +281,7 @@ func TestManager_ReadFromOffset_InvalidOffset(t *testing.T) {
 	require.NoError(t, err)
 
 	// Try to read from negative offset
-	_, err = manager.ReadFromOffset(resourcePath, 0, -1, 10)
+	_, err = manager.ReadFromOffset(context.Background(), resourcePath, 0, -1, 10)
 	assert.Error(t, err)
 	assert.IsType(t, InvalidOffsetError{}, err)
 }

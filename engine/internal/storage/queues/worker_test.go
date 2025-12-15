@@ -32,7 +32,7 @@ func TestManager_Reserve(t *testing.T) {
 	require.NoError(t, err)
 
 	// Enqueue a job
-	jobID, _, err := manager.Enqueue(resourcePath, []byte("job payload"), DefaultEnqueueOptions())
+	jobID, _, err := manager.Enqueue(context.Background(), resourcePath, []byte("job payload"), DefaultEnqueueOptions())
 	require.NoError(t, err)
 
 	// Reserve the job
@@ -104,7 +104,7 @@ func TestManager_ACK(t *testing.T) {
 	require.NoError(t, err)
 
 	// Enqueue and reserve a job
-	jobID, _, err := manager.Enqueue(resourcePath, []byte("job"), DefaultEnqueueOptions())
+	jobID, _, err := manager.Enqueue(context.Background(), resourcePath, []byte("job"), DefaultEnqueueOptions())
 	require.NoError(t, err)
 
 	_, err = manager.AddToInFlight(resourcePath, jobID, 30*time.Second)
@@ -153,7 +153,7 @@ func TestManager_NACK(t *testing.T) {
 	manager.mu.Unlock()
 
 	// Enqueue and reserve a job
-	jobID, _, err := manager.Enqueue(resourcePath, []byte("job"), DefaultEnqueueOptions())
+	jobID, _, err := manager.Enqueue(context.Background(), resourcePath, []byte("job"), DefaultEnqueueOptions())
 	require.NoError(t, err)
 
 	_, err = manager.AddToInFlight(resourcePath, jobID, 30*time.Second)
@@ -203,7 +203,7 @@ func TestManager_NACK_MaxAttempts(t *testing.T) {
 	manager.mu.Unlock()
 
 	// Enqueue and reserve a job
-	jobID, _, err := manager.Enqueue(resourcePath, []byte("job"), DefaultEnqueueOptions())
+	jobID, _, err := manager.Enqueue(context.Background(), resourcePath, []byte("job"), DefaultEnqueueOptions())
 	require.NoError(t, err)
 
 	// Manually set attempts to max
@@ -250,11 +250,11 @@ func TestManager_Receive(t *testing.T) {
 	require.NoError(t, err)
 
 	// Enqueue multiple jobs
-	_, _, err = manager.Enqueue(resourcePath, []byte("job1"), DefaultEnqueueOptions())
+	_, _, err = manager.Enqueue(context.Background(), resourcePath, []byte("job1"), DefaultEnqueueOptions())
 	require.NoError(t, err)
-	_, _, err = manager.Enqueue(resourcePath, []byte("job2"), DefaultEnqueueOptions())
+	_, _, err = manager.Enqueue(context.Background(), resourcePath, []byte("job2"), DefaultEnqueueOptions())
 	require.NoError(t, err)
-	_, _, err = manager.Enqueue(resourcePath, []byte("job3"), DefaultEnqueueOptions())
+	_, _, err = manager.Enqueue(context.Background(), resourcePath, []byte("job3"), DefaultEnqueueOptions())
 	require.NoError(t, err)
 
 	// Receive jobs
@@ -323,7 +323,7 @@ func TestManager_GetJobPayload(t *testing.T) {
 
 	// Enqueue a job
 	payload := []byte("test payload")
-	jobID, _, err := manager.Enqueue(resourcePath, payload, DefaultEnqueueOptions())
+	jobID, _, err := manager.Enqueue(context.Background(), resourcePath, payload, DefaultEnqueueOptions())
 	require.NoError(t, err)
 
 	// Get job payload
@@ -355,13 +355,13 @@ func TestManager_GetQueueStats(t *testing.T) {
 	require.NoError(t, err)
 
 	// Enqueue some jobs
-	_, _, err = manager.Enqueue(resourcePath, []byte("job1"), DefaultEnqueueOptions())
+	_, _, err = manager.Enqueue(context.Background(), resourcePath, []byte("job1"), DefaultEnqueueOptions())
 	require.NoError(t, err)
-	_, _, err = manager.Enqueue(resourcePath, []byte("job2"), DefaultEnqueueOptions())
+	_, _, err = manager.Enqueue(context.Background(), resourcePath, []byte("job2"), DefaultEnqueueOptions())
 	require.NoError(t, err)
 
 	// Reserve one job
-	jobID, _, err := manager.Enqueue(resourcePath, []byte("job3"), DefaultEnqueueOptions())
+	jobID, _, err := manager.Enqueue(context.Background(), resourcePath, []byte("job3"), DefaultEnqueueOptions())
 	require.NoError(t, err)
 	_, err = manager.AddToInFlight(resourcePath, jobID, 30*time.Second)
 	require.NoError(t, err)

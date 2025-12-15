@@ -69,7 +69,7 @@ func TestReserve_EdgeCases(t *testing.T) {
 		require.NoError(t, err)
 
 		// Enqueue a job first so Reserve has something to work with
-		_, _, err = manager.Enqueue(resourcePath, []byte("job"), DefaultEnqueueOptions())
+		_, _, err = manager.Enqueue(context.Background(), resourcePath, []byte("job"), DefaultEnqueueOptions())
 		require.NoError(t, err)
 
 		ctx, cancel := context.WithCancel(context.Background())
@@ -109,7 +109,7 @@ func TestReserve_EdgeCases(t *testing.T) {
 		options := DefaultReserveOptions()
 		options.VisibilityTimeout = 0
 
-		_, _, err = manager.Enqueue(resourcePath, []byte("job"), DefaultEnqueueOptions())
+		_, _, err = manager.Enqueue(context.Background(), resourcePath, []byte("job"), DefaultEnqueueOptions())
 		require.NoError(t, err)
 
 		job, err := manager.Reserve(ctx, resourcePath, options)
@@ -152,7 +152,7 @@ func TestReserve_EdgeCases(t *testing.T) {
 		err = manager.InitializeQueue(resourcePath)
 		require.NoError(t, err)
 
-		jobID, _, err := manager.Enqueue(resourcePath, []byte("job"), DefaultEnqueueOptions())
+		jobID, _, err := manager.Enqueue(context.Background(), resourcePath, []byte("job"), DefaultEnqueueOptions())
 		require.NoError(t, err)
 
 		options := DefaultReserveOptions()
@@ -186,7 +186,7 @@ func TestReserve_EdgeCases(t *testing.T) {
 		err = manager.InitializeQueue(resourcePath)
 		require.NoError(t, err)
 
-		jobID, _, err := manager.Enqueue(resourcePath, []byte("job"), DefaultEnqueueOptions())
+		jobID, _, err := manager.Enqueue(context.Background(), resourcePath, []byte("job"), DefaultEnqueueOptions())
 		require.NoError(t, err)
 
 		options := DefaultReserveOptions()
@@ -239,7 +239,7 @@ func TestACK_EdgeCases(t *testing.T) {
 	})
 
 	t.Run("ACK job that's not in InFlight", func(t *testing.T) {
-		jobID, _, err := manager.Enqueue(resourcePath, []byte("job"), DefaultEnqueueOptions())
+		jobID, _, err := manager.Enqueue(context.Background(), resourcePath, []byte("job"), DefaultEnqueueOptions())
 		require.NoError(t, err)
 
 		// ACK without reserving (job is still in ReadyHeap)
@@ -249,7 +249,7 @@ func TestACK_EdgeCases(t *testing.T) {
 	})
 
 	t.Run("ACK same job multiple times (idempotency)", func(t *testing.T) {
-		jobID, _, err := manager.Enqueue(resourcePath, []byte("job"), DefaultEnqueueOptions())
+		jobID, _, err := manager.Enqueue(context.Background(), resourcePath, []byte("job"), DefaultEnqueueOptions())
 		require.NoError(t, err)
 
 		_, err = manager.AddToInFlight(resourcePath, jobID, 30*time.Second)
@@ -269,7 +269,7 @@ func TestACK_EdgeCases(t *testing.T) {
 	})
 
 	t.Run("ACK with context cancellation", func(t *testing.T) {
-		jobID, _, err := manager.Enqueue(resourcePath, []byte("job"), DefaultEnqueueOptions())
+		jobID, _, err := manager.Enqueue(context.Background(), resourcePath, []byte("job"), DefaultEnqueueOptions())
 		require.NoError(t, err)
 
 		_, err = manager.AddToInFlight(resourcePath, jobID, 30*time.Second)
@@ -321,7 +321,7 @@ func TestNACK_EdgeCases(t *testing.T) {
 	})
 
 	t.Run("NACK job that's not in InFlight", func(t *testing.T) {
-		jobID, _, err := manager.Enqueue(resourcePath, []byte("job"), DefaultEnqueueOptions())
+		jobID, _, err := manager.Enqueue(context.Background(), resourcePath, []byte("job"), DefaultEnqueueOptions())
 		require.NoError(t, err)
 
 		// NACK without reserving (job is still in ReadyHeap)
@@ -338,7 +338,7 @@ func TestNACK_EdgeCases(t *testing.T) {
 		manager.retryPolicies[resourcePath] = &policy
 		manager.mu.Unlock()
 
-		jobID, _, err := manager.Enqueue(resourcePath, []byte("job"), DefaultEnqueueOptions())
+		jobID, _, err := manager.Enqueue(context.Background(), resourcePath, []byte("job"), DefaultEnqueueOptions())
 		require.NoError(t, err)
 
 		// Manually set attempts to max
@@ -364,7 +364,7 @@ func TestNACK_EdgeCases(t *testing.T) {
 		manager.retryPolicies[resourcePath] = &policy
 		manager.mu.Unlock()
 
-		jobID, _, err := manager.Enqueue(resourcePath, []byte("job"), DefaultEnqueueOptions())
+		jobID, _, err := manager.Enqueue(context.Background(), resourcePath, []byte("job"), DefaultEnqueueOptions())
 		require.NoError(t, err)
 
 		_, err = manager.AddToInFlight(resourcePath, jobID, 30*time.Second)
@@ -380,7 +380,7 @@ func TestNACK_EdgeCases(t *testing.T) {
 	})
 
 	t.Run("NACK with context cancellation", func(t *testing.T) {
-		jobID, _, err := manager.Enqueue(resourcePath, []byte("job"), DefaultEnqueueOptions())
+		jobID, _, err := manager.Enqueue(context.Background(), resourcePath, []byte("job"), DefaultEnqueueOptions())
 		require.NoError(t, err)
 
 		_, err = manager.AddToInFlight(resourcePath, jobID, 30*time.Second)
@@ -428,7 +428,7 @@ func TestReceive_EdgeCases(t *testing.T) {
 	options.VisibilityTimeout = 30 * time.Second
 
 	t.Run("Receive with maxJobs = 0", func(t *testing.T) {
-		_, _, err := manager.Enqueue(resourcePath, []byte("job1"), DefaultEnqueueOptions())
+		_, _, err := manager.Enqueue(context.Background(), resourcePath, []byte("job1"), DefaultEnqueueOptions())
 		require.NoError(t, err)
 
 		jobs, err := manager.Receive(ctx, resourcePath, 0, options)
@@ -439,7 +439,7 @@ func TestReceive_EdgeCases(t *testing.T) {
 	t.Run("Receive with maxJobs > 100", func(t *testing.T) {
 		// Enqueue 5 jobs
 		for i := 0; i < 5; i++ {
-			_, _, err := manager.Enqueue(resourcePath, []byte("job"), DefaultEnqueueOptions())
+			_, _, err := manager.Enqueue(context.Background(), resourcePath, []byte("job"), DefaultEnqueueOptions())
 			require.NoError(t, err)
 		}
 
@@ -460,7 +460,7 @@ func TestReceive_EdgeCases(t *testing.T) {
 
 	t.Run("Receive with context cancellation", func(t *testing.T) {
 		// Enqueue a job first so Receive has something to work with
-		_, _, err := manager.Enqueue(resourcePath, []byte("job"), DefaultEnqueueOptions())
+		_, _, err := manager.Enqueue(context.Background(), resourcePath, []byte("job"), DefaultEnqueueOptions())
 		require.NoError(t, err)
 
 		ctx, cancel := context.WithCancel(context.Background())
@@ -553,7 +553,7 @@ func TestWorkerRegistration_EdgeCases(t *testing.T) {
 		require.NoError(t, err)
 
 		// Enqueue and reserve a job
-		jobID, _, err := manager.Enqueue(resourcePath, []byte("job"), DefaultEnqueueOptions())
+		jobID, _, err := manager.Enqueue(context.Background(), resourcePath, []byte("job"), DefaultEnqueueOptions())
 		require.NoError(t, err)
 
 		_, err = manager.AddToInFlight(resourcePath, jobID, 30*time.Second)
@@ -618,7 +618,7 @@ func TestGetJobPayload_EdgeCases(t *testing.T) {
 	})
 
 	t.Run("Get payload with context cancellation", func(t *testing.T) {
-		jobID, _, err := manager.Enqueue(resourcePath, []byte("job"), DefaultEnqueueOptions())
+		jobID, _, err := manager.Enqueue(context.Background(), resourcePath, []byte("job"), DefaultEnqueueOptions())
 		require.NoError(t, err)
 
 		ctx, cancel := context.WithCancel(context.Background())
@@ -672,7 +672,7 @@ func TestGetQueueStats_EdgeCases(t *testing.T) {
 	})
 
 	t.Run("Stats for queue with only in-flight jobs", func(t *testing.T) {
-		jobID, _, err := manager.Enqueue(resourcePath, []byte("job"), DefaultEnqueueOptions())
+		jobID, _, err := manager.Enqueue(context.Background(), resourcePath, []byte("job"), DefaultEnqueueOptions())
 		require.NoError(t, err)
 
 		_, err = manager.AddToInFlight(resourcePath, jobID, 30*time.Second)
@@ -686,9 +686,9 @@ func TestGetQueueStats_EdgeCases(t *testing.T) {
 	})
 
 	t.Run("Stats for queue with only pending jobs", func(t *testing.T) {
-		_, _, err := manager.Enqueue(resourcePath, []byte("job1"), DefaultEnqueueOptions())
+		_, _, err := manager.Enqueue(context.Background(), resourcePath, []byte("job1"), DefaultEnqueueOptions())
 		require.NoError(t, err)
-		_, _, err = manager.Enqueue(resourcePath, []byte("job2"), DefaultEnqueueOptions())
+		_, _, err = manager.Enqueue(context.Background(), resourcePath, []byte("job2"), DefaultEnqueueOptions())
 		require.NoError(t, err)
 
 		stats, err := manager.GetQueueStats(ctx, resourcePath)
@@ -745,7 +745,7 @@ func TestScheduler_EdgeCases(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("Process expired jobs with no retry policy", func(t *testing.T) {
-		jobID, _, err := manager.Enqueue(resourcePath, []byte("job"), DefaultEnqueueOptions())
+		jobID, _, err := manager.Enqueue(context.Background(), resourcePath, []byte("job"), DefaultEnqueueOptions())
 		require.NoError(t, err)
 
 		// Manually add to InFlight with expired timeout
@@ -786,7 +786,7 @@ func TestScheduler_EdgeCases(t *testing.T) {
 		manager.retryPolicies[resourcePath] = &policy
 		manager.mu.Unlock()
 
-		jobID, _, err := manager.Enqueue(resourcePath, []byte("job"), DefaultEnqueueOptions())
+		jobID, _, err := manager.Enqueue(context.Background(), resourcePath, []byte("job"), DefaultEnqueueOptions())
 		require.NoError(t, err)
 
 		// Manually add to InFlight with expired timeout
@@ -863,7 +863,7 @@ func TestRetryPolicy_EdgeCases(t *testing.T) {
 		manager.retryPolicies[resourcePath] = &policy
 		manager.mu.Unlock()
 
-		jobID, _, err := manager.Enqueue(resourcePath, []byte("job"), DefaultEnqueueOptions())
+		jobID, _, err := manager.Enqueue(context.Background(), resourcePath, []byte("job"), DefaultEnqueueOptions())
 		require.NoError(t, err)
 
 		// Get the actual job from ReadyHeap and move it to InFlight with high attempts
@@ -922,7 +922,7 @@ func TestRetryPolicy_EdgeCases(t *testing.T) {
 		manager.retryPolicies[resourcePath] = &policy
 		manager.mu.Unlock()
 
-		jobID, _, err := manager.Enqueue(resourcePath, []byte("job"), DefaultEnqueueOptions())
+		jobID, _, err := manager.Enqueue(context.Background(), resourcePath, []byte("job"), DefaultEnqueueOptions())
 		require.NoError(t, err)
 
 		// Get the actual job from ReadyHeap and move it to InFlight with attempts=3
@@ -979,7 +979,7 @@ func TestRetryPolicy_EdgeCases(t *testing.T) {
 		manager.retryPolicies[resourcePath] = &policy
 		manager.mu.Unlock()
 
-		jobID, _, err := manager.Enqueue(resourcePath, []byte("job"), DefaultEnqueueOptions())
+		jobID, _, err := manager.Enqueue(context.Background(), resourcePath, []byte("job"), DefaultEnqueueOptions())
 		require.NoError(t, err)
 
 		// Manually set very high attempts
@@ -1027,7 +1027,7 @@ func TestConcurrentOperations(t *testing.T) {
 
 		for i := 0; i < numJobs; i++ {
 			go func() {
-				_, _, err := manager.Enqueue(resourcePath, []byte("job"), DefaultEnqueueOptions())
+				_, _, err := manager.Enqueue(context.Background(), resourcePath, []byte("job"), DefaultEnqueueOptions())
 				errors <- err
 			}()
 		}
@@ -1047,7 +1047,7 @@ func TestConcurrentOperations(t *testing.T) {
 		const numJobs = 5
 		jobIDs := make([]string, numJobs)
 		for i := 0; i < numJobs; i++ {
-			jobID, _, err := manager.Enqueue(resourcePath, []byte("job"), DefaultEnqueueOptions())
+			jobID, _, err := manager.Enqueue(context.Background(), resourcePath, []byte("job"), DefaultEnqueueOptions())
 			require.NoError(t, err)
 			jobIDs[i] = jobID
 		}

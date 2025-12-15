@@ -16,6 +16,7 @@ import (
 	"github.com/flowmesh/engine/internal/storage/log"
 	"github.com/flowmesh/engine/internal/storage/metastore"
 	"github.com/flowmesh/engine/internal/storage/schema"
+	"github.com/flowmesh/engine/internal/tracing"
 	"github.com/rs/zerolog"
 )
 
@@ -97,8 +98,16 @@ func (m *Manager) getOrCreateIndex(resourcePath string) *OffsetIndex {
 }
 
 // WriteEvents writes events to a stream and returns assigned offsets
-func (m *Manager) WriteEvents(resourcePath string, events []Event) ([]int64, error) {
+func (m *Manager) WriteEvents(ctx context.Context, resourcePath string, events []Event) ([]int64, error) {
 	startTime := time.Now()
+
+	// Partition 0 for MVP
+	partition := int32(0)
+
+	// Start tracing span
+	ctx, span := StartWriteSpan(ctx, resourcePath, partition, len(events))
+	defer span.End()
+
 	// Validate stream exists and get config
 	config, err := m.metaStore.GetResource(resourcePath)
 	if err != nil {
@@ -113,17 +122,19 @@ func (m *Manager) WriteEvents(resourcePath string, events []Event) ([]int64, err
 		// Get schema (use latest if version is 0)
 		var schemaDef *schema.Schema
 		if config.Schema.Version > 0 {
-			schemaDef, err = m.schemaRegistry.GetSchema(context.Background(), config.Tenant, config.Schema.ID, config.Schema.Version)
+			schemaDef, err = m.schemaRegistry.GetSchema(ctx, config.Tenant, config.Schema.ID, config.Schema.Version)
 		} else {
-			schemaDef, err = m.schemaRegistry.GetLatestSchema(context.Background(), config.Tenant, config.Schema.ID)
+			schemaDef, err = m.schemaRegistry.GetLatestSchema(ctx, config.Tenant, config.Schema.ID)
 		}
 		if err != nil {
+			span.RecordError(err)
 			return nil, WriteError{ResourcePath: resourcePath, Err: fmt.Errorf("failed to get schema: %w", err)}
 		}
 
 		// Validate each event payload
 		for i, event := range events {
 			if err := m.validator.Validate(event.Payload, schemaDef.Definition); err != nil {
+				span.RecordError(err)
 				return nil, WriteError{
 					ResourcePath: resourcePath,
 					Err:          fmt.Errorf("event %d validation failed: %w", i, err),
@@ -135,9 +146,6 @@ func (m *Manager) WriteEvents(resourcePath string, events []Event) ([]int64, err
 	// Get or create stream state
 	state := m.getOrCreateStreamState(resourcePath)
 	idx := m.getOrCreateIndex(resourcePath)
-
-	// Partition 0 for MVP
-	partition := int32(0)
 
 	state.mu.Lock()
 	defer state.mu.Unlock()
@@ -163,7 +171,7 @@ func (m *Manager) WriteEvents(resourcePath string, events []Event) ([]int64, err
 			schemaVersion = config.Schema.Version
 		} else {
 			// Get latest version
-			latestSchema, err := m.schemaRegistry.GetLatestSchema(context.Background(), config.Tenant, config.Schema.ID)
+			latestSchema, err := m.schemaRegistry.GetLatestSchema(ctx, config.Tenant, config.Schema.ID)
 			if err == nil {
 				schemaVersion = latestSchema.Version
 			}
@@ -177,8 +185,17 @@ func (m *Manager) WriteEvents(resourcePath string, events []Event) ([]int64, err
 		// Generate unique ID
 		idBytes := make([]byte, 16)
 		if _, err := rand.Read(idBytes); err != nil {
+			span.RecordError(err)
 			return nil, WriteError{ResourcePath: resourcePath, Err: fmt.Errorf("failed to generate ID: %w", err)}
 		}
+
+		// Ensure headers map exists
+		if event.Headers == nil {
+			event.Headers = make(map[string]string)
+		}
+
+		// Inject trace context into event headers
+		tracing.InjectToHeaders(ctx, event.Headers)
 
 		// Create message
 		msg := &log.Message{
@@ -199,11 +216,13 @@ func (m *Manager) WriteEvents(resourcePath string, events []Event) ([]int64, err
 		// Encode message
 		encoded, err := log.EncodeMessage(msg)
 		if err != nil {
+			span.RecordError(err)
 			return nil, WriteError{ResourcePath: resourcePath, Err: fmt.Errorf("failed to encode message: %w", err)}
 		}
 
 		// Write to segment
 		if err := writer.WriteEntry(encoded); err != nil {
+			span.RecordError(err)
 			return nil, WriteError{ResourcePath: resourcePath, Err: fmt.Errorf("failed to write entry: %w", err)}
 		}
 
@@ -255,8 +274,13 @@ func (m *Manager) WriteEvents(resourcePath string, events []Event) ([]int64, err
 }
 
 // ReadFromOffset reads messages from a stream starting at the given offset
-func (m *Manager) ReadFromOffset(resourcePath string, partition int32, offset int64, maxMessages int) ([]*log.Message, error) {
+func (m *Manager) ReadFromOffset(ctx context.Context, resourcePath string, partition int32, offset int64, maxMessages int) ([]*log.Message, error) {
 	startTime := time.Now()
+
+	// Start tracing span
+	ctx, span := StartReadSpan(ctx, resourcePath, partition, offset, maxMessages)
+	defer span.End()
+
 	// Validate stream exists
 	config, err := m.metaStore.GetResource(resourcePath)
 	if err != nil {

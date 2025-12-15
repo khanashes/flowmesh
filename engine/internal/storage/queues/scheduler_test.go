@@ -46,7 +46,7 @@ func TestScheduler_ProcessExpiredJobs(t *testing.T) {
 	manager.mu.Unlock()
 
 	// Enqueue a job
-	jobID, _, err := manager.Enqueue(resourcePath, []byte("job"), DefaultEnqueueOptions())
+	jobID, _, err := manager.Enqueue(context.Background(), resourcePath, []byte("job"), DefaultEnqueueOptions())
 	require.NoError(t, err)
 
 	// Add to InFlight with expired timeout

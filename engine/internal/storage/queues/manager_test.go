@@ -1,6 +1,7 @@
 package queues
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -52,13 +53,13 @@ func TestManager_Enqueue(t *testing.T) {
 	require.NoError(t, err)
 
 	// Enqueue a job
-	jobID, seq, err := manager.Enqueue(resourcePath, []byte("job payload"), DefaultEnqueueOptions())
+	jobID, seq, err := manager.Enqueue(context.Background(), resourcePath, []byte("job payload"), DefaultEnqueueOptions())
 	require.NoError(t, err)
 	assert.NotEmpty(t, jobID)
 	assert.Equal(t, int64(0), seq)
 
 	// Enqueue another job
-	jobID2, seq2, err := manager.Enqueue(resourcePath, []byte("job payload 2"), DefaultEnqueueOptions())
+	jobID2, seq2, err := manager.Enqueue(context.Background(), resourcePath, []byte("job payload 2"), DefaultEnqueueOptions())
 	require.NoError(t, err)
 	assert.NotEmpty(t, jobID2)
 	assert.NotEqual(t, jobID, jobID2)
@@ -92,7 +93,7 @@ func TestManager_Enqueue_WithDelay(t *testing.T) {
 		Headers: map[string]string{"key": "value"},
 	}
 
-	jobID, seq, err := manager.Enqueue(resourcePath, []byte("delayed job"), options)
+	jobID, seq, err := manager.Enqueue(context.Background(), resourcePath, []byte("delayed job"), options)
 	require.NoError(t, err)
 	assert.NotEmpty(t, jobID)
 	assert.Equal(t, int64(0), seq)
@@ -107,7 +108,7 @@ func TestManager_Enqueue_QueueNotFound(t *testing.T) {
 	manager, _, _, _, cleanup := setupTestManager(t)
 	defer cleanup()
 
-	_, _, err := manager.Enqueue("nonexistent/queue", []byte("payload"), DefaultEnqueueOptions())
+	_, _, err := manager.Enqueue(context.Background(), "nonexistent/queue", []byte("payload"), DefaultEnqueueOptions())
 	assert.Error(t, err)
 	assert.IsType(t, QueueNotFoundError{}, err)
 }
@@ -134,10 +135,10 @@ func TestManager_PopReadyJob(t *testing.T) {
 	require.NoError(t, err)
 
 	// Enqueue jobs
-	jobID1, _, err := manager.Enqueue(resourcePath, []byte("job1"), DefaultEnqueueOptions())
+	jobID1, _, err := manager.Enqueue(context.Background(), resourcePath, []byte("job1"), DefaultEnqueueOptions())
 	require.NoError(t, err)
 
-	jobID2, _, err := manager.Enqueue(resourcePath, []byte("job2"), DefaultEnqueueOptions())
+	jobID2, _, err := manager.Enqueue(context.Background(), resourcePath, []byte("job2"), DefaultEnqueueOptions())
 	require.NoError(t, err)
 
 	// Pop ready jobs (should be in order)
@@ -179,7 +180,7 @@ func TestManager_AddToInFlight(t *testing.T) {
 	require.NoError(t, err)
 
 	// Enqueue a job
-	jobID, _, err := manager.Enqueue(resourcePath, []byte("job payload"), DefaultEnqueueOptions())
+	jobID, _, err := manager.Enqueue(context.Background(), resourcePath, []byte("job payload"), DefaultEnqueueOptions())
 	require.NoError(t, err)
 
 	// Add to InFlight
@@ -216,7 +217,7 @@ func TestManager_AddToInFlight_InvalidTimeout(t *testing.T) {
 	err = manager.InitializeQueue(resourcePath)
 	require.NoError(t, err)
 
-	jobID, _, err := manager.Enqueue(resourcePath, []byte("job"), DefaultEnqueueOptions())
+	jobID, _, err := manager.Enqueue(context.Background(), resourcePath, []byte("job"), DefaultEnqueueOptions())
 	require.NoError(t, err)
 
 	// Try with invalid timeout
@@ -247,7 +248,7 @@ func TestManager_RemoveFromInFlight(t *testing.T) {
 	require.NoError(t, err)
 
 	// Enqueue and add to InFlight
-	jobID, _, err := manager.Enqueue(resourcePath, []byte("job"), DefaultEnqueueOptions())
+	jobID, _, err := manager.Enqueue(context.Background(), resourcePath, []byte("job"), DefaultEnqueueOptions())
 	require.NoError(t, err)
 
 	_, err = manager.AddToInFlight(resourcePath, jobID, 30*time.Second)
@@ -285,7 +286,7 @@ func TestManager_GetInFlight(t *testing.T) {
 	require.NoError(t, err)
 
 	// Enqueue and add to InFlight
-	jobID, _, err := manager.Enqueue(resourcePath, []byte("job"), DefaultEnqueueOptions())
+	jobID, _, err := manager.Enqueue(context.Background(), resourcePath, []byte("job"), DefaultEnqueueOptions())
 	require.NoError(t, err)
 
 	_, err = manager.AddToInFlight(resourcePath, jobID, 30*time.Second)
@@ -319,10 +320,10 @@ func TestManager_InitializeQueue(t *testing.T) {
 	require.NoError(t, err)
 
 	// Enqueue some jobs
-	_, _, err = manager.Enqueue(resourcePath, []byte("job1"), DefaultEnqueueOptions())
+	_, _, err = manager.Enqueue(context.Background(), resourcePath, []byte("job1"), DefaultEnqueueOptions())
 	require.NoError(t, err)
 
-	_, _, err = manager.Enqueue(resourcePath, []byte("job2"), DefaultEnqueueOptions())
+	_, _, err = manager.Enqueue(context.Background(), resourcePath, []byte("job2"), DefaultEnqueueOptions())
 	require.NoError(t, err)
 
 	// Recreate manager to test recovery

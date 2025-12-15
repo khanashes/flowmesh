@@ -34,7 +34,7 @@ func (w *streamManagerWrapper) WriteEvents(ctx context.Context, resourcePath str
 		}
 	}
 
-	return w.Manager.WriteEvents(resourcePath, streamEvents)
+	return w.Manager.WriteEvents(ctx, resourcePath, streamEvents)
 }
 
 // ReadFromOffset implements StreamReader interface
@@ -44,7 +44,7 @@ func (w *streamManagerWrapper) ReadFromOffset(ctx context.Context, resourcePath 
 		return nil, ctx.Err()
 	default:
 	}
-	return w.Manager.ReadFromOffset(resourcePath, partition, offset, maxMessages)
+	return w.Manager.ReadFromOffset(ctx, resourcePath, partition, offset, maxMessages)
 }
 
 // GetLatestOffset implements StreamReader interface
@@ -100,7 +100,7 @@ func (w *queueManagerWrapper) Enqueue(ctx context.Context, resourcePath string, 
 		Headers: options.Headers,
 	}
 
-	return w.Manager.Enqueue(resourcePath, payload, queueOptions)
+	return w.Manager.Enqueue(ctx, resourcePath, payload, queueOptions)
 }
 
 // Reserve implements QueueReader interface

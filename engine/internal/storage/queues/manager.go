@@ -16,7 +16,9 @@ import (
 	"github.com/flowmesh/engine/internal/storage/log"
 	"github.com/flowmesh/engine/internal/storage/metastore"
 	"github.com/flowmesh/engine/internal/storage/schema"
+	"github.com/flowmesh/engine/internal/tracing"
 	"github.com/rs/zerolog"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // QueueState represents the state of a queue
@@ -102,8 +104,13 @@ func (m *Manager) getOrCreateQueueState(resourcePath string) *QueueState {
 }
 
 // Enqueue enqueues a job to a queue and returns job ID and sequence number
-func (m *Manager) Enqueue(resourcePath string, payload []byte, options EnqueueOptions) (string, int64, error) {
+func (m *Manager) Enqueue(ctx context.Context, resourcePath string, payload []byte, options EnqueueOptions) (string, int64, error) {
 	startTime := time.Now()
+
+	// Start tracing span
+	ctx, span := StartEnqueueSpan(ctx, resourcePath)
+	defer span.End()
+
 	// Validate queue exists and get config
 	config, err := m.metaStore.GetResource(resourcePath)
 	if err != nil {
@@ -118,16 +125,18 @@ func (m *Manager) Enqueue(resourcePath string, payload []byte, options EnqueueOp
 		// Get schema (use latest if version is 0)
 		var schemaDef *schema.Schema
 		if config.Schema.Version > 0 {
-			schemaDef, err = m.schemaRegistry.GetSchema(context.Background(), config.Tenant, config.Schema.ID, config.Schema.Version)
+			schemaDef, err = m.schemaRegistry.GetSchema(ctx, config.Tenant, config.Schema.ID, config.Schema.Version)
 		} else {
-			schemaDef, err = m.schemaRegistry.GetLatestSchema(context.Background(), config.Tenant, config.Schema.ID)
+			schemaDef, err = m.schemaRegistry.GetLatestSchema(ctx, config.Tenant, config.Schema.ID)
 		}
 		if err != nil {
+			span.RecordError(err)
 			return "", 0, EnqueueError{ResourcePath: resourcePath, Err: fmt.Errorf("failed to get schema: %w", err)}
 		}
 
 		// Validate payload
 		if err := m.validator.Validate(payload, schemaDef.Definition); err != nil {
+			span.RecordError(err)
 			return "", 0, EnqueueError{
 				ResourcePath: resourcePath,
 				Err:          fmt.Errorf("payload validation failed: %w", err),
@@ -175,12 +184,20 @@ func (m *Manager) Enqueue(resourcePath string, payload []byte, options EnqueueOp
 			schemaVersion = config.Schema.Version
 		} else {
 			// Get latest version
-			latestSchema, err := m.schemaRegistry.GetLatestSchema(context.Background(), config.Tenant, config.Schema.ID)
+			latestSchema, err := m.schemaRegistry.GetLatestSchema(ctx, config.Tenant, config.Schema.ID)
 			if err == nil {
 				schemaVersion = latestSchema.Version
 			}
 		}
 	}
+
+	// Ensure headers map exists
+	if options.Headers == nil {
+		options.Headers = make(map[string]string)
+	}
+
+	// Inject trace context into message headers
+	tracing.InjectToHeaders(ctx, options.Headers)
 
 	// Create message
 	msg := &log.Message{
@@ -201,13 +218,21 @@ func (m *Manager) Enqueue(resourcePath string, payload []byte, options EnqueueOp
 	// Encode message
 	encoded, err := log.EncodeMessage(msg)
 	if err != nil {
+		span.RecordError(err)
 		return "", 0, EnqueueError{ResourcePath: resourcePath, Err: fmt.Errorf("failed to encode message: %w", err)}
 	}
 
 	// Write to segment
 	if err := writer.WriteEntry(encoded); err != nil {
+		span.RecordError(err)
 		return "", 0, EnqueueError{ResourcePath: resourcePath, Err: fmt.Errorf("failed to write entry: %w", err)}
 	}
+
+	// Set span attributes
+	span.SetAttributes(
+		attribute.String("queue.job_id", jobID),
+		attribute.Int64("queue.seq", seq),
+	)
 
 	// Get segment path for PayloadPos
 	segments, err := m.logManager.ListSegments(resourcePath, partition)
@@ -336,11 +361,20 @@ func (m *Manager) ACK(ctx context.Context, resourcePath string, jobID string) er
 		return ctx.Err()
 	default:
 	}
+
+	// Start tracing span
+	ctx, span := StartACKSpan(ctx, resourcePath, jobID)
+	defer span.End()
+
 	err := m.RemoveFromInFlight(resourcePath, jobID)
-	if err == nil && m.metrics != nil {
-		// Get config for tenant/namespace/queue labels
-		if config, configErr := m.metaStore.GetResource(resourcePath); configErr == nil {
-			m.metrics.RecordJobCompleted(config.Tenant, config.Namespace, config.Name)
+	if err != nil {
+		span.RecordError(err)
+	} else {
+		if m.metrics != nil {
+			// Get config for tenant/namespace/queue labels
+			if config, configErr := m.metaStore.GetResource(resourcePath); configErr == nil {
+				m.metrics.RecordJobCompleted(config.Tenant, config.Namespace, config.Name)
+			}
 		}
 	}
 	return err
@@ -378,7 +412,15 @@ func (m *Manager) RemoveFromInFlight(resourcePath string, jobID string) error {
 
 // NACK negatively acknowledges a job (requeues with backoff)
 func (m *Manager) NACK(ctx context.Context, resourcePath string, jobID string) error {
-	return m.NACKWithDelay(ctx, resourcePath, jobID, 0)
+	// Start tracing span
+	ctx, span := StartNACKSpan(ctx, resourcePath, jobID)
+	defer span.End()
+
+	err := m.NACKWithDelay(ctx, resourcePath, jobID, 0)
+	if err != nil {
+		span.RecordError(err)
+	}
+	return err
 }
 
 // NACKWithDelay negatively acknowledges a job with explicit delay
@@ -763,7 +805,7 @@ func (m *Manager) MoveToDLQ(ctx context.Context, resourcePath string, jobID stri
 	}
 
 	// Enqueue to DLQ
-	_, _, err = m.Enqueue(dlqPath, payload, EnqueueOptions{
+	_, _, err = m.Enqueue(ctx, dlqPath, payload, EnqueueOptions{
 		Headers: headers,
 	})
 	if err != nil {
@@ -981,6 +1023,11 @@ func (m *Manager) InitializeQueue(resourcePath string) error {
 // Reserve reserves a job from the queue with visibility timeout
 func (m *Manager) Reserve(ctx context.Context, resourcePath string, options ReserveOptions) (*JobMetadata, error) {
 	startTime := time.Now()
+
+	// Start tracing span
+	ctx, span := StartReserveSpan(ctx, resourcePath)
+	defer span.End()
+
 	// Check context first
 	select {
 	case <-ctx.Done():
@@ -1059,10 +1106,16 @@ func (m *Manager) Reserve(ctx context.Context, resourcePath string, options Rese
 		Msg("Job reserved")
 
 	// Record metrics
-	if m.metrics != nil && job != nil {
+	if m.metrics != nil {
 		duration := time.Since(startTime)
 		m.metrics.RecordReserve(config.Tenant, config.Namespace, config.Name, duration)
 	}
+
+	// Set span attributes (job is guaranteed to be non-nil at this point)
+	span.SetAttributes(
+		attribute.String("queue.job_id", job.ID),
+		attribute.Int("queue.attempts", int(job.Attempts)),
+	)
 
 	return job, nil
 }

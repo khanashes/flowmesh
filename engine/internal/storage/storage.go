@@ -14,6 +14,7 @@ import (
 	"github.com/flowmesh/engine/internal/storage/queues"
 	"github.com/flowmesh/engine/internal/storage/schema"
 	"github.com/flowmesh/engine/internal/storage/streams"
+	"github.com/flowmesh/engine/internal/tracing"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
 )
@@ -31,6 +32,7 @@ type Storage struct {
 	schemaRegistry       *schema.Registry
 	metricsCollector     *metrics.Collector
 	nodeMetrics          *metrics.NodeMetrics
+	tracerProvider       *tracing.Provider
 	log                  zerolog.Logger
 	mu                   sync.RWMutex
 	closed               bool
@@ -89,6 +91,11 @@ func (s *Storage) MetricsCollector() interface{ GetRegistry() *prometheus.Regist
 	return s.metricsCollector
 }
 
+// TracerProvider returns the tracing provider
+func (s *Storage) TracerProvider() *tracing.Provider {
+	return s.tracerProvider
+}
+
 // Paths returns the storage paths
 func (s *Storage) Paths() *StoragePaths {
 	return s.paths
@@ -141,6 +148,14 @@ func (s *Storage) Close(ctx context.Context) error {
 	if s.consumerGroupManager != nil {
 		if err := s.consumerGroupManager.Stop(context.Background()); err != nil {
 			s.log.Error().Err(err).Msg("Failed to stop consumer group manager")
+			lastErr = err
+		}
+	}
+
+	// Shutdown tracing provider
+	if s.tracerProvider != nil {
+		if err := s.tracerProvider.Shutdown(ctx); err != nil {
+			s.log.Error().Err(err).Msg("Failed to shutdown tracing provider")
 			lastErr = err
 		}
 	}
