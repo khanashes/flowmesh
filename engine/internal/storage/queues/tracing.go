@@ -90,3 +90,20 @@ func StartNACKSpan(ctx context.Context, resourcePath, jobID string) (context.Con
 	)
 	return ctx, span
 }
+
+// StartPeekSpan starts a span for Peek operation
+func StartPeekSpan(ctx context.Context, resourcePath string) (context.Context, trace.Span) {
+	tracer := otel.Tracer("flowmesh.queue")
+	tenant, namespace, name := parseResourcePath(resourcePath)
+	ctx, span := tracer.Start(ctx, "queue.peek",
+		trace.WithSpanKind(trace.SpanKindConsumer),
+	)
+	span.SetAttributes(
+		attribute.String(tracing.AttrTenant, tenant),
+		attribute.String(tracing.AttrNamespace, namespace),
+		attribute.String(tracing.AttrQueueName, name),
+		attribute.String(tracing.AttrResourceName, resourcePath),
+		attribute.String(tracing.AttrOperation, "peek"),
+	)
+	return ctx, span
+}

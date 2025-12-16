@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/flowmesh/engine/internal/filter"
 	"github.com/flowmesh/engine/internal/logger"
 	"github.com/flowmesh/engine/internal/metrics"
 	"github.com/flowmesh/engine/internal/storage/log"
@@ -300,13 +301,40 @@ func (m *Manager) WriteEvents(ctx context.Context, resourcePath string, events [
 	return offsets, nil
 }
 
+// ReadOptions options for reading from a stream
+type ReadOptions struct {
+	Offset      int64
+	MaxMessages int
+	Filter      string
+}
+
 // ReadFromOffset reads messages from a stream starting at the given offset
 func (m *Manager) ReadFromOffset(ctx context.Context, resourcePath string, partition int32, offset int64, maxMessages int) ([]*log.Message, error) {
+	return m.ReadWithOptions(ctx, resourcePath, partition, ReadOptions{
+		Offset:      offset,
+		MaxMessages: maxMessages,
+	})
+}
+
+// ReadWithOptions reads messages with advanced options
+func (m *Manager) ReadWithOptions(ctx context.Context, resourcePath string, partition int32, opts ReadOptions) ([]*log.Message, error) {
 	startTime := time.Now()
+	offset := opts.Offset
+	maxMessages := opts.MaxMessages
 
 	// Start tracing span
 	ctx, span := StartReadSpan(ctx, resourcePath, partition, offset, maxMessages)
 	defer span.End()
+
+	// Parse filter if present
+	var filterExpr filter.Expression
+	if opts.Filter != "" {
+		var err error
+		filterExpr, err = filter.Parse(opts.Filter)
+		if err != nil {
+			return nil, fmt.Errorf("invalid filter expression: %w", err)
+		}
+	}
 
 	// Validate stream exists
 	config, err := m.metaStore.GetResource(resourcePath)
@@ -374,7 +402,27 @@ func (m *Manager) ReadFromOffset(ctx context.Context, resourcePath string, parti
 				continue // Skip messages before target offset
 			}
 
-			// Message offset >= target offset, include it
+			// Apply filter if configured
+			if filterExpr != nil {
+				matchCtx := filter.Context{
+					"headers":   msg.Headers,
+					"partition": msg.Partition,
+					"offset":    msg.Offset,
+					"timestamp": msg.CreatedAt.Unix(),
+				}
+				result, err := filterExpr.Evaluate(matchCtx)
+				if err != nil {
+					// Log error but skip message? Or return error?
+					// For now, treat evaluation error as no match to be safe
+					m.log.Debug().Err(err).Msg("Filter evaluation failed")
+					continue
+				}
+				if b, ok := result.(bool); !ok || !b {
+					continue
+				}
+			}
+
+			// Message offset >= target offset and matches filter, include it
 			messages = append(messages, msg)
 
 			// If we've read enough, stop

@@ -4,16 +4,19 @@ import (
 	"bytes"
 	"context"
 	"encoding/gob"
+	"encoding/json" // Added for Scan method
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings" // Added for Scan method
 	"sync"
 	"time"
 
 	"github.com/cockroachdb/pebble"
+	"github.com/flowmesh/engine/internal/filter" // Added for Scan method
 	"github.com/flowmesh/engine/internal/logger"
-	"github.com/flowmesh/engine/internal/storage/metastore"
+	"github.com/flowmesh/engine/internal/storage/metastore" // Added for Scan method
 	"github.com/rs/zerolog"
 )
 
@@ -583,4 +586,138 @@ func (m *Manager) recoverKV(ctx context.Context, resourcePath string) error {
 	}
 
 	return nil
+}
+
+// Scan scans the KV store for keys matching the prefix and optional filter
+func (m *Manager) Scan(ctx context.Context, resourcePath, prefix, filterStr string, limit int) ([]ScanResult, error) {
+	// Start tracing span
+	ctx, span := StartScanSpan(ctx, resourcePath)
+	defer span.End()
+
+	// Parse filter if present
+	var filterExpr filter.Expression
+	if filterStr != "" {
+		var err error
+		filterExpr, err = filter.Parse(filterStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid filter expression: %w", err)
+		}
+	}
+
+	// Validate limit
+	if limit <= 0 {
+		limit = 100 // Default to 100
+	}
+	if limit > 1000 {
+		limit = 1000 // Hard cap
+	}
+
+	// Validate KV store exists
+	_, err := m.metaStore.GetResource(resourcePath)
+	if err != nil {
+		if _, ok := err.(metastore.ResourceNotFoundError); ok {
+			return nil, KVStoreNotFoundError{ResourcePath: resourcePath}
+		}
+		return nil, fmt.Errorf("failed to validate KV store: %w", err)
+	}
+
+	// Get or open DB
+	db, err := m.getOrOpenDB(resourcePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get DB: %w", err)
+	}
+
+	// Build prefix key
+	prefixKey := encodeKey(prefix)
+
+	// Build upper bound for prefix if provided (optimization for lexicographical scan)
+	var upperBoundBytes []byte
+	if prefix != "" {
+		upperBoundBytes = make([]byte, len(prefixKey))
+		copy(upperBoundBytes, prefixKey)
+		for i := len(upperBoundBytes) - 1; i >= 0; i-- {
+			if upperBoundBytes[i] < 0xff {
+				upperBoundBytes[i]++
+				upperBoundBytes = upperBoundBytes[:i+1]
+				break
+			}
+		}
+	}
+
+	results := make([]ScanResult, 0, limit)
+
+	iter, err := db.NewIter(&pebble.IterOptions{
+		LowerBound: prefixKey,
+		UpperBound: upperBoundBytes,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create iterator: %w", err)
+	}
+	defer iter.Close()
+
+	for iter.First(); iter.Valid(); iter.Next() {
+		if len(results) >= limit {
+			break
+		}
+
+		encodedKey := iter.Key()
+		userKey := decodeKey(encodedKey)
+
+		// Filter by prefix (double check)
+		if prefix != "" && !strings.HasPrefix(userKey, prefix) {
+			continue
+		}
+
+		// Read value to filter
+		valueBytes, err := iter.ValueAndErr()
+		if err != nil {
+			m.log.Warn().Err(err).Str("key", userKey).Msg("Failed to read value during scan")
+			continue
+		}
+
+		val, err := decodeValue(valueBytes)
+		if err != nil {
+			m.log.Warn().Err(err).Str("key", userKey).Msg("Failed to decode value during scan")
+			continue
+		}
+
+		// Check expiration
+		if val.ExpiresAt != nil && time.Now().After(*val.ExpiresAt) {
+			continue // Skip expired
+		}
+
+		// Apply filter
+		if filterExpr != nil {
+			// Try to unmarshal JSON value
+			var jsonValue interface{}
+			_ = json.Unmarshal(val.Payload, &jsonValue)
+
+			matchCtx := filter.Context{
+				"key":        userKey,
+				"value":      string(val.Payload), // Raw string value
+				"json":       jsonValue,           // Parsed JSON (if valid)
+				"created_at": val.CreatedAt.Unix(),
+			}
+
+			if val.ExpiresAt != nil {
+				matchCtx["expires_at"] = val.ExpiresAt.Unix()
+			}
+
+			result, err := filterExpr.Evaluate(matchCtx)
+			if err != nil {
+				// Log debug
+				continue
+			}
+			if b, ok := result.(bool); !ok || !b {
+				continue
+			}
+		}
+
+		results = append(results, ScanResult{
+			Key:   userKey,
+			Value: val,
+		})
+	}
+
+	return results, nil
 }

@@ -26,3 +26,9 @@ func DefaultSetOptions() SetOptions {
 		TTL: 0, // No expiration by default
 	}
 }
+
+// ScanResult represents a key-value pair returned by Scan
+type ScanResult struct {
+	Key   string
+	Value *Value
+}

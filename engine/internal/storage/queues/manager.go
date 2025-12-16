@@ -8,8 +8,11 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"sort"
 	"sync"
 	"time"
+
+	"github.com/flowmesh/engine/internal/filter"
 
 	"github.com/flowmesh/engine/internal/logger"
 	"github.com/flowmesh/engine/internal/metrics"
@@ -1219,6 +1222,119 @@ func (m *Manager) longPollForJob(ctx context.Context, resourcePath string, pollT
 			}
 		}
 	}
+}
+
+// Peek returns a list of messages from the queue without consuming them
+func (m *Manager) Peek(ctx context.Context, resourcePath string, filterStr string, limit int) ([]*log.Message, error) {
+	// Start tracing span
+	ctx, span := StartPeekSpan(ctx, resourcePath)
+	defer span.End()
+
+	// Parse filter if present
+	var filterExpr filter.Expression
+	if filterStr != "" {
+		var err error
+		filterExpr, err = filter.Parse(filterStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid filter expression: %w", err)
+		}
+	}
+
+	// Validate limit
+	if limit <= 0 {
+		limit = 10 // Default
+	}
+	if limit > 1000 {
+		limit = 1000 // Hard cap
+	}
+
+	// Get queue state
+	m.mu.RLock()
+	state, exists := m.queueStates[resourcePath]
+	m.mu.RUnlock()
+
+	if !exists {
+		// Verify resource exists in metastore
+		if _, err := m.metaStore.GetResource(resourcePath); err != nil {
+			if _, ok := err.(metastore.ResourceNotFoundError); ok {
+				return nil, QueueNotFoundError{ResourcePath: resourcePath}
+			}
+			return nil, err
+		}
+		// If resource exists but state doesn't, it might be empty or not loaded
+		// Just return empty list
+		return []*log.Message{}, nil
+	}
+
+	// Get all jobs from heap (thread-safe copy)
+	jobs := state.ReadyHeap.GetAll()
+
+	// Sort jobs by VisibleAt then Seq to simulate Dequeue order
+	sort.Slice(jobs, func(i, j int) bool {
+		if jobs[i].VisibleAt.Equal(jobs[j].VisibleAt) {
+			return jobs[i].Seq < jobs[j].Seq
+		}
+		return jobs[i].VisibleAt.Before(jobs[j].VisibleAt)
+	})
+
+	messages := make([]*log.Message, 0, len(jobs))
+
+	// Iterate logic
+	for _, job := range jobs {
+		if len(messages) >= limit {
+			break
+		}
+
+		// Read message content
+		reader, err := log.NewSegmentReader(job.PayloadPos.File)
+		if err != nil {
+			m.log.Warn().Err(err).Str("file", job.PayloadPos.File).Msg("Failed to open segment for peek")
+			continue
+		}
+
+		// Seek to offset
+		if _, err := reader.Seek(job.PayloadPos.Offset, io.SeekStart); err != nil {
+			reader.Close()
+			m.log.Warn().Err(err).Msg("Failed to seek to message offset")
+			continue
+		}
+
+		data, _, err := reader.ReadEntry()
+		reader.Close() // Close immediately to avoid leaking handles in loop
+		if err != nil {
+			m.log.Warn().Err(err).Msg("Failed to read message entry")
+			continue
+		}
+
+		msg, err := log.DecodeMessage(data)
+		if err != nil {
+			m.log.Warn().Err(err).Msg("Failed to decode message")
+			continue
+		}
+
+		// Apply filter
+		if filterExpr != nil {
+			matchCtx := filter.Context{
+				"headers":    msg.Headers,
+				"partition":  msg.Partition,
+				"seq":        msg.Seq,
+				"visible_at": job.VisibleAt.Unix(),
+				"attempts":   job.Attempts,
+			}
+			result, err := filterExpr.Evaluate(matchCtx)
+			if err != nil {
+				m.log.Debug().Err(err).Msg("Filter evaluation failed")
+				continue
+			}
+			if b, ok := result.(bool); !ok || !b {
+				continue
+			}
+		}
+
+		messages = append(messages, msg)
+	}
+
+	return messages, nil
 }
 
 // Receive receives one or more jobs from the queue

@@ -74,3 +74,20 @@ func StartDeleteSpan(ctx context.Context, resourcePath, key string) (context.Con
 	)
 	return ctx, span
 }
+
+// StartScanSpan starts a span for Scan operation
+func StartScanSpan(ctx context.Context, resourcePath string) (context.Context, trace.Span) {
+	tracer := otel.Tracer("flowmesh.kv")
+	tenant, namespace, name := parseResourcePath(resourcePath)
+	ctx, span := tracer.Start(ctx, "kv.scan",
+		trace.WithSpanKind(trace.SpanKindClient),
+	)
+	span.SetAttributes(
+		attribute.String(tracing.AttrTenant, tenant),
+		attribute.String(tracing.AttrNamespace, namespace),
+		attribute.String(tracing.AttrKVStoreName, name),
+		attribute.String(tracing.AttrResourceName, resourcePath),
+		attribute.String(tracing.AttrOperation, "scan"),
+	)
+	return ctx, span
+}
