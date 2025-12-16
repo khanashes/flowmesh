@@ -33,6 +33,7 @@ type Session struct {
 	EndTime              *time.Time
 	SandboxConsumerGroup string
 	Status               SessionStatus
+	ErrorMessage         string
 	CreatedAt            time.Time
 	UpdatedAt            time.Time
 }

@@ -14,6 +14,8 @@ const (
 	MessageTypeQueue MessageType = "QUEUE"
 	// MessageTypeKVEvent represents a KV event message
 	MessageTypeKVEvent MessageType = "KV_EVENT"
+	// MessageTypeQueueAck represents a queue acknowledgement message
+	MessageTypeQueueAck MessageType = "QUEUE_ACK"
 )
 
 // Message represents a message stored in the log

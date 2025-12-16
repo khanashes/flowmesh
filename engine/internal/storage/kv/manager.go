@@ -500,3 +500,87 @@ func hashResourcePath(path string) string {
 	}
 	return hashStr
 }
+
+// Recover recovers the state of the KV manager (rebuilds expiry index)
+func (m *Manager) Recover(ctx context.Context) error {
+	m.log.Info().Msg("Starting KV recovery")
+
+	// List all KV resources
+	kvs, err := m.metaStore.ListResources("", "", metastore.ResourceKV)
+	if err != nil {
+		return fmt.Errorf("failed to list KV stores: %w", err)
+	}
+
+	m.log.Info().Int("count", len(kvs)).Msg("Found KV stores to recover")
+
+	count := 0
+	for _, config := range kvs {
+		if err := m.recoverKV(ctx, config.GetPath()); err != nil {
+			m.log.Error().Err(err).Str("resource", config.GetPath()).Msg("Failed to recover KV store")
+			// Continue recovering others
+			continue
+		}
+		count++
+	}
+
+	m.log.Info().Int("recovered", count).Msg("KV recovery completed")
+	return nil
+}
+
+// recoverKV recovers a single KV store
+func (m *Manager) recoverKV(ctx context.Context, resourcePath string) error {
+	// Open DB
+	db, err := m.getOrOpenDB(resourcePath)
+	if err != nil {
+		return err
+	}
+
+	// Iterate all keys
+	iter, err := db.NewIter(nil)
+	if err != nil {
+		return fmt.Errorf("failed to create iterator: %w", err)
+	}
+	defer iter.Close()
+
+	keysCount := 0
+	expiredCount := 0
+
+	for iter.First(); iter.Valid(); iter.Next() {
+		// We need to read the value to check expiration
+		valueBytes, err := iter.ValueAndErr()
+		if err != nil {
+			continue
+		}
+
+		// Decode value
+		val, err := decodeValue(valueBytes)
+		if err != nil {
+			m.log.Warn().Err(err).Str("resource", resourcePath).Msg("Failed to decode value during recovery")
+			continue
+		}
+
+		// Check if it has expiry
+		if val.ExpiresAt != nil {
+			keysCount++
+			userKey := decodeKey(iter.Key())
+
+			// If already expired, we could delete it now, or let the reaper handle it
+			// Adding to index means reaper will pick it up immediately
+			m.addToExpiryIndex(*val.ExpiresAt, resourcePath, userKey)
+
+			if time.Now().After(*val.ExpiresAt) {
+				expiredCount++
+			}
+		}
+	}
+
+	if keysCount > 0 {
+		m.log.Debug().
+			Str("resource", resourcePath).
+			Int("keys_with_ttl", keysCount).
+			Int("expired", expiredCount).
+			Msg("Recovered TTL keys")
+	}
+
+	return nil
+}

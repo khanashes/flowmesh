@@ -305,18 +305,30 @@ func (s *Storage) Recover(ctx context.Context) error {
 		}
 	}
 
+	// KV manager recovery (rebuild expiry index)
+	if err := s.kvManager.Recover(ctx); err != nil {
+		return fmt.Errorf("failed to recover KV manager: %w", err)
+	}
+
 	// Stream manager recovery (rebuild indices)
-	// TODO: Add stream recovery logic when implemented
+	if s.streamManager != nil {
+		if err := s.streamManager.Recover(ctx); err != nil {
+			return fmt.Errorf("failed to recover stream manager: %w", err)
+		}
+	}
 
 	// Queue manager recovery
-	// TODO: Add queue recovery logic when implemented
-
-	// Consumer group manager recovery
-	// TODO: Add consumer group recovery logic when implemented
+	if s.queueManager != nil {
+		if err := s.queueManager.Recover(ctx); err != nil {
+			return fmt.Errorf("failed to recover queue manager: %w", err)
+		}
+	}
 
 	// Replay manager recovery - mark active sessions as stopped
 	if s.replayManager != nil {
-		// This is already handled by replay manager during start
+		if err := s.replayManager.Recover(ctx); err != nil {
+			return fmt.Errorf("failed to recover replay manager: %w", err)
+		}
 	}
 
 	s.log.Info().Msg("Storage recovery completed")

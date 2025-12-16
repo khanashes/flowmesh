@@ -209,13 +209,13 @@ func (sr *SegmentReader) ReadEntry() (data []byte, offset int64, err error) {
 }
 
 // Seek seeks to a specific offset in the file
-func (sr *SegmentReader) Seek(offset int64) error {
-	newOffset, err := sr.file.Seek(offset, io.SeekStart)
+func (sr *SegmentReader) Seek(offset int64, whence int) (int64, error) {
+	newOffset, err := sr.file.Seek(offset, whence)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	sr.offset = newOffset
-	return nil
+	return newOffset, nil
 }
 
 // Close closes the segment reader

@@ -645,3 +645,27 @@ func (m *Manager) SaveIndexes() error {
 
 	return nil
 }
+
+// Recover recovers the state of all streams from the log
+func (m *Manager) Recover(ctx context.Context) error {
+	m.log.Info().Msg("Starting stream recovery")
+
+	// List all stream resources
+	streams, err := m.metaStore.ListResources("", "", metastore.ResourceStream)
+	if err != nil {
+		return fmt.Errorf("failed to list streams: %w", err)
+	}
+
+	m.log.Info().Int("count", len(streams)).Msg("Found streams to recover")
+
+	for _, config := range streams {
+		path := config.GetPath()
+		if err := m.InitializeStream(path); err != nil {
+			m.log.Error().Err(err).Str("stream", path).Msg("Failed to recover stream")
+			return fmt.Errorf("failed to recover stream %s: %w", path, err)
+		}
+	}
+
+	m.log.Info().Msg("Stream recovery completed")
+	return nil
+}

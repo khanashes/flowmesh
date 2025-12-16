@@ -474,6 +474,35 @@ func isValidStateTransition(current, requested SessionStatus) bool {
 	case SessionStatusStopped, SessionStatusCompleted, SessionStatusError:
 		return false // Terminal states
 	default:
-		return false
 	}
+	return false
+}
+
+// Recover recovers the state of the replay manager
+func (m *Manager) Recover(ctx context.Context) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	m.log.Info().Msg("Starting replay recovery")
+
+	count := 0
+	for _, session := range m.sessions {
+		if session.Status == SessionStatusActive {
+			// Mark as stopped/error due to crash
+			session.Status = SessionStatusError
+			session.ErrorMessage = "Session interrupted by system restart"
+			session.UpdatedAt = time.Now()
+			count++
+			m.log.Warn().Str("session", session.ID).Msg("Marked interrupted replay session as Error")
+		}
+	}
+
+	if count > 0 {
+		if err := m.flush(); err != nil {
+			return fmt.Errorf("failed to flush recovered sessions: %w", err)
+		}
+	}
+
+	m.log.Info().Int("interrupted_sessions", count).Msg("Replay recovery completed")
+	return nil
 }

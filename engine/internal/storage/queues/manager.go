@@ -400,6 +400,11 @@ func (m *Manager) RemoveFromInFlight(resourcePath string, jobID string) error {
 		return nil
 	}
 
+	// Persist ACK to log
+	if err := m.writeACKEntry(resourcePath, jobID); err != nil {
+		return fmt.Errorf("failed to persist ACK: %w", err)
+	}
+
 	delete(state.InFlight, jobID)
 
 	m.log.Debug().
@@ -407,6 +412,39 @@ func (m *Manager) RemoveFromInFlight(resourcePath string, jobID string) error {
 		Str("job_id", jobID).
 		Msg("Job removed from InFlight (ACKed)")
 
+	return nil
+}
+
+// writeACKEntry writes an ACK entry to the log
+func (m *Manager) writeACKEntry(resourcePath string, jobID string) error {
+	// Partition 0 for MVP
+	partition := int32(0)
+
+	writer, err := m.logManager.OpenSegment(resourcePath, partition)
+	if err != nil {
+		return err
+	}
+
+	msg := &log.Message{
+		ID:           jobID,
+		ResourcePath: resourcePath,
+		Type:         log.MessageTypeQueueAck,
+		CreatedAt:    time.Now(),
+		Payload:      []byte{}, // Empty payload for ACK
+	}
+
+	encoded, err := log.EncodeMessage(msg)
+	if err != nil {
+		return err
+	}
+
+	if err := writer.WriteEntry(encoded); err != nil {
+		return err
+	}
+
+	// Flush based on policy (handled by writer, but we explicit flush to be sure)
+	// Actually writer.WriteEntry handles policy. But we might want to force flush for ACKs?
+	// For now rely on policy.
 	return nil
 }
 
