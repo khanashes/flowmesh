@@ -24,6 +24,8 @@ type Manager struct {
 	segments       map[string]*ActiveSegment
 	maxSegmentSize int64
 	maxSegmentAge  time.Duration
+	fsyncPolicy    FsyncPolicy
+	fsyncScheduler *FsyncScheduler
 }
 
 // ActiveSegment represents an actively open segment
@@ -35,13 +37,22 @@ type ActiveSegment struct {
 }
 
 // NewManager creates a new log manager
-func NewManager(baseDir string) *Manager {
-	return &Manager{
+func NewManager(baseDir string, fsyncPolicy FsyncPolicy, fsyncInterval time.Duration) *Manager {
+	m := &Manager{
 		baseDir:        baseDir,
 		segments:       make(map[string]*ActiveSegment),
 		maxSegmentSize: DefaultMaxSegmentSize,
 		maxSegmentAge:  DefaultMaxSegmentAge,
+		fsyncPolicy:    fsyncPolicy,
 	}
+
+	// Create fsync scheduler if interval policy
+	if fsyncPolicy == FsyncInterval {
+		m.fsyncScheduler = NewFsyncScheduler(fsyncInterval)
+		m.fsyncScheduler.Start()
+	}
+
+	return m
 }
 
 // SetMaxSegmentSize sets the maximum segment size
@@ -104,9 +115,14 @@ func (m *Manager) createSegmentLocked(key, resourcePath string, partition int32)
 	segmentPath := getSegmentPath(resourceDir, segmentNum)
 
 	// Create segment writer
-	writer, err := NewSegmentWriter(segmentPath)
+	writer, err := NewSegmentWriter(segmentPath, m.fsyncPolicy)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create segment writer: %w", err)
+	}
+
+	// Register writer with fsync scheduler if using interval policy
+	if m.fsyncScheduler != nil {
+		m.fsyncScheduler.Register(writer)
 	}
 
 	// Create metadata
@@ -305,6 +321,107 @@ func (m *Manager) CloseAll() error {
 
 	m.segments = make(map[string]*ActiveSegment)
 	return lastErr
+}
+
+// Shutdown gracefully shuts down the log manager
+func (m *Manager) Shutdown() error {
+	// Stop fsync scheduler if running
+	if m.fsyncScheduler != nil {
+		m.fsyncScheduler.Stop()
+	}
+
+	// Close all segments
+	return m.CloseAll()
+}
+
+// Recover validates and recovers log segments on startup
+func (m *Manager) Recover() error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	log.Info().Str("base_dir", m.baseDir).Msg("Starting log recovery")
+
+	// Find all resource directories
+	resourceDirs, err := filepath.Glob(filepath.Join(m.baseDir, "*"))
+	if err != nil {
+		return fmt.Errorf("failed to list resource directories: %w", err)
+	}
+
+	recoveredCount := 0
+	corruptedCount := 0
+
+	for _, resourceDir := range resourceDirs {
+		info, err := os.Stat(resourceDir)
+		if err != nil || !info.IsDir() {
+			continue
+		}
+
+		// List segments in this resource directory
+		segmentFiles, err := filepath.Glob(filepath.Join(resourceDir, "segment-*.log"))
+		if err != nil {
+			log.Warn().Err(err).Str("dir", resourceDir).Msg("Failed to list segments")
+			continue
+		}
+
+		for _, segmentPath := range segmentFiles {
+			if err := m.recoverSegment(segmentPath); err != nil {
+				log.Error().Err(err).Str("segment", segmentPath).Msg("Failed to recover segment")
+				corruptedCount++
+			} else {
+				recoveredCount++
+			}
+		}
+	}
+
+	log.Info().
+		Int("recovered", recoveredCount).
+		Int("corrupted", corruptedCount).
+		Msg("Log recovery completed")
+
+	return nil
+}
+
+// recoverSegment validates and recovers a single segment file
+func (m *Manager) recoverSegment(segmentPath string) error {
+	// Validate segment for corruption
+	if err := ValidateSegment(segmentPath); err != nil {
+		// Attempt to truncate corrupted entries
+		if truncateErr := m.truncateCorruptedSegment(segmentPath); truncateErr != nil {
+			return fmt.Errorf("segment corrupted and truncation failed: %w (original: %v)", truncateErr, err)
+		}
+		log.Warn().Str("segment", segmentPath).Msg("Truncated corrupted segment")
+	}
+
+	return nil
+}
+
+// truncateCorruptedSegment attempts to recover a corrupted segment by truncating
+func (m *Manager) truncateCorruptedSegment(segmentPath string) error {
+	reader, err := NewSegmentReader(segmentPath)
+	if err != nil {
+		return err
+	}
+	defer reader.Close()
+
+	// Read entries until corruption is found
+	lastValidOffset := int64(0)
+	for {
+		_, offset, err := reader.ReadEntry()
+		if err != nil {
+			// Found corruption point
+			break
+		}
+		lastValidOffset = offset
+	}
+
+	// If no valid entries, delete the file
+	if lastValidOffset == 0 {
+		return os.Remove(segmentPath)
+	}
+
+	// Truncate file to last valid offset
+	// Note: This is a simplified approach - in production, you'd want more sophisticated recovery
+	return os.Truncate(segmentPath, lastValidOffset)
 }
 
 // segmentKey creates a unique key for a resource and partition

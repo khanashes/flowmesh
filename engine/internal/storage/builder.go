@@ -103,7 +103,9 @@ func (b *Builder) Build() (*Storage, error) {
 
 	// Initialize log manager if not provided
 	if b.logManager == nil {
-		b.logManager = logpkg.NewManager(paths.BaseDir)
+		// Parse fsync policy
+		fsyncPolicy := logpkg.FsyncPolicy(b.config.FsyncPolicy)
+		b.logManager = logpkg.NewManager(paths.BaseDir, fsyncPolicy, b.config.FsyncInterval)
 	}
 
 	// Initialize metrics if enabled

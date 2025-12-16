@@ -723,7 +723,7 @@ func TestScheduler_EdgeCases(t *testing.T) {
 	metaStore, err := metastore.NewStore(filepath.Join(tmpDir, "metadata"))
 	require.NoError(t, err)
 
-	logManager := log.NewManager(filepath.Join(tmpDir, "data"))
+	logManager := log.NewManager(filepath.Join(tmpDir, "data"), log.FsyncInterval, 10*time.Millisecond)
 
 	manager := NewManager(metaStore, logManager, filepath.Join(tmpDir, "metadata"))
 

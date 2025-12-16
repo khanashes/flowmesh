@@ -32,6 +32,7 @@ type Storage struct {
 	consumerGroupManager *consumers.Manager
 	schemaRegistry       *schema.Registry
 	replayManager        *replay.Manager
+	checkpointManager    *CheckpointManager
 	metricsCollector     *metrics.Collector
 	nodeMetrics          *metrics.NodeMetrics
 	tracerProvider       *tracing.Provider
@@ -167,6 +168,14 @@ func (s *Storage) Close(ctx context.Context) error {
 		}
 	}
 
+	// Stop checkpoint manager
+	if s.checkpointManager != nil {
+		if err := s.checkpointManager.Stop(); err != nil {
+			s.log.Error().Err(err).Msg("Failed to stop checkpoint manager")
+			lastErr = err
+		}
+	}
+
 	// Shutdown tracing provider
 	if s.tracerProvider != nil {
 		if err := s.tracerProvider.Shutdown(ctx); err != nil {
@@ -224,6 +233,16 @@ func (s *Storage) Start(ctx context.Context) error {
 		}
 	}
 
+	// Run recovery
+	s.log.Info().Msg("Running crash recovery...")
+	if err := s.Recover(ctx); err != nil {
+		return fmt.Errorf("failed to recover storage state: %w", err)
+	}
+
+	// Start checkpoint manager
+	s.checkpointManager = NewCheckpointManager(s, s.paths.MetadataDir, DefaultCheckpointInterval)
+	s.checkpointManager.Start()
+
 	s.ready = true
 	s.log.Info().Msg("Storage system started")
 
@@ -261,6 +280,46 @@ func (s *Storage) Validate(ctx context.Context) error {
 		// Metadata file doesn't exist yet, that's okay
 	}
 
+	return nil
+}
+
+// Recover performs crash recovery by validating and recovering storage state
+func (s *Storage) Recover(ctx context.Context) error {
+	s.log.Info().Msg("Starting storage recovery")
+
+	// Recover log segments
+	if err := s.logManager.Recover(); err != nil {
+		return fmt.Errorf("failed to recover log segments: %w", err)
+	}
+
+	// Load latest checkpoint if available
+	if s.checkpointManager != nil {
+		checkpoint, err := s.checkpointManager.LoadLatestCheckpoint()
+		if err != nil && !os.IsNotExist(err) {
+			s.log.Warn().Err(err).Msg("Failed to load checkpoint, continuing without checkpoint recovery")
+		} else if checkpoint != nil {
+			s.log.Info().
+				Time("checkpoint_time", checkpoint.Timestamp).
+				Msg("Loaded checkpoint for recovery")
+			// TODO: Use checkpoint data to restore state
+		}
+	}
+
+	// Stream manager recovery (rebuild indices)
+	// TODO: Add stream recovery logic when implemented
+
+	// Queue manager recovery
+	// TODO: Add queue recovery logic when implemented
+
+	// Consumer group manager recovery
+	// TODO: Add consumer group recovery logic when implemented
+
+	// Replay manager recovery - mark active sessions as stopped
+	if s.replayManager != nil {
+		// This is already handled by replay manager during start
+	}
+
+	s.log.Info().Msg("Storage recovery completed")
 	return nil
 }
 

@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/flowmesh/engine/internal/storage/log"
 	"github.com/flowmesh/engine/internal/storage/metastore"
@@ -18,7 +19,7 @@ func setupTestManager(t *testing.T) (*Manager, *metastore.Store, *log.Manager, s
 	metaStore, err := metastore.NewStore(filepath.Join(tmpDir, "metadata"))
 	require.NoError(t, err)
 
-	logManager := log.NewManager(filepath.Join(tmpDir, "data"))
+	logManager := log.NewManager(filepath.Join(tmpDir, "data"), log.FsyncInterval, 10*time.Millisecond)
 
 	manager := NewManager(metaStore, logManager, filepath.Join(tmpDir, "metadata"))
 
@@ -246,7 +247,7 @@ func TestManager_InitializeStream(t *testing.T) {
 	// Recreate manager to test recovery
 	metaStore2, err := metastore.NewStore(filepath.Join(tmpDir, "metadata"))
 	require.NoError(t, err)
-	logManager2 := log.NewManager(filepath.Join(tmpDir, "data"))
+	logManager2 := log.NewManager(filepath.Join(tmpDir, "data"), log.FsyncInterval, 10*time.Millisecond)
 	manager2 := NewManager(metaStore2, logManager2, filepath.Join(tmpDir, "metadata"))
 
 	// Re-initialize stream (should recover offsets)

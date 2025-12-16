@@ -9,6 +9,8 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"sync"
+	"time"
 )
 
 const (
@@ -25,13 +27,16 @@ var (
 
 // SegmentWriter handles writing entries to a segment file
 type SegmentWriter struct {
-	file   *os.File
-	path   string
-	offset int64
+	file          *os.File
+	path          string
+	offset        int64
+	fsyncPolicy   FsyncPolicy
+	lastFsyncTime time.Time
+	mu            sync.Mutex
 }
 
 // NewSegmentWriter creates a new segment writer
-func NewSegmentWriter(path string) (*SegmentWriter, error) {
+func NewSegmentWriter(path string, policy FsyncPolicy) (*SegmentWriter, error) {
 	// Create directory if it doesn't exist
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0755); err != nil {
@@ -52,9 +57,11 @@ func NewSegmentWriter(path string) (*SegmentWriter, error) {
 	}
 
 	writer := &SegmentWriter{
-		file:   file,
-		path:   path,
-		offset: stat.Size(),
+		file:          file,
+		path:          path,
+		offset:        stat.Size(),
+		fsyncPolicy:   policy,
+		lastFsyncTime: time.Now(),
 	}
 
 	return writer, nil
@@ -63,6 +70,9 @@ func NewSegmentWriter(path string) (*SegmentWriter, error) {
 // WriteEntry writes an entry to the segment file
 // Format: [EntryLength (4 bytes)][EntryBytes (variable)][Checksum (4 bytes)]
 func (sw *SegmentWriter) WriteEntry(data []byte) error {
+	sw.mu.Lock()
+	defer sw.mu.Unlock()
+
 	if len(data) == 0 {
 		return nil
 	}
@@ -96,6 +106,15 @@ func (sw *SegmentWriter) WriteEntry(data []byte) error {
 
 	// Update offset
 	sw.offset += EntryHeaderSize + int64(len(data))
+
+	// Fsync based on policy
+	if sw.fsyncPolicy == FsyncAlways {
+		if err := sw.file.Sync(); err != nil {
+			return err
+		}
+		sw.lastFsyncTime = time.Now()
+	}
+	// For FsyncInterval, syncing is handled by FsyncScheduler
 
 	return nil
 }

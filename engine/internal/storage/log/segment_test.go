@@ -13,7 +13,7 @@ func TestSegmentWriter_WriteEntry(t *testing.T) {
 	tmpDir := t.TempDir()
 	segmentPath := filepath.Join(tmpDir, "segment-000001.log")
 
-	writer, err := NewSegmentWriter(segmentPath)
+	writer, err := NewSegmentWriter(segmentPath, FsyncAlways)
 	require.NoError(t, err)
 	defer writer.Close()
 
@@ -37,7 +37,7 @@ func TestSegmentReader_ReadEntry(t *testing.T) {
 	segmentPath := filepath.Join(tmpDir, "segment-000001.log")
 
 	// Write some entries
-	writer, err := NewSegmentWriter(segmentPath)
+	writer, err := NewSegmentWriter(segmentPath, FsyncAlways)
 	require.NoError(t, err)
 
 	testData1 := []byte("first entry")
@@ -75,7 +75,7 @@ func TestSegmentWriter_ChecksumValidation(t *testing.T) {
 	segmentPath := filepath.Join(tmpDir, "segment-000001.log")
 
 	// Write entry
-	writer, err := NewSegmentWriter(segmentPath)
+	writer, err := NewSegmentWriter(segmentPath, FsyncAlways)
 	require.NoError(t, err)
 
 	testData := []byte("test data")
@@ -103,7 +103,7 @@ func TestSegmentWriter_MultipleEntries(t *testing.T) {
 	tmpDir := t.TempDir()
 	segmentPath := filepath.Join(tmpDir, "segment-000001.log")
 
-	writer, err := NewSegmentWriter(segmentPath)
+	writer, err := NewSegmentWriter(segmentPath, FsyncAlways)
 	require.NoError(t, err)
 
 	// Write multiple entries
@@ -142,7 +142,7 @@ func TestValidateSegment(t *testing.T) {
 	segmentPath := filepath.Join(tmpDir, "segment-000001.log")
 
 	// Create valid segment
-	writer, err := NewSegmentWriter(segmentPath)
+	writer, err := NewSegmentWriter(segmentPath, FsyncAlways)
 	require.NoError(t, err)
 
 	require.NoError(t, writer.WriteEntry([]byte("test")))

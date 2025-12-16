@@ -18,6 +18,12 @@ type Config struct {
 	// FlushInterval is the interval for flushing segments to disk
 	FlushInterval time.Duration
 
+	// FsyncPolicy determines when to sync data to disk ("always", "interval")
+	FsyncPolicy string
+
+	// FsyncInterval is the interval for interval-based fsyncing
+	FsyncInterval time.Duration
+
 	// EnableMetrics enables metrics collection
 	EnableMetrics bool
 
@@ -32,6 +38,8 @@ func DefaultConfig() *Config {
 		SegmentMaxSize: 100 * 1024 * 1024, // 100MB
 		SegmentMaxAge:  24 * time.Hour,
 		FlushInterval:  5 * time.Second,
+		FsyncPolicy:    "interval",
+		FsyncInterval:  10 * time.Millisecond,
 		EnableMetrics:  true,
 		EnableTracing:  false,
 	}
@@ -50,6 +58,12 @@ func (c *Config) Validate() error {
 	}
 	if c.FlushInterval <= 0 {
 		return ErrInvalidConfig{Field: "FlushInterval", Reason: "must be greater than zero"}
+	}
+	if c.FsyncPolicy != "always" && c.FsyncPolicy != "interval" {
+		return ErrInvalidConfig{Field: "FsyncPolicy", Reason: "must be 'always' or 'interval'"}
+	}
+	if c.FsyncPolicy == "interval" && c.FsyncInterval <= 0 {
+		return ErrInvalidConfig{Field: "FsyncInterval", Reason: "must be greater than zero for interval policy"}
 	}
 	return nil
 }
