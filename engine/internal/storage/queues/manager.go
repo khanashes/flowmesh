@@ -463,13 +463,18 @@ func (m *Manager) NACKWithDelay(ctx context.Context, resourcePath string, jobID 
 		state.mu.Unlock() // Release lock before calling MoveToDLQ (it will acquire its own locks)
 		err := m.MoveToDLQ(ctx, resourcePath, jobID)
 		if err != nil {
-			// If MoveToDLQ fails, ensure job is removed from InFlight
+			// If MoveToDLQ fails, log warning but still return MaxAttemptsExceededError
+			// The job exceeded max attempts regardless of DLQ move success
+			m.log.Warn().
+				Err(err).
+				Str("resource", resourcePath).
+				Str("job_id", jobID).
+				Msg("Max attempts exceeded but failed to move to DLQ")
+			// Ensure job is removed from InFlight
 			state.mu.Lock()
 			delete(state.InFlight, jobID)
 			state.mu.Unlock()
-			return fmt.Errorf("max attempts exceeded and failed to move to DLQ: %w", err)
 		}
-		// MoveToDLQ already removed the job from InFlight, so we're done
 		// Record failed job metric
 		if m.metrics != nil {
 			if config, configErr := m.metaStore.GetResource(resourcePath); configErr == nil {

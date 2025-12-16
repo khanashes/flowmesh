@@ -1521,3 +1521,391 @@ var SchemaService_ServiceDesc = grpc.ServiceDesc{
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "flowmesh.proto",
 }
+
+const (
+	ReplayService_CreateReplaySession_FullMethodName = "/flowmesh.v1.ReplayService/CreateReplaySession"
+	ReplayService_GetReplaySession_FullMethodName    = "/flowmesh.v1.ReplayService/GetReplaySession"
+	ReplayService_ListReplaySessions_FullMethodName  = "/flowmesh.v1.ReplayService/ListReplaySessions"
+	ReplayService_StartReplay_FullMethodName         = "/flowmesh.v1.ReplayService/StartReplay"
+	ReplayService_PauseReplay_FullMethodName         = "/flowmesh.v1.ReplayService/PauseReplay"
+	ReplayService_ResumeReplay_FullMethodName        = "/flowmesh.v1.ReplayService/ResumeReplay"
+	ReplayService_StopReplay_FullMethodName          = "/flowmesh.v1.ReplayService/StopReplay"
+	ReplayService_DeleteReplaySession_FullMethodName = "/flowmesh.v1.ReplayService/DeleteReplaySession"
+)
+
+// ReplayServiceClient is the client API for ReplayService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// ReplayService provides operations for replay sessions
+type ReplayServiceClient interface {
+	// CreateReplaySession creates a new replay session
+	CreateReplaySession(ctx context.Context, in *CreateReplaySessionRequest, opts ...grpc.CallOption) (*CreateReplaySessionResponse, error)
+	// GetReplaySession retrieves a replay session by ID
+	GetReplaySession(ctx context.Context, in *GetReplaySessionRequest, opts ...grpc.CallOption) (*GetReplaySessionResponse, error)
+	// ListReplaySessions lists all replay sessions, optionally filtered by stream
+	ListReplaySessions(ctx context.Context, in *ListReplaySessionsRequest, opts ...grpc.CallOption) (*ListReplaySessionsResponse, error)
+	// StartReplay starts replaying messages for a session
+	StartReplay(ctx context.Context, in *StartReplayRequest, opts ...grpc.CallOption) (*StartReplayResponse, error)
+	// PauseReplay pauses an active replay session
+	PauseReplay(ctx context.Context, in *PauseReplayRequest, opts ...grpc.CallOption) (*PauseReplayResponse, error)
+	// ResumeReplay resumes a paused replay session
+	ResumeReplay(ctx context.Context, in *ResumeReplayRequest, opts ...grpc.CallOption) (*ResumeReplayResponse, error)
+	// StopReplay stops an active replay session
+	StopReplay(ctx context.Context, in *StopReplayRequest, opts ...grpc.CallOption) (*StopReplayResponse, error)
+	// DeleteReplaySession deletes a replay session
+	DeleteReplaySession(ctx context.Context, in *DeleteReplaySessionRequest, opts ...grpc.CallOption) (*DeleteReplaySessionResponse, error)
+}
+
+type replayServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewReplayServiceClient(cc grpc.ClientConnInterface) ReplayServiceClient {
+	return &replayServiceClient{cc}
+}
+
+func (c *replayServiceClient) CreateReplaySession(ctx context.Context, in *CreateReplaySessionRequest, opts ...grpc.CallOption) (*CreateReplaySessionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateReplaySessionResponse)
+	err := c.cc.Invoke(ctx, ReplayService_CreateReplaySession_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *replayServiceClient) GetReplaySession(ctx context.Context, in *GetReplaySessionRequest, opts ...grpc.CallOption) (*GetReplaySessionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetReplaySessionResponse)
+	err := c.cc.Invoke(ctx, ReplayService_GetReplaySession_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *replayServiceClient) ListReplaySessions(ctx context.Context, in *ListReplaySessionsRequest, opts ...grpc.CallOption) (*ListReplaySessionsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListReplaySessionsResponse)
+	err := c.cc.Invoke(ctx, ReplayService_ListReplaySessions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *replayServiceClient) StartReplay(ctx context.Context, in *StartReplayRequest, opts ...grpc.CallOption) (*StartReplayResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(StartReplayResponse)
+	err := c.cc.Invoke(ctx, ReplayService_StartReplay_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *replayServiceClient) PauseReplay(ctx context.Context, in *PauseReplayRequest, opts ...grpc.CallOption) (*PauseReplayResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PauseReplayResponse)
+	err := c.cc.Invoke(ctx, ReplayService_PauseReplay_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *replayServiceClient) ResumeReplay(ctx context.Context, in *ResumeReplayRequest, opts ...grpc.CallOption) (*ResumeReplayResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResumeReplayResponse)
+	err := c.cc.Invoke(ctx, ReplayService_ResumeReplay_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *replayServiceClient) StopReplay(ctx context.Context, in *StopReplayRequest, opts ...grpc.CallOption) (*StopReplayResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(StopReplayResponse)
+	err := c.cc.Invoke(ctx, ReplayService_StopReplay_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *replayServiceClient) DeleteReplaySession(ctx context.Context, in *DeleteReplaySessionRequest, opts ...grpc.CallOption) (*DeleteReplaySessionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteReplaySessionResponse)
+	err := c.cc.Invoke(ctx, ReplayService_DeleteReplaySession_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ReplayServiceServer is the server API for ReplayService service.
+// All implementations must embed UnimplementedReplayServiceServer
+// for forward compatibility.
+//
+// ReplayService provides operations for replay sessions
+type ReplayServiceServer interface {
+	// CreateReplaySession creates a new replay session
+	CreateReplaySession(context.Context, *CreateReplaySessionRequest) (*CreateReplaySessionResponse, error)
+	// GetReplaySession retrieves a replay session by ID
+	GetReplaySession(context.Context, *GetReplaySessionRequest) (*GetReplaySessionResponse, error)
+	// ListReplaySessions lists all replay sessions, optionally filtered by stream
+	ListReplaySessions(context.Context, *ListReplaySessionsRequest) (*ListReplaySessionsResponse, error)
+	// StartReplay starts replaying messages for a session
+	StartReplay(context.Context, *StartReplayRequest) (*StartReplayResponse, error)
+	// PauseReplay pauses an active replay session
+	PauseReplay(context.Context, *PauseReplayRequest) (*PauseReplayResponse, error)
+	// ResumeReplay resumes a paused replay session
+	ResumeReplay(context.Context, *ResumeReplayRequest) (*ResumeReplayResponse, error)
+	// StopReplay stops an active replay session
+	StopReplay(context.Context, *StopReplayRequest) (*StopReplayResponse, error)
+	// DeleteReplaySession deletes a replay session
+	DeleteReplaySession(context.Context, *DeleteReplaySessionRequest) (*DeleteReplaySessionResponse, error)
+	mustEmbedUnimplementedReplayServiceServer()
+}
+
+// UnimplementedReplayServiceServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedReplayServiceServer struct{}
+
+func (UnimplementedReplayServiceServer) CreateReplaySession(context.Context, *CreateReplaySessionRequest) (*CreateReplaySessionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateReplaySession not implemented")
+}
+func (UnimplementedReplayServiceServer) GetReplaySession(context.Context, *GetReplaySessionRequest) (*GetReplaySessionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetReplaySession not implemented")
+}
+func (UnimplementedReplayServiceServer) ListReplaySessions(context.Context, *ListReplaySessionsRequest) (*ListReplaySessionsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListReplaySessions not implemented")
+}
+func (UnimplementedReplayServiceServer) StartReplay(context.Context, *StartReplayRequest) (*StartReplayResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method StartReplay not implemented")
+}
+func (UnimplementedReplayServiceServer) PauseReplay(context.Context, *PauseReplayRequest) (*PauseReplayResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method PauseReplay not implemented")
+}
+func (UnimplementedReplayServiceServer) ResumeReplay(context.Context, *ResumeReplayRequest) (*ResumeReplayResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ResumeReplay not implemented")
+}
+func (UnimplementedReplayServiceServer) StopReplay(context.Context, *StopReplayRequest) (*StopReplayResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method StopReplay not implemented")
+}
+func (UnimplementedReplayServiceServer) DeleteReplaySession(context.Context, *DeleteReplaySessionRequest) (*DeleteReplaySessionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteReplaySession not implemented")
+}
+func (UnimplementedReplayServiceServer) mustEmbedUnimplementedReplayServiceServer() {}
+func (UnimplementedReplayServiceServer) testEmbeddedByValue()                       {}
+
+// UnsafeReplayServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to ReplayServiceServer will
+// result in compilation errors.
+type UnsafeReplayServiceServer interface {
+	mustEmbedUnimplementedReplayServiceServer()
+}
+
+func RegisterReplayServiceServer(s grpc.ServiceRegistrar, srv ReplayServiceServer) {
+	// If the following call panics, it indicates UnimplementedReplayServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&ReplayService_ServiceDesc, srv)
+}
+
+func _ReplayService_CreateReplaySession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateReplaySessionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReplayServiceServer).CreateReplaySession(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ReplayService_CreateReplaySession_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReplayServiceServer).CreateReplaySession(ctx, req.(*CreateReplaySessionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ReplayService_GetReplaySession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetReplaySessionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReplayServiceServer).GetReplaySession(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ReplayService_GetReplaySession_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReplayServiceServer).GetReplaySession(ctx, req.(*GetReplaySessionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ReplayService_ListReplaySessions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListReplaySessionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReplayServiceServer).ListReplaySessions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ReplayService_ListReplaySessions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReplayServiceServer).ListReplaySessions(ctx, req.(*ListReplaySessionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ReplayService_StartReplay_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StartReplayRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReplayServiceServer).StartReplay(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ReplayService_StartReplay_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReplayServiceServer).StartReplay(ctx, req.(*StartReplayRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ReplayService_PauseReplay_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PauseReplayRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReplayServiceServer).PauseReplay(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ReplayService_PauseReplay_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReplayServiceServer).PauseReplay(ctx, req.(*PauseReplayRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ReplayService_ResumeReplay_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResumeReplayRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReplayServiceServer).ResumeReplay(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ReplayService_ResumeReplay_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReplayServiceServer).ResumeReplay(ctx, req.(*ResumeReplayRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ReplayService_StopReplay_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StopReplayRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReplayServiceServer).StopReplay(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ReplayService_StopReplay_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReplayServiceServer).StopReplay(ctx, req.(*StopReplayRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ReplayService_DeleteReplaySession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteReplaySessionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReplayServiceServer).DeleteReplaySession(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ReplayService_DeleteReplaySession_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReplayServiceServer).DeleteReplaySession(ctx, req.(*DeleteReplaySessionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// ReplayService_ServiceDesc is the grpc.ServiceDesc for ReplayService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var ReplayService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "flowmesh.v1.ReplayService",
+	HandlerType: (*ReplayServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "CreateReplaySession",
+			Handler:    _ReplayService_CreateReplaySession_Handler,
+		},
+		{
+			MethodName: "GetReplaySession",
+			Handler:    _ReplayService_GetReplaySession_Handler,
+		},
+		{
+			MethodName: "ListReplaySessions",
+			Handler:    _ReplayService_ListReplaySessions_Handler,
+		},
+		{
+			MethodName: "StartReplay",
+			Handler:    _ReplayService_StartReplay_Handler,
+		},
+		{
+			MethodName: "PauseReplay",
+			Handler:    _ReplayService_PauseReplay_Handler,
+		},
+		{
+			MethodName: "ResumeReplay",
+			Handler:    _ReplayService_ResumeReplay_Handler,
+		},
+		{
+			MethodName: "StopReplay",
+			Handler:    _ReplayService_StopReplay_Handler,
+		},
+		{
+			MethodName: "DeleteReplaySession",
+			Handler:    _ReplayService_DeleteReplaySession_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "flowmesh.proto",
+}

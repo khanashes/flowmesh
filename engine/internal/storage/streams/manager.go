@@ -35,16 +35,17 @@ type StreamState struct {
 
 // Manager manages stream operations
 type Manager struct {
-	metaStore      *metastore.Store
-	logManager     *log.Manager
-	metadataDir    string
-	schemaRegistry *schema.Registry
-	validator      *schema.Validator
-	streamStates   map[string]*StreamState
-	indexes        map[string]*OffsetIndex
-	metrics        *metrics.StreamMetrics // Optional metrics collector
-	log            zerolog.Logger
-	mu             sync.RWMutex
+	metaStore        *metastore.Store
+	logManager       *log.Manager
+	metadataDir      string
+	schemaRegistry   *schema.Registry
+	validator        *schema.Validator
+	streamStates     map[string]*StreamState
+	indexes          map[string]*OffsetIndex
+	timestampIndexes map[string]*TimestampIndex
+	metrics          *metrics.StreamMetrics // Optional metrics collector
+	log              zerolog.Logger
+	mu               sync.RWMutex
 }
 
 // NewManager creates a new stream manager
@@ -54,15 +55,16 @@ func NewManager(metaStore *metastore.Store, logManager *log.Manager, metadataDir
 		sm = streamMetrics[0]
 	}
 	return &Manager{
-		metaStore:      metaStore,
-		logManager:     logManager,
-		metadataDir:    metadataDir,
-		schemaRegistry: schema.NewRegistry(metaStore),
-		validator:      schema.NewValidator(),
-		streamStates:   make(map[string]*StreamState),
-		indexes:        make(map[string]*OffsetIndex),
-		metrics:        sm,
-		log:            logger.WithComponent("streams"),
+		metaStore:        metaStore,
+		logManager:       logManager,
+		metadataDir:      metadataDir,
+		schemaRegistry:   schema.NewRegistry(metaStore),
+		validator:        schema.NewValidator(),
+		streamStates:     make(map[string]*StreamState),
+		indexes:          make(map[string]*OffsetIndex),
+		timestampIndexes: make(map[string]*TimestampIndex),
+		metrics:          sm,
+		log:              logger.WithComponent("streams"),
 	}
 }
 
@@ -94,6 +96,20 @@ func (m *Manager) getOrCreateIndex(resourcePath string) *OffsetIndex {
 
 	idx := NewOffsetIndex()
 	m.indexes[resourcePath] = idx
+	return idx
+}
+
+// getOrCreateTimestampIndex gets or creates timestamp index for a resource
+func (m *Manager) getOrCreateTimestampIndex(resourcePath string) *TimestampIndex {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if idx, exists := m.timestampIndexes[resourcePath]; exists {
+		return idx
+	}
+
+	idx := NewTimestampIndex()
+	m.timestampIndexes[resourcePath] = idx
 	return idx
 }
 
@@ -146,6 +162,7 @@ func (m *Manager) WriteEvents(ctx context.Context, resourcePath string, events [
 	// Get or create stream state
 	state := m.getOrCreateStreamState(resourcePath)
 	idx := m.getOrCreateIndex(resourcePath)
+	timestampIdx := m.getOrCreateTimestampIndex(resourcePath)
 
 	state.mu.Lock()
 	defer state.mu.Unlock()
@@ -197,7 +214,8 @@ func (m *Manager) WriteEvents(ctx context.Context, resourcePath string, events [
 		// Inject trace context into event headers
 		tracing.InjectToHeaders(ctx, event.Headers)
 
-		// Create message
+		// Create message with current timestamp
+		createdAt := time.Now()
 		msg := &log.Message{
 			ID:            hex.EncodeToString(idBytes),
 			ResourcePath:  resourcePath,
@@ -207,7 +225,7 @@ func (m *Manager) WriteEvents(ctx context.Context, resourcePath string, events [
 			Type:          log.MessageTypeStream,
 			Payload:       event.Payload,
 			Headers:       event.Headers,
-			CreatedAt:     time.Now(),
+			CreatedAt:     createdAt,
 			VisibleAt:     time.Time{}, // Not used for streams
 			Attempts:      0,           // Not used for streams
 			SchemaVersion: schemaVersion,
@@ -235,6 +253,15 @@ func (m *Manager) WriteEvents(ctx context.Context, resourcePath string, events [
 				// Use the last segment (most recent)
 				lastSegment := segments[len(segments)-1]
 				idx.AddEntry(offset, lastSegment.Path, currentFileOffset)
+			}
+		}
+
+		// Update timestamp index (at intervals)
+		if timestampIdx.ShouldIndex(offset, createdAt) {
+			segments, err := m.logManager.ListSegments(resourcePath, partition)
+			if err == nil && len(segments) > 0 {
+				lastSegment := segments[len(segments)-1]
+				timestampIdx.AddEntry(createdAt, offset, lastSegment.Path, currentFileOffset)
 			}
 		}
 
@@ -405,6 +432,54 @@ func (m *Manager) GetLatestOffset(resourcePath string, partition int32) (int64, 
 	return offset - 1, nil // Last written offset
 }
 
+// FindOffsetByTimestamp finds the approximate offset for a given timestamp
+// Uses timestamp index to find approximate offset, then scans forward to find exact position
+func (m *Manager) FindOffsetByTimestamp(ctx context.Context, resourcePath string, partition int32, timestamp time.Time) (int64, error) {
+	// Validate stream exists
+	_, err := m.metaStore.GetResource(resourcePath)
+	if err != nil {
+		if _, ok := err.(metastore.ResourceNotFoundError); ok {
+			return -1, StreamNotFoundError{ResourcePath: resourcePath}
+		}
+		return -1, err
+	}
+
+	// Get timestamp index
+	timestampIdx := m.getOrCreateTimestampIndex(resourcePath)
+	if len(timestampIdx.Entries) == 0 {
+		return -1, fmt.Errorf("timestamp index is empty for stream %s", resourcePath)
+	}
+
+	// Find approximate offset from timestamp index
+	approxOffset, _, _, err := timestampIdx.FindOffsetByTimestamp(timestamp)
+	if err != nil {
+		return -1, fmt.Errorf("failed to find offset by timestamp: %w", err)
+	}
+
+	// Scan forward from approximate offset to find exact position
+	// Read messages starting from approximate offset
+	messages, err := m.ReadFromOffset(ctx, resourcePath, partition, approxOffset, 1000)
+	if err != nil {
+		return -1, fmt.Errorf("failed to read messages for timestamp lookup: %w", err)
+	}
+
+	// Find the first message with timestamp >= target timestamp
+	targetNanos := timestamp.UnixNano()
+	for _, msg := range messages {
+		if msg.CreatedAt.UnixNano() >= targetNanos {
+			return msg.Offset, nil
+		}
+	}
+
+	// If we didn't find it in the first batch, the timestamp might be beyond available messages
+	// Return the last offset we checked
+	if len(messages) > 0 {
+		return messages[len(messages)-1].Offset, nil
+	}
+
+	return approxOffset, nil
+}
+
 // recoverLatestOffset recovers the latest offset by reading the last segment
 func (m *Manager) recoverLatestOffset(resourcePath string, partition int32) (int64, error) {
 	segments, err := m.logManager.ListSegments(resourcePath, partition)
@@ -504,6 +579,13 @@ func (m *Manager) InitializeStream(resourcePath string) error {
 		m.log.Warn().Err(err).Str("resource", resourcePath).Msg("Failed to load index, will rebuild")
 	}
 
+	// Initialize timestamp index
+	timestampIdx := m.getOrCreateTimestampIndex(resourcePath)
+	timestampIndexPath := m.getTimestampIndexPath(resourcePath)
+	if err := timestampIdx.Load(timestampIndexPath); err != nil {
+		m.log.Warn().Err(err).Str("resource", resourcePath).Msg("Failed to load timestamp index, will rebuild on next write")
+	}
+
 	m.log.Info().
 		Str("resource", resourcePath).
 		Int64("latest_offset", lastOffset).
@@ -519,6 +601,14 @@ func (m *Manager) getIndexPath(resourcePath string) string {
 	hash := hashResourcePath(resourcePath)
 	indexDir := filepath.Join(m.metadataDir, "streams", hash)
 	return filepath.Join(indexDir, "index.json")
+}
+
+// getTimestampIndexPath returns the path to the timestamp index file for a resource
+func (m *Manager) getTimestampIndexPath(resourcePath string) string {
+	// Store timestamp index in metadata directory
+	hash := hashResourcePath(resourcePath)
+	indexDir := filepath.Join(m.metadataDir, "streams", hash)
+	return filepath.Join(indexDir, "timestamp_index.json")
 }
 
 // hashResourcePath creates a simple hash from resource path
@@ -540,6 +630,15 @@ func (m *Manager) SaveIndexes() error {
 		indexPath := m.getIndexPath(resourcePath)
 		if err := idx.Save(indexPath); err != nil {
 			m.log.Error().Err(err).Str("resource", resourcePath).Msg("Failed to save index")
+			return err
+		}
+	}
+
+	// Save timestamp indexes
+	for resourcePath, timestampIdx := range m.timestampIndexes {
+		timestampIndexPath := m.getTimestampIndexPath(resourcePath)
+		if err := timestampIdx.Save(timestampIndexPath); err != nil {
+			m.log.Error().Err(err).Str("resource", resourcePath).Msg("Failed to save timestamp index")
 			return err
 		}
 	}

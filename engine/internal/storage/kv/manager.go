@@ -58,7 +58,8 @@ func (m *Manager) Start(ctx context.Context) error {
 	m.log.Info().Msg("Starting KV manager...")
 
 	// Start TTL reaper
-	go m.runTTLReaper(ctx)
+	m.reaperStopCh = make(chan struct{})
+	go m.runTTLReaper(ctx, m.reaperStopCh)
 
 	m.ready = true
 	m.log.Info().Msg("KV manager started")
@@ -79,7 +80,6 @@ func (m *Manager) Stop(ctx context.Context) error {
 
 	// Stop TTL reaper
 	close(m.reaperStopCh)
-	m.reaperStopCh = make(chan struct{})
 
 	// Close all databases
 	var lastErr error

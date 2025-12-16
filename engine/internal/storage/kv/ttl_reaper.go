@@ -11,7 +11,7 @@ const (
 )
 
 // runTTLReaper runs the background TTL reaper goroutine
-func (m *Manager) runTTLReaper(ctx context.Context) {
+func (m *Manager) runTTLReaper(ctx context.Context, stopCh <-chan struct{}) {
 	ticker := time.NewTicker(DefaultTTLReaperInterval)
 	defer ticker.Stop()
 
@@ -22,7 +22,7 @@ func (m *Manager) runTTLReaper(ctx context.Context) {
 		case <-ctx.Done():
 			m.log.Info().Msg("TTL reaper stopped due to context cancellation")
 			return
-		case <-m.reaperStopCh:
+		case <-stopCh:
 			m.log.Info().Msg("TTL reaper stopped")
 			return
 		case <-ticker.C:

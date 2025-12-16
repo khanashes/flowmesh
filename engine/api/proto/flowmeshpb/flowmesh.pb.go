@@ -3876,6 +3876,1008 @@ func (x *SetResourceSchemaResponse) GetStatus() *Status {
 	return nil
 }
 
+// ReplaySession represents a replay session
+type ReplaySession struct {
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	SessionId            string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`                                    // Unique session identifier
+	Stream               string                 `protobuf:"bytes,2,opt,name=stream,proto3" json:"stream,omitempty"`                                                           // Stream resource path
+	Partition            int32                  `protobuf:"varint,3,opt,name=partition,proto3" json:"partition,omitempty"`                                                    // Partition ID
+	StartOffset          int64                  `protobuf:"varint,4,opt,name=start_offset,json=startOffset,proto3" json:"start_offset,omitempty"`                             // Start offset (-1 if using timestamp)
+	StartTimestamp       int64                  `protobuf:"varint,5,opt,name=start_timestamp,json=startTimestamp,proto3" json:"start_timestamp,omitempty"`                    // Start timestamp (Unix nanoseconds, 0 if using offset)
+	EndOffset            int64                  `protobuf:"varint,6,opt,name=end_offset,json=endOffset,proto3" json:"end_offset,omitempty"`                                   // End offset (-1 if not set or using timestamp)
+	EndTimestamp         int64                  `protobuf:"varint,7,opt,name=end_timestamp,json=endTimestamp,proto3" json:"end_timestamp,omitempty"`                          // End timestamp (Unix nanoseconds, 0 if not set or using offset)
+	SandboxConsumerGroup string                 `protobuf:"bytes,8,opt,name=sandbox_consumer_group,json=sandboxConsumerGroup,proto3" json:"sandbox_consumer_group,omitempty"` // Sandbox consumer group name
+	Status               string                 `protobuf:"bytes,9,opt,name=status,proto3" json:"status,omitempty"`                                                           // Session status (created, active, paused, stopped, completed, error)
+	Progress             *ReplayProgress        `protobuf:"bytes,10,opt,name=progress,proto3" json:"progress,omitempty"`                                                      // Replay progress
+	CreatedAt            int64                  `protobuf:"varint,11,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`                                  // Creation timestamp (Unix nanoseconds)
+	UpdatedAt            int64                  `protobuf:"varint,12,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`                                  // Last update timestamp (Unix nanoseconds)
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *ReplaySession) Reset() {
+	*x = ReplaySession{}
+	mi := &file_flowmesh_proto_msgTypes[67]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReplaySession) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReplaySession) ProtoMessage() {}
+
+func (x *ReplaySession) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[67]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReplaySession.ProtoReflect.Descriptor instead.
+func (*ReplaySession) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{67}
+}
+
+func (x *ReplaySession) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *ReplaySession) GetStream() string {
+	if x != nil {
+		return x.Stream
+	}
+	return ""
+}
+
+func (x *ReplaySession) GetPartition() int32 {
+	if x != nil {
+		return x.Partition
+	}
+	return 0
+}
+
+func (x *ReplaySession) GetStartOffset() int64 {
+	if x != nil {
+		return x.StartOffset
+	}
+	return 0
+}
+
+func (x *ReplaySession) GetStartTimestamp() int64 {
+	if x != nil {
+		return x.StartTimestamp
+	}
+	return 0
+}
+
+func (x *ReplaySession) GetEndOffset() int64 {
+	if x != nil {
+		return x.EndOffset
+	}
+	return 0
+}
+
+func (x *ReplaySession) GetEndTimestamp() int64 {
+	if x != nil {
+		return x.EndTimestamp
+	}
+	return 0
+}
+
+func (x *ReplaySession) GetSandboxConsumerGroup() string {
+	if x != nil {
+		return x.SandboxConsumerGroup
+	}
+	return ""
+}
+
+func (x *ReplaySession) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *ReplaySession) GetProgress() *ReplayProgress {
+	if x != nil {
+		return x.Progress
+	}
+	return nil
+}
+
+func (x *ReplaySession) GetCreatedAt() int64 {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return 0
+}
+
+func (x *ReplaySession) GetUpdatedAt() int64 {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return 0
+}
+
+// ReplayProgress represents the progress of a replay session
+type ReplayProgress struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	CurrentOffset    int64                  `protobuf:"varint,1,opt,name=current_offset,json=currentOffset,proto3" json:"current_offset,omitempty"`          // Current offset being replayed
+	MessagesReplayed int64                  `protobuf:"varint,2,opt,name=messages_replayed,json=messagesReplayed,proto3" json:"messages_replayed,omitempty"` // Number of messages replayed
+	Errors           int64                  `protobuf:"varint,3,opt,name=errors,proto3" json:"errors,omitempty"`                                             // Number of errors encountered
+	StartedAt        int64                  `protobuf:"varint,4,opt,name=started_at,json=startedAt,proto3" json:"started_at,omitempty"`                      // Start timestamp (Unix nanoseconds, 0 if not started)
+	PausedAt         int64                  `protobuf:"varint,5,opt,name=paused_at,json=pausedAt,proto3" json:"paused_at,omitempty"`                         // Pause timestamp (Unix nanoseconds, 0 if not paused)
+	CompletedAt      int64                  `protobuf:"varint,6,opt,name=completed_at,json=completedAt,proto3" json:"completed_at,omitempty"`                // Completion timestamp (Unix nanoseconds, 0 if not completed)
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *ReplayProgress) Reset() {
+	*x = ReplayProgress{}
+	mi := &file_flowmesh_proto_msgTypes[68]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReplayProgress) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReplayProgress) ProtoMessage() {}
+
+func (x *ReplayProgress) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[68]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReplayProgress.ProtoReflect.Descriptor instead.
+func (*ReplayProgress) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{68}
+}
+
+func (x *ReplayProgress) GetCurrentOffset() int64 {
+	if x != nil {
+		return x.CurrentOffset
+	}
+	return 0
+}
+
+func (x *ReplayProgress) GetMessagesReplayed() int64 {
+	if x != nil {
+		return x.MessagesReplayed
+	}
+	return 0
+}
+
+func (x *ReplayProgress) GetErrors() int64 {
+	if x != nil {
+		return x.Errors
+	}
+	return 0
+}
+
+func (x *ReplayProgress) GetStartedAt() int64 {
+	if x != nil {
+		return x.StartedAt
+	}
+	return 0
+}
+
+func (x *ReplayProgress) GetPausedAt() int64 {
+	if x != nil {
+		return x.PausedAt
+	}
+	return 0
+}
+
+func (x *ReplayProgress) GetCompletedAt() int64 {
+	if x != nil {
+		return x.CompletedAt
+	}
+	return 0
+}
+
+// CreateReplaySessionRequest is a request to create a replay session
+type CreateReplaySessionRequest struct {
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	ResourcePath         *ResourcePath          `protobuf:"bytes,1,opt,name=resource_path,json=resourcePath,proto3" json:"resource_path,omitempty"`                           // Stream resource path
+	StartOffset          int64                  `protobuf:"varint,2,opt,name=start_offset,json=startOffset,proto3" json:"start_offset,omitempty"`                             // Start offset (-1 if using timestamp)
+	StartTimestamp       int64                  `protobuf:"varint,3,opt,name=start_timestamp,json=startTimestamp,proto3" json:"start_timestamp,omitempty"`                    // Start timestamp (Unix nanoseconds, 0 if using offset)
+	EndOffset            int64                  `protobuf:"varint,4,opt,name=end_offset,json=endOffset,proto3" json:"end_offset,omitempty"`                                   // End offset (-1 if not set or using timestamp)
+	EndTimestamp         int64                  `protobuf:"varint,5,opt,name=end_timestamp,json=endTimestamp,proto3" json:"end_timestamp,omitempty"`                          // End timestamp (Unix nanoseconds, 0 if not set or using offset)
+	SandboxConsumerGroup string                 `protobuf:"bytes,6,opt,name=sandbox_consumer_group,json=sandboxConsumerGroup,proto3" json:"sandbox_consumer_group,omitempty"` // Sandbox consumer group name
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *CreateReplaySessionRequest) Reset() {
+	*x = CreateReplaySessionRequest{}
+	mi := &file_flowmesh_proto_msgTypes[69]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateReplaySessionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateReplaySessionRequest) ProtoMessage() {}
+
+func (x *CreateReplaySessionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[69]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateReplaySessionRequest.ProtoReflect.Descriptor instead.
+func (*CreateReplaySessionRequest) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{69}
+}
+
+func (x *CreateReplaySessionRequest) GetResourcePath() *ResourcePath {
+	if x != nil {
+		return x.ResourcePath
+	}
+	return nil
+}
+
+func (x *CreateReplaySessionRequest) GetStartOffset() int64 {
+	if x != nil {
+		return x.StartOffset
+	}
+	return 0
+}
+
+func (x *CreateReplaySessionRequest) GetStartTimestamp() int64 {
+	if x != nil {
+		return x.StartTimestamp
+	}
+	return 0
+}
+
+func (x *CreateReplaySessionRequest) GetEndOffset() int64 {
+	if x != nil {
+		return x.EndOffset
+	}
+	return 0
+}
+
+func (x *CreateReplaySessionRequest) GetEndTimestamp() int64 {
+	if x != nil {
+		return x.EndTimestamp
+	}
+	return 0
+}
+
+func (x *CreateReplaySessionRequest) GetSandboxConsumerGroup() string {
+	if x != nil {
+		return x.SandboxConsumerGroup
+	}
+	return ""
+}
+
+// CreateReplaySessionResponse is a response to creating a replay session
+type CreateReplaySessionResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        *Status                `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`   // Operation status
+	Session       *ReplaySession         `protobuf:"bytes,2,opt,name=session,proto3" json:"session,omitempty"` // Created session
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateReplaySessionResponse) Reset() {
+	*x = CreateReplaySessionResponse{}
+	mi := &file_flowmesh_proto_msgTypes[70]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateReplaySessionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateReplaySessionResponse) ProtoMessage() {}
+
+func (x *CreateReplaySessionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[70]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateReplaySessionResponse.ProtoReflect.Descriptor instead.
+func (*CreateReplaySessionResponse) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{70}
+}
+
+func (x *CreateReplaySessionResponse) GetStatus() *Status {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
+func (x *CreateReplaySessionResponse) GetSession() *ReplaySession {
+	if x != nil {
+		return x.Session
+	}
+	return nil
+}
+
+// GetReplaySessionRequest is a request to get a replay session
+type GetReplaySessionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"` // Session ID
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetReplaySessionRequest) Reset() {
+	*x = GetReplaySessionRequest{}
+	mi := &file_flowmesh_proto_msgTypes[71]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetReplaySessionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetReplaySessionRequest) ProtoMessage() {}
+
+func (x *GetReplaySessionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[71]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetReplaySessionRequest.ProtoReflect.Descriptor instead.
+func (*GetReplaySessionRequest) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{71}
+}
+
+func (x *GetReplaySessionRequest) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+// GetReplaySessionResponse is a response to getting a replay session
+type GetReplaySessionResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        *Status                `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`   // Operation status
+	Session       *ReplaySession         `protobuf:"bytes,2,opt,name=session,proto3" json:"session,omitempty"` // Session details
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetReplaySessionResponse) Reset() {
+	*x = GetReplaySessionResponse{}
+	mi := &file_flowmesh_proto_msgTypes[72]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetReplaySessionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetReplaySessionResponse) ProtoMessage() {}
+
+func (x *GetReplaySessionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[72]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetReplaySessionResponse.ProtoReflect.Descriptor instead.
+func (*GetReplaySessionResponse) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{72}
+}
+
+func (x *GetReplaySessionResponse) GetStatus() *Status {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
+func (x *GetReplaySessionResponse) GetSession() *ReplaySession {
+	if x != nil {
+		return x.Session
+	}
+	return nil
+}
+
+// ListReplaySessionsRequest is a request to list replay sessions
+type ListReplaySessionsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ResourcePath  *ResourcePath          `protobuf:"bytes,1,opt,name=resource_path,json=resourcePath,proto3" json:"resource_path,omitempty"` // Optional: filter by stream resource path
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListReplaySessionsRequest) Reset() {
+	*x = ListReplaySessionsRequest{}
+	mi := &file_flowmesh_proto_msgTypes[73]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListReplaySessionsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListReplaySessionsRequest) ProtoMessage() {}
+
+func (x *ListReplaySessionsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[73]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListReplaySessionsRequest.ProtoReflect.Descriptor instead.
+func (*ListReplaySessionsRequest) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{73}
+}
+
+func (x *ListReplaySessionsRequest) GetResourcePath() *ResourcePath {
+	if x != nil {
+		return x.ResourcePath
+	}
+	return nil
+}
+
+// ListReplaySessionsResponse is a response to listing replay sessions
+type ListReplaySessionsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        *Status                `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`     // Operation status
+	Sessions      []*ReplaySession       `protobuf:"bytes,2,rep,name=sessions,proto3" json:"sessions,omitempty"` // List of sessions
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListReplaySessionsResponse) Reset() {
+	*x = ListReplaySessionsResponse{}
+	mi := &file_flowmesh_proto_msgTypes[74]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListReplaySessionsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListReplaySessionsResponse) ProtoMessage() {}
+
+func (x *ListReplaySessionsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[74]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListReplaySessionsResponse.ProtoReflect.Descriptor instead.
+func (*ListReplaySessionsResponse) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{74}
+}
+
+func (x *ListReplaySessionsResponse) GetStatus() *Status {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
+func (x *ListReplaySessionsResponse) GetSessions() []*ReplaySession {
+	if x != nil {
+		return x.Sessions
+	}
+	return nil
+}
+
+// StartReplayRequest is a request to start a replay session
+type StartReplayRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"` // Session ID
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StartReplayRequest) Reset() {
+	*x = StartReplayRequest{}
+	mi := &file_flowmesh_proto_msgTypes[75]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StartReplayRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StartReplayRequest) ProtoMessage() {}
+
+func (x *StartReplayRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[75]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StartReplayRequest.ProtoReflect.Descriptor instead.
+func (*StartReplayRequest) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{75}
+}
+
+func (x *StartReplayRequest) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+// StartReplayResponse is a response to starting a replay session
+type StartReplayResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        *Status                `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"` // Operation status
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StartReplayResponse) Reset() {
+	*x = StartReplayResponse{}
+	mi := &file_flowmesh_proto_msgTypes[76]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StartReplayResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StartReplayResponse) ProtoMessage() {}
+
+func (x *StartReplayResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[76]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StartReplayResponse.ProtoReflect.Descriptor instead.
+func (*StartReplayResponse) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{76}
+}
+
+func (x *StartReplayResponse) GetStatus() *Status {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
+// PauseReplayRequest is a request to pause a replay session
+type PauseReplayRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"` // Session ID
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PauseReplayRequest) Reset() {
+	*x = PauseReplayRequest{}
+	mi := &file_flowmesh_proto_msgTypes[77]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PauseReplayRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PauseReplayRequest) ProtoMessage() {}
+
+func (x *PauseReplayRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[77]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PauseReplayRequest.ProtoReflect.Descriptor instead.
+func (*PauseReplayRequest) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{77}
+}
+
+func (x *PauseReplayRequest) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+// PauseReplayResponse is a response to pausing a replay session
+type PauseReplayResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        *Status                `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"` // Operation status
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PauseReplayResponse) Reset() {
+	*x = PauseReplayResponse{}
+	mi := &file_flowmesh_proto_msgTypes[78]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PauseReplayResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PauseReplayResponse) ProtoMessage() {}
+
+func (x *PauseReplayResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[78]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PauseReplayResponse.ProtoReflect.Descriptor instead.
+func (*PauseReplayResponse) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{78}
+}
+
+func (x *PauseReplayResponse) GetStatus() *Status {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
+// ResumeReplayRequest is a request to resume a replay session
+type ResumeReplayRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"` // Session ID
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResumeReplayRequest) Reset() {
+	*x = ResumeReplayRequest{}
+	mi := &file_flowmesh_proto_msgTypes[79]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResumeReplayRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResumeReplayRequest) ProtoMessage() {}
+
+func (x *ResumeReplayRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[79]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResumeReplayRequest.ProtoReflect.Descriptor instead.
+func (*ResumeReplayRequest) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{79}
+}
+
+func (x *ResumeReplayRequest) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+// ResumeReplayResponse is a response to resuming a replay session
+type ResumeReplayResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        *Status                `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"` // Operation status
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResumeReplayResponse) Reset() {
+	*x = ResumeReplayResponse{}
+	mi := &file_flowmesh_proto_msgTypes[80]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResumeReplayResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResumeReplayResponse) ProtoMessage() {}
+
+func (x *ResumeReplayResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[80]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResumeReplayResponse.ProtoReflect.Descriptor instead.
+func (*ResumeReplayResponse) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{80}
+}
+
+func (x *ResumeReplayResponse) GetStatus() *Status {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
+// StopReplayRequest is a request to stop a replay session
+type StopReplayRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"` // Session ID
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StopReplayRequest) Reset() {
+	*x = StopReplayRequest{}
+	mi := &file_flowmesh_proto_msgTypes[81]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StopReplayRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StopReplayRequest) ProtoMessage() {}
+
+func (x *StopReplayRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[81]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StopReplayRequest.ProtoReflect.Descriptor instead.
+func (*StopReplayRequest) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{81}
+}
+
+func (x *StopReplayRequest) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+// StopReplayResponse is a response to stopping a replay session
+type StopReplayResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        *Status                `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"` // Operation status
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StopReplayResponse) Reset() {
+	*x = StopReplayResponse{}
+	mi := &file_flowmesh_proto_msgTypes[82]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StopReplayResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StopReplayResponse) ProtoMessage() {}
+
+func (x *StopReplayResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[82]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StopReplayResponse.ProtoReflect.Descriptor instead.
+func (*StopReplayResponse) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{82}
+}
+
+func (x *StopReplayResponse) GetStatus() *Status {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
+// DeleteReplaySessionRequest is a request to delete a replay session
+type DeleteReplaySessionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"` // Session ID
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteReplaySessionRequest) Reset() {
+	*x = DeleteReplaySessionRequest{}
+	mi := &file_flowmesh_proto_msgTypes[83]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteReplaySessionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteReplaySessionRequest) ProtoMessage() {}
+
+func (x *DeleteReplaySessionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[83]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteReplaySessionRequest.ProtoReflect.Descriptor instead.
+func (*DeleteReplaySessionRequest) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{83}
+}
+
+func (x *DeleteReplaySessionRequest) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+// DeleteReplaySessionResponse is a response to deleting a replay session
+type DeleteReplaySessionResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        *Status                `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"` // Operation status
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteReplaySessionResponse) Reset() {
+	*x = DeleteReplaySessionResponse{}
+	mi := &file_flowmesh_proto_msgTypes[84]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteReplaySessionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteReplaySessionResponse) ProtoMessage() {}
+
+func (x *DeleteReplaySessionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flowmesh_proto_msgTypes[84]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteReplaySessionResponse.ProtoReflect.Descriptor instead.
+func (*DeleteReplaySessionResponse) Descriptor() ([]byte, []int) {
+	return file_flowmesh_proto_rawDescGZIP(), []int{84}
+}
+
+func (x *DeleteReplaySessionResponse) GetStatus() *Status {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
 var File_flowmesh_proto protoreflect.FileDescriptor
 
 const file_flowmesh_proto_rawDesc = "" +
@@ -4147,6 +5149,79 @@ const file_flowmesh_proto_rawDesc = "" +
 	"\tschema_id\x18\x02 \x01(\tR\bschemaId\x12\x18\n" +
 	"\aversion\x18\x03 \x01(\x05R\aversion\"H\n" +
 	"\x19SetResourceSchemaResponse\x12+\n" +
+	"\x06status\x18\x01 \x01(\v2\x13.flowmesh.v1.StatusR\x06status\"\xb9\x03\n" +
+	"\rReplaySession\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x16\n" +
+	"\x06stream\x18\x02 \x01(\tR\x06stream\x12\x1c\n" +
+	"\tpartition\x18\x03 \x01(\x05R\tpartition\x12!\n" +
+	"\fstart_offset\x18\x04 \x01(\x03R\vstartOffset\x12'\n" +
+	"\x0fstart_timestamp\x18\x05 \x01(\x03R\x0estartTimestamp\x12\x1d\n" +
+	"\n" +
+	"end_offset\x18\x06 \x01(\x03R\tendOffset\x12#\n" +
+	"\rend_timestamp\x18\a \x01(\x03R\fendTimestamp\x124\n" +
+	"\x16sandbox_consumer_group\x18\b \x01(\tR\x14sandboxConsumerGroup\x12\x16\n" +
+	"\x06status\x18\t \x01(\tR\x06status\x127\n" +
+	"\bprogress\x18\n" +
+	" \x01(\v2\x1b.flowmesh.v1.ReplayProgressR\bprogress\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\v \x01(\x03R\tcreatedAt\x12\x1d\n" +
+	"\n" +
+	"updated_at\x18\f \x01(\x03R\tupdatedAt\"\xdb\x01\n" +
+	"\x0eReplayProgress\x12%\n" +
+	"\x0ecurrent_offset\x18\x01 \x01(\x03R\rcurrentOffset\x12+\n" +
+	"\x11messages_replayed\x18\x02 \x01(\x03R\x10messagesReplayed\x12\x16\n" +
+	"\x06errors\x18\x03 \x01(\x03R\x06errors\x12\x1d\n" +
+	"\n" +
+	"started_at\x18\x04 \x01(\x03R\tstartedAt\x12\x1b\n" +
+	"\tpaused_at\x18\x05 \x01(\x03R\bpausedAt\x12!\n" +
+	"\fcompleted_at\x18\x06 \x01(\x03R\vcompletedAt\"\xa2\x02\n" +
+	"\x1aCreateReplaySessionRequest\x12>\n" +
+	"\rresource_path\x18\x01 \x01(\v2\x19.flowmesh.v1.ResourcePathR\fresourcePath\x12!\n" +
+	"\fstart_offset\x18\x02 \x01(\x03R\vstartOffset\x12'\n" +
+	"\x0fstart_timestamp\x18\x03 \x01(\x03R\x0estartTimestamp\x12\x1d\n" +
+	"\n" +
+	"end_offset\x18\x04 \x01(\x03R\tendOffset\x12#\n" +
+	"\rend_timestamp\x18\x05 \x01(\x03R\fendTimestamp\x124\n" +
+	"\x16sandbox_consumer_group\x18\x06 \x01(\tR\x14sandboxConsumerGroup\"\x80\x01\n" +
+	"\x1bCreateReplaySessionResponse\x12+\n" +
+	"\x06status\x18\x01 \x01(\v2\x13.flowmesh.v1.StatusR\x06status\x124\n" +
+	"\asession\x18\x02 \x01(\v2\x1a.flowmesh.v1.ReplaySessionR\asession\"8\n" +
+	"\x17GetReplaySessionRequest\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\"}\n" +
+	"\x18GetReplaySessionResponse\x12+\n" +
+	"\x06status\x18\x01 \x01(\v2\x13.flowmesh.v1.StatusR\x06status\x124\n" +
+	"\asession\x18\x02 \x01(\v2\x1a.flowmesh.v1.ReplaySessionR\asession\"[\n" +
+	"\x19ListReplaySessionsRequest\x12>\n" +
+	"\rresource_path\x18\x01 \x01(\v2\x19.flowmesh.v1.ResourcePathR\fresourcePath\"\x81\x01\n" +
+	"\x1aListReplaySessionsResponse\x12+\n" +
+	"\x06status\x18\x01 \x01(\v2\x13.flowmesh.v1.StatusR\x06status\x126\n" +
+	"\bsessions\x18\x02 \x03(\v2\x1a.flowmesh.v1.ReplaySessionR\bsessions\"3\n" +
+	"\x12StartReplayRequest\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\"B\n" +
+	"\x13StartReplayResponse\x12+\n" +
+	"\x06status\x18\x01 \x01(\v2\x13.flowmesh.v1.StatusR\x06status\"3\n" +
+	"\x12PauseReplayRequest\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\"B\n" +
+	"\x13PauseReplayResponse\x12+\n" +
+	"\x06status\x18\x01 \x01(\v2\x13.flowmesh.v1.StatusR\x06status\"4\n" +
+	"\x13ResumeReplayRequest\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\"C\n" +
+	"\x14ResumeReplayResponse\x12+\n" +
+	"\x06status\x18\x01 \x01(\v2\x13.flowmesh.v1.StatusR\x06status\"2\n" +
+	"\x11StopReplayRequest\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\"A\n" +
+	"\x12StopReplayResponse\x12+\n" +
+	"\x06status\x18\x01 \x01(\v2\x13.flowmesh.v1.StatusR\x06status\";\n" +
+	"\x1aDeleteReplaySessionRequest\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\"J\n" +
+	"\x1bDeleteReplaySessionResponse\x12+\n" +
 	"\x06status\x18\x01 \x01(\v2\x13.flowmesh.v1.StatusR\x06status2\xbc\x01\n" +
 	"\rHealthService\x12P\n" +
 	"\vHealthCheck\x12\x1f.flowmesh.v1.HealthCheckRequest\x1a .flowmesh.v1.HealthCheckResponse\x12Y\n" +
@@ -4182,7 +5257,17 @@ const file_flowmesh_proto_rawDesc = "" +
 	"\tGetSchema\x12\x1d.flowmesh.v1.GetSchemaRequest\x1a\x1e.flowmesh.v1.GetSchemaResponse\x12P\n" +
 	"\vListSchemas\x12\x1f.flowmesh.v1.ListSchemasRequest\x1a .flowmesh.v1.ListSchemasResponse\x12S\n" +
 	"\fDeleteSchema\x12 .flowmesh.v1.DeleteSchemaRequest\x1a!.flowmesh.v1.DeleteSchemaResponse\x12b\n" +
-	"\x11SetResourceSchema\x12%.flowmesh.v1.SetResourceSchemaRequest\x1a&.flowmesh.v1.SetResourceSchemaResponseB1Z/github.com/flowmesh/engine/api/proto/flowmeshpbb\x06proto3"
+	"\x11SetResourceSchema\x12%.flowmesh.v1.SetResourceSchemaRequest\x1a&.flowmesh.v1.SetResourceSchemaResponse2\xf3\x05\n" +
+	"\rReplayService\x12h\n" +
+	"\x13CreateReplaySession\x12'.flowmesh.v1.CreateReplaySessionRequest\x1a(.flowmesh.v1.CreateReplaySessionResponse\x12_\n" +
+	"\x10GetReplaySession\x12$.flowmesh.v1.GetReplaySessionRequest\x1a%.flowmesh.v1.GetReplaySessionResponse\x12e\n" +
+	"\x12ListReplaySessions\x12&.flowmesh.v1.ListReplaySessionsRequest\x1a'.flowmesh.v1.ListReplaySessionsResponse\x12P\n" +
+	"\vStartReplay\x12\x1f.flowmesh.v1.StartReplayRequest\x1a .flowmesh.v1.StartReplayResponse\x12P\n" +
+	"\vPauseReplay\x12\x1f.flowmesh.v1.PauseReplayRequest\x1a .flowmesh.v1.PauseReplayResponse\x12S\n" +
+	"\fResumeReplay\x12 .flowmesh.v1.ResumeReplayRequest\x1a!.flowmesh.v1.ResumeReplayResponse\x12M\n" +
+	"\n" +
+	"StopReplay\x12\x1e.flowmesh.v1.StopReplayRequest\x1a\x1f.flowmesh.v1.StopReplayResponse\x12h\n" +
+	"\x13DeleteReplaySession\x12'.flowmesh.v1.DeleteReplaySessionRequest\x1a(.flowmesh.v1.DeleteReplaySessionResponseB1Z/github.com/flowmesh/engine/api/proto/flowmeshpbb\x06proto3"
 
 var (
 	file_flowmesh_proto_rawDescOnce sync.Once
@@ -4196,7 +5281,7 @@ func file_flowmesh_proto_rawDescGZIP() []byte {
 	return file_flowmesh_proto_rawDescData
 }
 
-var file_flowmesh_proto_msgTypes = make([]protoimpl.MessageInfo, 71)
+var file_flowmesh_proto_msgTypes = make([]protoimpl.MessageInfo, 89)
 var file_flowmesh_proto_goTypes = []any{
 	(*ResourcePath)(nil),                  // 0: flowmesh.v1.ResourcePath
 	(*Status)(nil),                        // 1: flowmesh.v1.Status
@@ -4265,143 +5350,191 @@ var file_flowmesh_proto_goTypes = []any{
 	(*DeleteSchemaResponse)(nil),          // 64: flowmesh.v1.DeleteSchemaResponse
 	(*SetResourceSchemaRequest)(nil),      // 65: flowmesh.v1.SetResourceSchemaRequest
 	(*SetResourceSchemaResponse)(nil),     // 66: flowmesh.v1.SetResourceSchemaResponse
-	nil,                                   // 67: flowmesh.v1.Event.HeadersEntry
-	nil,                                   // 68: flowmesh.v1.Message.HeadersEntry
-	nil,                                   // 69: flowmesh.v1.Job.HeadersEntry
-	nil,                                   // 70: flowmesh.v1.EnqueueRequest.HeadersEntry
+	(*ReplaySession)(nil),                 // 67: flowmesh.v1.ReplaySession
+	(*ReplayProgress)(nil),                // 68: flowmesh.v1.ReplayProgress
+	(*CreateReplaySessionRequest)(nil),    // 69: flowmesh.v1.CreateReplaySessionRequest
+	(*CreateReplaySessionResponse)(nil),   // 70: flowmesh.v1.CreateReplaySessionResponse
+	(*GetReplaySessionRequest)(nil),       // 71: flowmesh.v1.GetReplaySessionRequest
+	(*GetReplaySessionResponse)(nil),      // 72: flowmesh.v1.GetReplaySessionResponse
+	(*ListReplaySessionsRequest)(nil),     // 73: flowmesh.v1.ListReplaySessionsRequest
+	(*ListReplaySessionsResponse)(nil),    // 74: flowmesh.v1.ListReplaySessionsResponse
+	(*StartReplayRequest)(nil),            // 75: flowmesh.v1.StartReplayRequest
+	(*StartReplayResponse)(nil),           // 76: flowmesh.v1.StartReplayResponse
+	(*PauseReplayRequest)(nil),            // 77: flowmesh.v1.PauseReplayRequest
+	(*PauseReplayResponse)(nil),           // 78: flowmesh.v1.PauseReplayResponse
+	(*ResumeReplayRequest)(nil),           // 79: flowmesh.v1.ResumeReplayRequest
+	(*ResumeReplayResponse)(nil),          // 80: flowmesh.v1.ResumeReplayResponse
+	(*StopReplayRequest)(nil),             // 81: flowmesh.v1.StopReplayRequest
+	(*StopReplayResponse)(nil),            // 82: flowmesh.v1.StopReplayResponse
+	(*DeleteReplaySessionRequest)(nil),    // 83: flowmesh.v1.DeleteReplaySessionRequest
+	(*DeleteReplaySessionResponse)(nil),   // 84: flowmesh.v1.DeleteReplaySessionResponse
+	nil,                                   // 85: flowmesh.v1.Event.HeadersEntry
+	nil,                                   // 86: flowmesh.v1.Message.HeadersEntry
+	nil,                                   // 87: flowmesh.v1.Job.HeadersEntry
+	nil,                                   // 88: flowmesh.v1.EnqueueRequest.HeadersEntry
 }
 var file_flowmesh_proto_depIdxs = []int32{
-	1,  // 0: flowmesh.v1.HealthCheckResponse.status:type_name -> flowmesh.v1.Status
-	1,  // 1: flowmesh.v1.ReadinessCheckResponse.status:type_name -> flowmesh.v1.Status
-	67, // 2: flowmesh.v1.Event.headers:type_name -> flowmesh.v1.Event.HeadersEntry
-	68, // 3: flowmesh.v1.Message.headers:type_name -> flowmesh.v1.Message.HeadersEntry
-	0,  // 4: flowmesh.v1.WriteEventsRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
-	6,  // 5: flowmesh.v1.WriteEventsRequest.events:type_name -> flowmesh.v1.Event
-	1,  // 6: flowmesh.v1.WriteEventsResponse.status:type_name -> flowmesh.v1.Status
-	0,  // 7: flowmesh.v1.ReadStreamRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
-	1,  // 8: flowmesh.v1.ReadStreamResponse.status:type_name -> flowmesh.v1.Status
-	7,  // 9: flowmesh.v1.ReadStreamResponse.messages:type_name -> flowmesh.v1.Message
-	0,  // 10: flowmesh.v1.SubscribeRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
-	7,  // 11: flowmesh.v1.SubscribeResponse.message:type_name -> flowmesh.v1.Message
-	1,  // 12: flowmesh.v1.SubscribeResponse.status:type_name -> flowmesh.v1.Status
-	0,  // 13: flowmesh.v1.CommitOffsetRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
-	1,  // 14: flowmesh.v1.CommitOffsetResponse.status:type_name -> flowmesh.v1.Status
-	0,  // 15: flowmesh.v1.GetOffsetRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
-	1,  // 16: flowmesh.v1.GetOffsetResponse.status:type_name -> flowmesh.v1.Status
-	0,  // 17: flowmesh.v1.GetLatestOffsetRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
-	1,  // 18: flowmesh.v1.GetLatestOffsetResponse.status:type_name -> flowmesh.v1.Status
-	0,  // 19: flowmesh.v1.GetConsumerGroupStateRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
-	1,  // 20: flowmesh.v1.GetConsumerGroupStateResponse.status:type_name -> flowmesh.v1.Status
-	20, // 21: flowmesh.v1.GetConsumerGroupStateResponse.state:type_name -> flowmesh.v1.ConsumerGroupState
-	69, // 22: flowmesh.v1.Job.headers:type_name -> flowmesh.v1.Job.HeadersEntry
-	0,  // 23: flowmesh.v1.EnqueueRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
-	70, // 24: flowmesh.v1.EnqueueRequest.headers:type_name -> flowmesh.v1.EnqueueRequest.HeadersEntry
-	1,  // 25: flowmesh.v1.EnqueueResponse.status:type_name -> flowmesh.v1.Status
-	0,  // 26: flowmesh.v1.ReserveRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
-	1,  // 27: flowmesh.v1.ReserveResponse.status:type_name -> flowmesh.v1.Status
-	23, // 28: flowmesh.v1.ReserveResponse.job:type_name -> flowmesh.v1.Job
-	0,  // 29: flowmesh.v1.ReceiveRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
-	1,  // 30: flowmesh.v1.ReceiveResponse.status:type_name -> flowmesh.v1.Status
-	23, // 31: flowmesh.v1.ReceiveResponse.jobs:type_name -> flowmesh.v1.Job
-	0,  // 32: flowmesh.v1.ACKRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
-	1,  // 33: flowmesh.v1.ACKResponse.status:type_name -> flowmesh.v1.Status
-	0,  // 34: flowmesh.v1.NACKRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
-	1,  // 35: flowmesh.v1.NACKResponse.status:type_name -> flowmesh.v1.Status
-	0,  // 36: flowmesh.v1.GetQueueStatsRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
-	1,  // 37: flowmesh.v1.GetQueueStatsResponse.status:type_name -> flowmesh.v1.Status
-	34, // 38: flowmesh.v1.GetQueueStatsResponse.stats:type_name -> flowmesh.v1.QueueStats
-	0,  // 39: flowmesh.v1.SetRetryPolicyRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
-	37, // 40: flowmesh.v1.SetRetryPolicyRequest.policy:type_name -> flowmesh.v1.RetryPolicy
-	1,  // 41: flowmesh.v1.SetRetryPolicyResponse.status:type_name -> flowmesh.v1.Status
-	0,  // 42: flowmesh.v1.GetRetryPolicyRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
-	1,  // 43: flowmesh.v1.GetRetryPolicyResponse.status:type_name -> flowmesh.v1.Status
-	37, // 44: flowmesh.v1.GetRetryPolicyResponse.policy:type_name -> flowmesh.v1.RetryPolicy
-	0,  // 45: flowmesh.v1.ListDLQJobsRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
-	1,  // 46: flowmesh.v1.ListDLQJobsResponse.status:type_name -> flowmesh.v1.Status
-	23, // 47: flowmesh.v1.ListDLQJobsResponse.jobs:type_name -> flowmesh.v1.Job
-	0,  // 48: flowmesh.v1.ReplayDLQJobRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
-	1,  // 49: flowmesh.v1.ReplayDLQJobResponse.status:type_name -> flowmesh.v1.Status
-	0,  // 50: flowmesh.v1.SetRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
-	1,  // 51: flowmesh.v1.SetResponse.status:type_name -> flowmesh.v1.Status
-	0,  // 52: flowmesh.v1.GetRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
-	1,  // 53: flowmesh.v1.GetResponse.status:type_name -> flowmesh.v1.Status
-	0,  // 54: flowmesh.v1.DeleteRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
-	1,  // 55: flowmesh.v1.DeleteResponse.status:type_name -> flowmesh.v1.Status
-	0,  // 56: flowmesh.v1.ExistsRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
-	1,  // 57: flowmesh.v1.ExistsResponse.status:type_name -> flowmesh.v1.Status
-	0,  // 58: flowmesh.v1.ListKeysRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
-	1,  // 59: flowmesh.v1.ListKeysResponse.status:type_name -> flowmesh.v1.Status
-	1,  // 60: flowmesh.v1.RegisterSchemaResponse.status:type_name -> flowmesh.v1.Status
-	1,  // 61: flowmesh.v1.GetSchemaResponse.status:type_name -> flowmesh.v1.Status
-	56, // 62: flowmesh.v1.GetSchemaResponse.schema:type_name -> flowmesh.v1.Schema
-	1,  // 63: flowmesh.v1.ListSchemasResponse.status:type_name -> flowmesh.v1.Status
-	56, // 64: flowmesh.v1.ListSchemasResponse.schemas:type_name -> flowmesh.v1.Schema
-	1,  // 65: flowmesh.v1.DeleteSchemaResponse.status:type_name -> flowmesh.v1.Status
-	0,  // 66: flowmesh.v1.SetResourceSchemaRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
-	1,  // 67: flowmesh.v1.SetResourceSchemaResponse.status:type_name -> flowmesh.v1.Status
-	2,  // 68: flowmesh.v1.HealthService.HealthCheck:input_type -> flowmesh.v1.HealthCheckRequest
-	4,  // 69: flowmesh.v1.HealthService.ReadinessCheck:input_type -> flowmesh.v1.ReadinessCheckRequest
-	8,  // 70: flowmesh.v1.StreamService.WriteEvents:input_type -> flowmesh.v1.WriteEventsRequest
-	10, // 71: flowmesh.v1.StreamService.ReadStream:input_type -> flowmesh.v1.ReadStreamRequest
-	12, // 72: flowmesh.v1.StreamService.Subscribe:input_type -> flowmesh.v1.SubscribeRequest
-	14, // 73: flowmesh.v1.StreamService.CommitOffset:input_type -> flowmesh.v1.CommitOffsetRequest
-	16, // 74: flowmesh.v1.StreamService.GetOffset:input_type -> flowmesh.v1.GetOffsetRequest
-	18, // 75: flowmesh.v1.StreamService.GetLatestOffset:input_type -> flowmesh.v1.GetLatestOffsetRequest
-	21, // 76: flowmesh.v1.StreamService.GetConsumerGroupState:input_type -> flowmesh.v1.GetConsumerGroupStateRequest
-	24, // 77: flowmesh.v1.QueueService.Enqueue:input_type -> flowmesh.v1.EnqueueRequest
-	26, // 78: flowmesh.v1.QueueService.Reserve:input_type -> flowmesh.v1.ReserveRequest
-	28, // 79: flowmesh.v1.QueueService.Receive:input_type -> flowmesh.v1.ReceiveRequest
-	30, // 80: flowmesh.v1.QueueService.ACK:input_type -> flowmesh.v1.ACKRequest
-	32, // 81: flowmesh.v1.QueueService.NACK:input_type -> flowmesh.v1.NACKRequest
-	35, // 82: flowmesh.v1.QueueService.GetQueueStats:input_type -> flowmesh.v1.GetQueueStatsRequest
-	38, // 83: flowmesh.v1.QueueService.SetRetryPolicy:input_type -> flowmesh.v1.SetRetryPolicyRequest
-	40, // 84: flowmesh.v1.QueueService.GetRetryPolicy:input_type -> flowmesh.v1.GetRetryPolicyRequest
-	42, // 85: flowmesh.v1.QueueService.ListDLQJobs:input_type -> flowmesh.v1.ListDLQJobsRequest
-	44, // 86: flowmesh.v1.QueueService.ReplayDLQJob:input_type -> flowmesh.v1.ReplayDLQJobRequest
-	46, // 87: flowmesh.v1.KVService.Set:input_type -> flowmesh.v1.SetRequest
-	48, // 88: flowmesh.v1.KVService.Get:input_type -> flowmesh.v1.GetRequest
-	50, // 89: flowmesh.v1.KVService.Delete:input_type -> flowmesh.v1.DeleteRequest
-	52, // 90: flowmesh.v1.KVService.Exists:input_type -> flowmesh.v1.ExistsRequest
-	54, // 91: flowmesh.v1.KVService.ListKeys:input_type -> flowmesh.v1.ListKeysRequest
-	57, // 92: flowmesh.v1.SchemaService.RegisterSchema:input_type -> flowmesh.v1.RegisterSchemaRequest
-	59, // 93: flowmesh.v1.SchemaService.GetSchema:input_type -> flowmesh.v1.GetSchemaRequest
-	61, // 94: flowmesh.v1.SchemaService.ListSchemas:input_type -> flowmesh.v1.ListSchemasRequest
-	63, // 95: flowmesh.v1.SchemaService.DeleteSchema:input_type -> flowmesh.v1.DeleteSchemaRequest
-	65, // 96: flowmesh.v1.SchemaService.SetResourceSchema:input_type -> flowmesh.v1.SetResourceSchemaRequest
-	3,  // 97: flowmesh.v1.HealthService.HealthCheck:output_type -> flowmesh.v1.HealthCheckResponse
-	5,  // 98: flowmesh.v1.HealthService.ReadinessCheck:output_type -> flowmesh.v1.ReadinessCheckResponse
-	9,  // 99: flowmesh.v1.StreamService.WriteEvents:output_type -> flowmesh.v1.WriteEventsResponse
-	11, // 100: flowmesh.v1.StreamService.ReadStream:output_type -> flowmesh.v1.ReadStreamResponse
-	13, // 101: flowmesh.v1.StreamService.Subscribe:output_type -> flowmesh.v1.SubscribeResponse
-	15, // 102: flowmesh.v1.StreamService.CommitOffset:output_type -> flowmesh.v1.CommitOffsetResponse
-	17, // 103: flowmesh.v1.StreamService.GetOffset:output_type -> flowmesh.v1.GetOffsetResponse
-	19, // 104: flowmesh.v1.StreamService.GetLatestOffset:output_type -> flowmesh.v1.GetLatestOffsetResponse
-	22, // 105: flowmesh.v1.StreamService.GetConsumerGroupState:output_type -> flowmesh.v1.GetConsumerGroupStateResponse
-	25, // 106: flowmesh.v1.QueueService.Enqueue:output_type -> flowmesh.v1.EnqueueResponse
-	27, // 107: flowmesh.v1.QueueService.Reserve:output_type -> flowmesh.v1.ReserveResponse
-	29, // 108: flowmesh.v1.QueueService.Receive:output_type -> flowmesh.v1.ReceiveResponse
-	31, // 109: flowmesh.v1.QueueService.ACK:output_type -> flowmesh.v1.ACKResponse
-	33, // 110: flowmesh.v1.QueueService.NACK:output_type -> flowmesh.v1.NACKResponse
-	36, // 111: flowmesh.v1.QueueService.GetQueueStats:output_type -> flowmesh.v1.GetQueueStatsResponse
-	39, // 112: flowmesh.v1.QueueService.SetRetryPolicy:output_type -> flowmesh.v1.SetRetryPolicyResponse
-	41, // 113: flowmesh.v1.QueueService.GetRetryPolicy:output_type -> flowmesh.v1.GetRetryPolicyResponse
-	43, // 114: flowmesh.v1.QueueService.ListDLQJobs:output_type -> flowmesh.v1.ListDLQJobsResponse
-	45, // 115: flowmesh.v1.QueueService.ReplayDLQJob:output_type -> flowmesh.v1.ReplayDLQJobResponse
-	47, // 116: flowmesh.v1.KVService.Set:output_type -> flowmesh.v1.SetResponse
-	49, // 117: flowmesh.v1.KVService.Get:output_type -> flowmesh.v1.GetResponse
-	51, // 118: flowmesh.v1.KVService.Delete:output_type -> flowmesh.v1.DeleteResponse
-	53, // 119: flowmesh.v1.KVService.Exists:output_type -> flowmesh.v1.ExistsResponse
-	55, // 120: flowmesh.v1.KVService.ListKeys:output_type -> flowmesh.v1.ListKeysResponse
-	58, // 121: flowmesh.v1.SchemaService.RegisterSchema:output_type -> flowmesh.v1.RegisterSchemaResponse
-	60, // 122: flowmesh.v1.SchemaService.GetSchema:output_type -> flowmesh.v1.GetSchemaResponse
-	62, // 123: flowmesh.v1.SchemaService.ListSchemas:output_type -> flowmesh.v1.ListSchemasResponse
-	64, // 124: flowmesh.v1.SchemaService.DeleteSchema:output_type -> flowmesh.v1.DeleteSchemaResponse
-	66, // 125: flowmesh.v1.SchemaService.SetResourceSchema:output_type -> flowmesh.v1.SetResourceSchemaResponse
-	97, // [97:126] is the sub-list for method output_type
-	68, // [68:97] is the sub-list for method input_type
-	68, // [68:68] is the sub-list for extension type_name
-	68, // [68:68] is the sub-list for extension extendee
-	0,  // [0:68] is the sub-list for field type_name
+	1,   // 0: flowmesh.v1.HealthCheckResponse.status:type_name -> flowmesh.v1.Status
+	1,   // 1: flowmesh.v1.ReadinessCheckResponse.status:type_name -> flowmesh.v1.Status
+	85,  // 2: flowmesh.v1.Event.headers:type_name -> flowmesh.v1.Event.HeadersEntry
+	86,  // 3: flowmesh.v1.Message.headers:type_name -> flowmesh.v1.Message.HeadersEntry
+	0,   // 4: flowmesh.v1.WriteEventsRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	6,   // 5: flowmesh.v1.WriteEventsRequest.events:type_name -> flowmesh.v1.Event
+	1,   // 6: flowmesh.v1.WriteEventsResponse.status:type_name -> flowmesh.v1.Status
+	0,   // 7: flowmesh.v1.ReadStreamRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	1,   // 8: flowmesh.v1.ReadStreamResponse.status:type_name -> flowmesh.v1.Status
+	7,   // 9: flowmesh.v1.ReadStreamResponse.messages:type_name -> flowmesh.v1.Message
+	0,   // 10: flowmesh.v1.SubscribeRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	7,   // 11: flowmesh.v1.SubscribeResponse.message:type_name -> flowmesh.v1.Message
+	1,   // 12: flowmesh.v1.SubscribeResponse.status:type_name -> flowmesh.v1.Status
+	0,   // 13: flowmesh.v1.CommitOffsetRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	1,   // 14: flowmesh.v1.CommitOffsetResponse.status:type_name -> flowmesh.v1.Status
+	0,   // 15: flowmesh.v1.GetOffsetRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	1,   // 16: flowmesh.v1.GetOffsetResponse.status:type_name -> flowmesh.v1.Status
+	0,   // 17: flowmesh.v1.GetLatestOffsetRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	1,   // 18: flowmesh.v1.GetLatestOffsetResponse.status:type_name -> flowmesh.v1.Status
+	0,   // 19: flowmesh.v1.GetConsumerGroupStateRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	1,   // 20: flowmesh.v1.GetConsumerGroupStateResponse.status:type_name -> flowmesh.v1.Status
+	20,  // 21: flowmesh.v1.GetConsumerGroupStateResponse.state:type_name -> flowmesh.v1.ConsumerGroupState
+	87,  // 22: flowmesh.v1.Job.headers:type_name -> flowmesh.v1.Job.HeadersEntry
+	0,   // 23: flowmesh.v1.EnqueueRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	88,  // 24: flowmesh.v1.EnqueueRequest.headers:type_name -> flowmesh.v1.EnqueueRequest.HeadersEntry
+	1,   // 25: flowmesh.v1.EnqueueResponse.status:type_name -> flowmesh.v1.Status
+	0,   // 26: flowmesh.v1.ReserveRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	1,   // 27: flowmesh.v1.ReserveResponse.status:type_name -> flowmesh.v1.Status
+	23,  // 28: flowmesh.v1.ReserveResponse.job:type_name -> flowmesh.v1.Job
+	0,   // 29: flowmesh.v1.ReceiveRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	1,   // 30: flowmesh.v1.ReceiveResponse.status:type_name -> flowmesh.v1.Status
+	23,  // 31: flowmesh.v1.ReceiveResponse.jobs:type_name -> flowmesh.v1.Job
+	0,   // 32: flowmesh.v1.ACKRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	1,   // 33: flowmesh.v1.ACKResponse.status:type_name -> flowmesh.v1.Status
+	0,   // 34: flowmesh.v1.NACKRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	1,   // 35: flowmesh.v1.NACKResponse.status:type_name -> flowmesh.v1.Status
+	0,   // 36: flowmesh.v1.GetQueueStatsRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	1,   // 37: flowmesh.v1.GetQueueStatsResponse.status:type_name -> flowmesh.v1.Status
+	34,  // 38: flowmesh.v1.GetQueueStatsResponse.stats:type_name -> flowmesh.v1.QueueStats
+	0,   // 39: flowmesh.v1.SetRetryPolicyRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	37,  // 40: flowmesh.v1.SetRetryPolicyRequest.policy:type_name -> flowmesh.v1.RetryPolicy
+	1,   // 41: flowmesh.v1.SetRetryPolicyResponse.status:type_name -> flowmesh.v1.Status
+	0,   // 42: flowmesh.v1.GetRetryPolicyRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	1,   // 43: flowmesh.v1.GetRetryPolicyResponse.status:type_name -> flowmesh.v1.Status
+	37,  // 44: flowmesh.v1.GetRetryPolicyResponse.policy:type_name -> flowmesh.v1.RetryPolicy
+	0,   // 45: flowmesh.v1.ListDLQJobsRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	1,   // 46: flowmesh.v1.ListDLQJobsResponse.status:type_name -> flowmesh.v1.Status
+	23,  // 47: flowmesh.v1.ListDLQJobsResponse.jobs:type_name -> flowmesh.v1.Job
+	0,   // 48: flowmesh.v1.ReplayDLQJobRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	1,   // 49: flowmesh.v1.ReplayDLQJobResponse.status:type_name -> flowmesh.v1.Status
+	0,   // 50: flowmesh.v1.SetRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	1,   // 51: flowmesh.v1.SetResponse.status:type_name -> flowmesh.v1.Status
+	0,   // 52: flowmesh.v1.GetRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	1,   // 53: flowmesh.v1.GetResponse.status:type_name -> flowmesh.v1.Status
+	0,   // 54: flowmesh.v1.DeleteRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	1,   // 55: flowmesh.v1.DeleteResponse.status:type_name -> flowmesh.v1.Status
+	0,   // 56: flowmesh.v1.ExistsRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	1,   // 57: flowmesh.v1.ExistsResponse.status:type_name -> flowmesh.v1.Status
+	0,   // 58: flowmesh.v1.ListKeysRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	1,   // 59: flowmesh.v1.ListKeysResponse.status:type_name -> flowmesh.v1.Status
+	1,   // 60: flowmesh.v1.RegisterSchemaResponse.status:type_name -> flowmesh.v1.Status
+	1,   // 61: flowmesh.v1.GetSchemaResponse.status:type_name -> flowmesh.v1.Status
+	56,  // 62: flowmesh.v1.GetSchemaResponse.schema:type_name -> flowmesh.v1.Schema
+	1,   // 63: flowmesh.v1.ListSchemasResponse.status:type_name -> flowmesh.v1.Status
+	56,  // 64: flowmesh.v1.ListSchemasResponse.schemas:type_name -> flowmesh.v1.Schema
+	1,   // 65: flowmesh.v1.DeleteSchemaResponse.status:type_name -> flowmesh.v1.Status
+	0,   // 66: flowmesh.v1.SetResourceSchemaRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	1,   // 67: flowmesh.v1.SetResourceSchemaResponse.status:type_name -> flowmesh.v1.Status
+	68,  // 68: flowmesh.v1.ReplaySession.progress:type_name -> flowmesh.v1.ReplayProgress
+	0,   // 69: flowmesh.v1.CreateReplaySessionRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	1,   // 70: flowmesh.v1.CreateReplaySessionResponse.status:type_name -> flowmesh.v1.Status
+	67,  // 71: flowmesh.v1.CreateReplaySessionResponse.session:type_name -> flowmesh.v1.ReplaySession
+	1,   // 72: flowmesh.v1.GetReplaySessionResponse.status:type_name -> flowmesh.v1.Status
+	67,  // 73: flowmesh.v1.GetReplaySessionResponse.session:type_name -> flowmesh.v1.ReplaySession
+	0,   // 74: flowmesh.v1.ListReplaySessionsRequest.resource_path:type_name -> flowmesh.v1.ResourcePath
+	1,   // 75: flowmesh.v1.ListReplaySessionsResponse.status:type_name -> flowmesh.v1.Status
+	67,  // 76: flowmesh.v1.ListReplaySessionsResponse.sessions:type_name -> flowmesh.v1.ReplaySession
+	1,   // 77: flowmesh.v1.StartReplayResponse.status:type_name -> flowmesh.v1.Status
+	1,   // 78: flowmesh.v1.PauseReplayResponse.status:type_name -> flowmesh.v1.Status
+	1,   // 79: flowmesh.v1.ResumeReplayResponse.status:type_name -> flowmesh.v1.Status
+	1,   // 80: flowmesh.v1.StopReplayResponse.status:type_name -> flowmesh.v1.Status
+	1,   // 81: flowmesh.v1.DeleteReplaySessionResponse.status:type_name -> flowmesh.v1.Status
+	2,   // 82: flowmesh.v1.HealthService.HealthCheck:input_type -> flowmesh.v1.HealthCheckRequest
+	4,   // 83: flowmesh.v1.HealthService.ReadinessCheck:input_type -> flowmesh.v1.ReadinessCheckRequest
+	8,   // 84: flowmesh.v1.StreamService.WriteEvents:input_type -> flowmesh.v1.WriteEventsRequest
+	10,  // 85: flowmesh.v1.StreamService.ReadStream:input_type -> flowmesh.v1.ReadStreamRequest
+	12,  // 86: flowmesh.v1.StreamService.Subscribe:input_type -> flowmesh.v1.SubscribeRequest
+	14,  // 87: flowmesh.v1.StreamService.CommitOffset:input_type -> flowmesh.v1.CommitOffsetRequest
+	16,  // 88: flowmesh.v1.StreamService.GetOffset:input_type -> flowmesh.v1.GetOffsetRequest
+	18,  // 89: flowmesh.v1.StreamService.GetLatestOffset:input_type -> flowmesh.v1.GetLatestOffsetRequest
+	21,  // 90: flowmesh.v1.StreamService.GetConsumerGroupState:input_type -> flowmesh.v1.GetConsumerGroupStateRequest
+	24,  // 91: flowmesh.v1.QueueService.Enqueue:input_type -> flowmesh.v1.EnqueueRequest
+	26,  // 92: flowmesh.v1.QueueService.Reserve:input_type -> flowmesh.v1.ReserveRequest
+	28,  // 93: flowmesh.v1.QueueService.Receive:input_type -> flowmesh.v1.ReceiveRequest
+	30,  // 94: flowmesh.v1.QueueService.ACK:input_type -> flowmesh.v1.ACKRequest
+	32,  // 95: flowmesh.v1.QueueService.NACK:input_type -> flowmesh.v1.NACKRequest
+	35,  // 96: flowmesh.v1.QueueService.GetQueueStats:input_type -> flowmesh.v1.GetQueueStatsRequest
+	38,  // 97: flowmesh.v1.QueueService.SetRetryPolicy:input_type -> flowmesh.v1.SetRetryPolicyRequest
+	40,  // 98: flowmesh.v1.QueueService.GetRetryPolicy:input_type -> flowmesh.v1.GetRetryPolicyRequest
+	42,  // 99: flowmesh.v1.QueueService.ListDLQJobs:input_type -> flowmesh.v1.ListDLQJobsRequest
+	44,  // 100: flowmesh.v1.QueueService.ReplayDLQJob:input_type -> flowmesh.v1.ReplayDLQJobRequest
+	46,  // 101: flowmesh.v1.KVService.Set:input_type -> flowmesh.v1.SetRequest
+	48,  // 102: flowmesh.v1.KVService.Get:input_type -> flowmesh.v1.GetRequest
+	50,  // 103: flowmesh.v1.KVService.Delete:input_type -> flowmesh.v1.DeleteRequest
+	52,  // 104: flowmesh.v1.KVService.Exists:input_type -> flowmesh.v1.ExistsRequest
+	54,  // 105: flowmesh.v1.KVService.ListKeys:input_type -> flowmesh.v1.ListKeysRequest
+	57,  // 106: flowmesh.v1.SchemaService.RegisterSchema:input_type -> flowmesh.v1.RegisterSchemaRequest
+	59,  // 107: flowmesh.v1.SchemaService.GetSchema:input_type -> flowmesh.v1.GetSchemaRequest
+	61,  // 108: flowmesh.v1.SchemaService.ListSchemas:input_type -> flowmesh.v1.ListSchemasRequest
+	63,  // 109: flowmesh.v1.SchemaService.DeleteSchema:input_type -> flowmesh.v1.DeleteSchemaRequest
+	65,  // 110: flowmesh.v1.SchemaService.SetResourceSchema:input_type -> flowmesh.v1.SetResourceSchemaRequest
+	69,  // 111: flowmesh.v1.ReplayService.CreateReplaySession:input_type -> flowmesh.v1.CreateReplaySessionRequest
+	71,  // 112: flowmesh.v1.ReplayService.GetReplaySession:input_type -> flowmesh.v1.GetReplaySessionRequest
+	73,  // 113: flowmesh.v1.ReplayService.ListReplaySessions:input_type -> flowmesh.v1.ListReplaySessionsRequest
+	75,  // 114: flowmesh.v1.ReplayService.StartReplay:input_type -> flowmesh.v1.StartReplayRequest
+	77,  // 115: flowmesh.v1.ReplayService.PauseReplay:input_type -> flowmesh.v1.PauseReplayRequest
+	79,  // 116: flowmesh.v1.ReplayService.ResumeReplay:input_type -> flowmesh.v1.ResumeReplayRequest
+	81,  // 117: flowmesh.v1.ReplayService.StopReplay:input_type -> flowmesh.v1.StopReplayRequest
+	83,  // 118: flowmesh.v1.ReplayService.DeleteReplaySession:input_type -> flowmesh.v1.DeleteReplaySessionRequest
+	3,   // 119: flowmesh.v1.HealthService.HealthCheck:output_type -> flowmesh.v1.HealthCheckResponse
+	5,   // 120: flowmesh.v1.HealthService.ReadinessCheck:output_type -> flowmesh.v1.ReadinessCheckResponse
+	9,   // 121: flowmesh.v1.StreamService.WriteEvents:output_type -> flowmesh.v1.WriteEventsResponse
+	11,  // 122: flowmesh.v1.StreamService.ReadStream:output_type -> flowmesh.v1.ReadStreamResponse
+	13,  // 123: flowmesh.v1.StreamService.Subscribe:output_type -> flowmesh.v1.SubscribeResponse
+	15,  // 124: flowmesh.v1.StreamService.CommitOffset:output_type -> flowmesh.v1.CommitOffsetResponse
+	17,  // 125: flowmesh.v1.StreamService.GetOffset:output_type -> flowmesh.v1.GetOffsetResponse
+	19,  // 126: flowmesh.v1.StreamService.GetLatestOffset:output_type -> flowmesh.v1.GetLatestOffsetResponse
+	22,  // 127: flowmesh.v1.StreamService.GetConsumerGroupState:output_type -> flowmesh.v1.GetConsumerGroupStateResponse
+	25,  // 128: flowmesh.v1.QueueService.Enqueue:output_type -> flowmesh.v1.EnqueueResponse
+	27,  // 129: flowmesh.v1.QueueService.Reserve:output_type -> flowmesh.v1.ReserveResponse
+	29,  // 130: flowmesh.v1.QueueService.Receive:output_type -> flowmesh.v1.ReceiveResponse
+	31,  // 131: flowmesh.v1.QueueService.ACK:output_type -> flowmesh.v1.ACKResponse
+	33,  // 132: flowmesh.v1.QueueService.NACK:output_type -> flowmesh.v1.NACKResponse
+	36,  // 133: flowmesh.v1.QueueService.GetQueueStats:output_type -> flowmesh.v1.GetQueueStatsResponse
+	39,  // 134: flowmesh.v1.QueueService.SetRetryPolicy:output_type -> flowmesh.v1.SetRetryPolicyResponse
+	41,  // 135: flowmesh.v1.QueueService.GetRetryPolicy:output_type -> flowmesh.v1.GetRetryPolicyResponse
+	43,  // 136: flowmesh.v1.QueueService.ListDLQJobs:output_type -> flowmesh.v1.ListDLQJobsResponse
+	45,  // 137: flowmesh.v1.QueueService.ReplayDLQJob:output_type -> flowmesh.v1.ReplayDLQJobResponse
+	47,  // 138: flowmesh.v1.KVService.Set:output_type -> flowmesh.v1.SetResponse
+	49,  // 139: flowmesh.v1.KVService.Get:output_type -> flowmesh.v1.GetResponse
+	51,  // 140: flowmesh.v1.KVService.Delete:output_type -> flowmesh.v1.DeleteResponse
+	53,  // 141: flowmesh.v1.KVService.Exists:output_type -> flowmesh.v1.ExistsResponse
+	55,  // 142: flowmesh.v1.KVService.ListKeys:output_type -> flowmesh.v1.ListKeysResponse
+	58,  // 143: flowmesh.v1.SchemaService.RegisterSchema:output_type -> flowmesh.v1.RegisterSchemaResponse
+	60,  // 144: flowmesh.v1.SchemaService.GetSchema:output_type -> flowmesh.v1.GetSchemaResponse
+	62,  // 145: flowmesh.v1.SchemaService.ListSchemas:output_type -> flowmesh.v1.ListSchemasResponse
+	64,  // 146: flowmesh.v1.SchemaService.DeleteSchema:output_type -> flowmesh.v1.DeleteSchemaResponse
+	66,  // 147: flowmesh.v1.SchemaService.SetResourceSchema:output_type -> flowmesh.v1.SetResourceSchemaResponse
+	70,  // 148: flowmesh.v1.ReplayService.CreateReplaySession:output_type -> flowmesh.v1.CreateReplaySessionResponse
+	72,  // 149: flowmesh.v1.ReplayService.GetReplaySession:output_type -> flowmesh.v1.GetReplaySessionResponse
+	74,  // 150: flowmesh.v1.ReplayService.ListReplaySessions:output_type -> flowmesh.v1.ListReplaySessionsResponse
+	76,  // 151: flowmesh.v1.ReplayService.StartReplay:output_type -> flowmesh.v1.StartReplayResponse
+	78,  // 152: flowmesh.v1.ReplayService.PauseReplay:output_type -> flowmesh.v1.PauseReplayResponse
+	80,  // 153: flowmesh.v1.ReplayService.ResumeReplay:output_type -> flowmesh.v1.ResumeReplayResponse
+	82,  // 154: flowmesh.v1.ReplayService.StopReplay:output_type -> flowmesh.v1.StopReplayResponse
+	84,  // 155: flowmesh.v1.ReplayService.DeleteReplaySession:output_type -> flowmesh.v1.DeleteReplaySessionResponse
+	119, // [119:156] is the sub-list for method output_type
+	82,  // [82:119] is the sub-list for method input_type
+	82,  // [82:82] is the sub-list for extension type_name
+	82,  // [82:82] is the sub-list for extension extendee
+	0,   // [0:82] is the sub-list for field type_name
 }
 
 func init() { file_flowmesh_proto_init() }
@@ -4415,9 +5548,9 @@ func file_flowmesh_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_flowmesh_proto_rawDesc), len(file_flowmesh_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   71,
+			NumMessages:   89,
 			NumExtensions: 0,
-			NumServices:   5,
+			NumServices:   6,
 		},
 		GoTypes:           file_flowmesh_proto_goTypes,
 		DependencyIndexes: file_flowmesh_proto_depIdxs,

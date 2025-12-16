@@ -546,3 +546,144 @@ service SchemaService {
   rpc SetResourceSchema(SetResourceSchemaRequest) returns (SetResourceSchemaResponse);
 }
 
+// ReplaySession represents a replay session
+message ReplaySession {
+  string session_id = 1;                    // Unique session identifier
+  string stream = 2;                        // Stream resource path
+  int32 partition = 3;                      // Partition ID
+  int64 start_offset = 4;                   // Start offset (-1 if using timestamp)
+  int64 start_timestamp = 5;                // Start timestamp (Unix nanoseconds, 0 if using offset)
+  int64 end_offset = 6;                     // End offset (-1 if not set or using timestamp)
+  int64 end_timestamp = 7;                  // End timestamp (Unix nanoseconds, 0 if not set or using offset)
+  string sandbox_consumer_group = 8;        // Sandbox consumer group name
+  string status = 9;                        // Session status (created, active, paused, stopped, completed, error)
+  ReplayProgress progress = 10;              // Replay progress
+  int64 created_at = 11;                     // Creation timestamp (Unix nanoseconds)
+  int64 updated_at = 12;                     // Last update timestamp (Unix nanoseconds)
+}
+
+// ReplayProgress represents the progress of a replay session
+message ReplayProgress {
+  int64 current_offset = 1;                 // Current offset being replayed
+  int64 messages_replayed = 2;               // Number of messages replayed
+  int64 errors = 3;                          // Number of errors encountered
+  int64 started_at = 4;                      // Start timestamp (Unix nanoseconds, 0 if not started)
+  int64 paused_at = 5;                      // Pause timestamp (Unix nanoseconds, 0 if not paused)
+  int64 completed_at = 6;                    // Completion timestamp (Unix nanoseconds, 0 if not completed)
+}
+
+// CreateReplaySessionRequest is a request to create a replay session
+message CreateReplaySessionRequest {
+  ResourcePath resource_path = 1;           // Stream resource path
+  int64 start_offset = 2;                    // Start offset (-1 if using timestamp)
+  int64 start_timestamp = 3;                 // Start timestamp (Unix nanoseconds, 0 if using offset)
+  int64 end_offset = 4;                      // End offset (-1 if not set or using timestamp)
+  int64 end_timestamp = 5;                  // End timestamp (Unix nanoseconds, 0 if not set or using offset)
+  string sandbox_consumer_group = 6;         // Sandbox consumer group name
+}
+
+// CreateReplaySessionResponse is a response to creating a replay session
+message CreateReplaySessionResponse {
+  Status status = 1;                         // Operation status
+  ReplaySession session = 2;                 // Created session
+}
+
+// GetReplaySessionRequest is a request to get a replay session
+message GetReplaySessionRequest {
+  string session_id = 1;                     // Session ID
+}
+
+// GetReplaySessionResponse is a response to getting a replay session
+message GetReplaySessionResponse {
+  Status status = 1;                         // Operation status
+  ReplaySession session = 2;                 // Session details
+}
+
+// ListReplaySessionsRequest is a request to list replay sessions
+message ListReplaySessionsRequest {
+  ResourcePath resource_path = 1;           // Optional: filter by stream resource path
+}
+
+// ListReplaySessionsResponse is a response to listing replay sessions
+message ListReplaySessionsResponse {
+  Status status = 1;                         // Operation status
+  repeated ReplaySession sessions = 2;       // List of sessions
+}
+
+// StartReplayRequest is a request to start a replay session
+message StartReplayRequest {
+  string session_id = 1;                     // Session ID
+}
+
+// StartReplayResponse is a response to starting a replay session
+message StartReplayResponse {
+  Status status = 1;                         // Operation status
+}
+
+// PauseReplayRequest is a request to pause a replay session
+message PauseReplayRequest {
+  string session_id = 1;                     // Session ID
+}
+
+// PauseReplayResponse is a response to pausing a replay session
+message PauseReplayResponse {
+  Status status = 1;                         // Operation status
+}
+
+// ResumeReplayRequest is a request to resume a replay session
+message ResumeReplayRequest {
+  string session_id = 1;                     // Session ID
+}
+
+// ResumeReplayResponse is a response to resuming a replay session
+message ResumeReplayResponse {
+  Status status = 1;                         // Operation status
+}
+
+// StopReplayRequest is a request to stop a replay session
+message StopReplayRequest {
+  string session_id = 1;                     // Session ID
+}
+
+// StopReplayResponse is a response to stopping a replay session
+message StopReplayResponse {
+  Status status = 1;                         // Operation status
+}
+
+// DeleteReplaySessionRequest is a request to delete a replay session
+message DeleteReplaySessionRequest {
+  string session_id = 1;                     // Session ID
+}
+
+// DeleteReplaySessionResponse is a response to deleting a replay session
+message DeleteReplaySessionResponse {
+  Status status = 1;                         // Operation status
+}
+
+// ReplayService provides operations for replay sessions
+service ReplayService {
+  // CreateReplaySession creates a new replay session
+  rpc CreateReplaySession(CreateReplaySessionRequest) returns (CreateReplaySessionResponse);
+
+  // GetReplaySession retrieves a replay session by ID
+  rpc GetReplaySession(GetReplaySessionRequest) returns (GetReplaySessionResponse);
+
+  // ListReplaySessions lists all replay sessions, optionally filtered by stream
+  rpc ListReplaySessions(ListReplaySessionsRequest) returns (ListReplaySessionsResponse);
+
+  // StartReplay starts replaying messages for a session
+  rpc StartReplay(StartReplayRequest) returns (StartReplayResponse);
+
+  // PauseReplay pauses an active replay session
+  rpc PauseReplay(PauseReplayRequest) returns (PauseReplayResponse);
+
+  // ResumeReplay resumes a paused replay session
+  rpc ResumeReplay(ResumeReplayRequest) returns (ResumeReplayResponse);
+
+  // StopReplay stops an active replay session
+  rpc StopReplay(StopReplayRequest) returns (StopReplayResponse);
+
+  // DeleteReplaySession deletes a replay session
+  rpc DeleteReplaySession(DeleteReplaySessionRequest) returns (DeleteReplaySessionResponse);
+}
+

@@ -175,6 +175,54 @@ type SchemaRegistry interface {
 	DeleteSchema(ctx context.Context, tenant, schemaID string, version int32) error
 }
 
+// ReplayManager defines the interface for replay management
+type ReplayManager interface {
+	Lifecycle
+	// CreateSession creates a new replay session
+	CreateSession(ctx context.Context, stream string, startOffset int64, startTime *time.Time, endOffset *int64, endTime *time.Time, sandboxGroup string) (*ReplaySession, error)
+	// GetSession retrieves a replay session by ID
+	GetSession(ctx context.Context, sessionID string) (*ReplaySession, error)
+	// ListSessions lists all replay sessions, optionally filtered by stream
+	ListSessions(ctx context.Context, stream string) ([]*ReplaySession, error)
+	// StartReplay starts replaying messages for a session
+	StartReplay(ctx context.Context, sessionID string) error
+	// PauseReplay pauses an active replay session
+	PauseReplay(ctx context.Context, sessionID string) error
+	// ResumeReplay resumes a paused replay session
+	ResumeReplay(ctx context.Context, sessionID string) error
+	// StopReplay stops an active replay session
+	StopReplay(ctx context.Context, sessionID string) error
+	// DeleteSession deletes a replay session
+	DeleteSession(ctx context.Context, sessionID string) error
+	// GetReplayProgress retrieves the progress of a replay session
+	GetReplayProgress(ctx context.Context, sessionID string) (*ReplayProgress, error)
+}
+
+// ReplaySession represents a replay session (exposed in interface)
+type ReplaySession struct {
+	ID                   string
+	Stream               string
+	Partition            int32
+	StartOffset          int64
+	StartTime            *time.Time
+	EndOffset            *int64
+	EndTime              *time.Time
+	SandboxConsumerGroup string
+	Status               string
+	CreatedAt            time.Time
+	UpdatedAt            time.Time
+}
+
+// ReplayProgress represents the progress of a replay session (exposed in interface)
+type ReplayProgress struct {
+	CurrentOffset    int64
+	MessagesReplayed int64
+	Errors           int64
+	StartedAt        *time.Time
+	PausedAt         *time.Time
+	CompletedAt      *time.Time
+}
+
 // StorageBackend defines the interface for storage operations
 type StorageBackend interface {
 	Lifecycle
@@ -192,6 +240,8 @@ type StorageBackend interface {
 	ConsumerGroupManager() ConsumerGroupManager
 	// SchemaRegistry returns the schema registry
 	SchemaRegistry() SchemaRegistry
+	// ReplayManager returns the replay manager
+	ReplayManager() ReplayManager
 	// MetricsCollector returns the metrics collector (if enabled, may return nil)
 	MetricsCollector() interface{ GetRegistry() *prometheus.Registry }
 	// Paths returns the storage paths

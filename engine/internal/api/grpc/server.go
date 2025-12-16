@@ -25,6 +25,7 @@ type Server struct {
 	queueSvc   *QueueService
 	kvSvc      *KVService
 	schemaSvc  *SchemaService
+	replaySvc  *ReplayService
 }
 
 // NewServer creates a new gRPC server
@@ -38,6 +39,7 @@ func NewServer(addr string, storage storage.StorageBackend) *Server {
 		queueSvc:  NewQueueService(storage),
 		kvSvc:     NewKVService(storage),
 		schemaSvc: NewSchemaService(storage),
+		replaySvc: NewReplayService(storage),
 	}
 
 	// Create gRPC server with interceptors
@@ -136,4 +138,5 @@ func (s *Server) registerServices() {
 
 	// Register schema service
 	flowmeshpb.RegisterSchemaServiceServer(s.grpcServer, s.schemaSvc)
+	flowmeshpb.RegisterReplayServiceServer(s.grpcServer, s.replaySvc)
 }

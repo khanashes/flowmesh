@@ -12,6 +12,7 @@ import (
 	logpkg "github.com/flowmesh/engine/internal/storage/log"
 	"github.com/flowmesh/engine/internal/storage/metastore"
 	"github.com/flowmesh/engine/internal/storage/queues"
+	"github.com/flowmesh/engine/internal/storage/replay"
 	"github.com/flowmesh/engine/internal/storage/schema"
 	"github.com/flowmesh/engine/internal/storage/streams"
 	"github.com/flowmesh/engine/internal/tracing"
@@ -30,6 +31,7 @@ type Storage struct {
 	kvManager            *kv.Manager
 	consumerGroupManager *consumers.Manager
 	schemaRegistry       *schema.Registry
+	replayManager        *replay.Manager
 	metricsCollector     *metrics.Collector
 	nodeMetrics          *metrics.NodeMetrics
 	tracerProvider       *tracing.Provider
@@ -81,6 +83,11 @@ func (s *Storage) ConsumerGroupManager() ConsumerGroupManager {
 // SchemaRegistry returns the schema registry
 func (s *Storage) SchemaRegistry() SchemaRegistry {
 	return &schemaRegistryWrapper{Registry: s.schemaRegistry}
+}
+
+// ReplayManager returns the replay manager
+func (s *Storage) ReplayManager() ReplayManager {
+	return &replayManagerWrapper{Manager: s.replayManager}
 }
 
 // MetricsCollector returns the metrics collector
@@ -152,6 +159,14 @@ func (s *Storage) Close(ctx context.Context) error {
 		}
 	}
 
+	// Stop replay manager
+	if s.replayManager != nil {
+		if err := s.replayManager.Stop(context.Background()); err != nil {
+			s.log.Error().Err(err).Msg("Failed to stop replay manager")
+			lastErr = err
+		}
+	}
+
 	// Shutdown tracing provider
 	if s.tracerProvider != nil {
 		if err := s.tracerProvider.Shutdown(ctx); err != nil {
@@ -199,6 +214,13 @@ func (s *Storage) Start(ctx context.Context) error {
 	if s.consumerGroupManager != nil {
 		if err := s.consumerGroupManager.Start(ctx); err != nil {
 			return fmt.Errorf("failed to start consumer group manager: %w", err)
+		}
+	}
+
+	// Start replay manager
+	if s.replayManager != nil {
+		if err := s.replayManager.Start(ctx); err != nil {
+			return fmt.Errorf("failed to start replay manager: %w", err)
 		}
 	}
 

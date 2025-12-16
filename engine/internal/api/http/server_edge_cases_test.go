@@ -336,6 +336,7 @@ func (m *mockStorageBackendWithMutex) StreamManager() storage.StreamManager     
 func (m *mockStorageBackendWithMutex) QueueManager() storage.QueueManager                 { return nil }
 func (m *mockStorageBackendWithMutex) KVManager() storage.KVManager                       { return nil }
 func (m *mockStorageBackendWithMutex) ConsumerGroupManager() storage.ConsumerGroupManager { return nil }
+func (m *mockStorageBackendWithMutex) ReplayManager() storage.ReplayManager               { return nil }
 func (m *mockStorageBackendWithMutex) SchemaRegistry() storage.SchemaRegistry             { return nil }
 func (m *mockStorageBackendWithMutex) MetricsCollector() interface{ GetRegistry() *prometheus.Registry } {
 	return nil

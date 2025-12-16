@@ -19,6 +19,7 @@ type Router struct {
 	queueHandlers  *handlers.QueueHandlers
 	kvHandlers     *handlers.KVHandlers
 	schemaHandlers *handlers.SchemaHandlers
+	replayHandlers *handlers.ReplayHandlers
 	metricsHandler http.Handler
 }
 
@@ -81,6 +82,9 @@ func (r *Router) setupRoutes() {
 
 	// Schema API endpoints
 	r.mux.Handle("/api/v1/schemas/", chain(http.HandlerFunc(r.handleSchemaRoutes)))
+
+	// Replay API endpoints
+	r.mux.Handle("/api/v1/replay/", chain(http.HandlerFunc(r.handleReplayRoutes)))
 
 	// Default API v1 route (for unmatched paths)
 	r.mux.Handle("/api/v1/", chain(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -264,6 +268,70 @@ func (r *Router) handleSchemaRoutes(w http.ResponseWriter, req *http.Request) {
 	if req.Method == http.MethodDelete {
 		r.schemaHandlers.DeleteSchema(w, req)
 		return
+	}
+
+	// No match found
+	http.NotFound(w, req)
+}
+
+// handleReplayRoutes routes replay-related requests to appropriate handlers
+func (r *Router) handleReplayRoutes(w http.ResponseWriter, req *http.Request) {
+	path := req.URL.Path
+
+	// POST /api/v1/replay/sessions - Create replay session
+	if req.Method == http.MethodPost && strings.HasSuffix(path, "/sessions") {
+		r.replayHandlers.CreateReplaySession(w, req)
+		return
+	}
+
+	// GET /api/v1/replay/sessions - List replay sessions
+	if req.Method == http.MethodGet && strings.HasSuffix(path, "/sessions") {
+		r.replayHandlers.ListReplaySessions(w, req)
+		return
+	}
+
+	// POST /api/v1/replay/sessions/{session_id}/start - Start replay
+	if req.Method == http.MethodPost && strings.Contains(path, "/sessions/") && strings.HasSuffix(path, "/start") {
+		r.replayHandlers.StartReplay(w, req)
+		return
+	}
+
+	// POST /api/v1/replay/sessions/{session_id}/pause - Pause replay
+	if req.Method == http.MethodPost && strings.Contains(path, "/sessions/") && strings.HasSuffix(path, "/pause") {
+		r.replayHandlers.PauseReplay(w, req)
+		return
+	}
+
+	// POST /api/v1/replay/sessions/{session_id}/resume - Resume replay
+	if req.Method == http.MethodPost && strings.Contains(path, "/sessions/") && strings.HasSuffix(path, "/resume") {
+		r.replayHandlers.ResumeReplay(w, req)
+		return
+	}
+
+	// POST /api/v1/replay/sessions/{session_id}/stop - Stop replay
+	if req.Method == http.MethodPost && strings.Contains(path, "/sessions/") && strings.HasSuffix(path, "/stop") {
+		r.replayHandlers.StopReplay(w, req)
+		return
+	}
+
+	// GET /api/v1/replay/sessions/{session_id} - Get session details
+	if req.Method == http.MethodGet && strings.Contains(path, "/sessions/") {
+		// Check it's not a sub-path like /start, /pause, etc.
+		parts := strings.Split(path, "/")
+		if len(parts) >= 5 && parts[4] == "sessions" && len(parts) == 6 {
+			r.replayHandlers.GetReplaySession(w, req)
+			return
+		}
+	}
+
+	// DELETE /api/v1/replay/sessions/{session_id} - Delete session
+	if req.Method == http.MethodDelete && strings.Contains(path, "/sessions/") {
+		// Check it's not a sub-path
+		parts := strings.Split(path, "/")
+		if len(parts) >= 5 && parts[4] == "sessions" && len(parts) == 6 {
+			r.replayHandlers.DeleteReplaySession(w, req)
+			return
+		}
 	}
 
 	// No match found

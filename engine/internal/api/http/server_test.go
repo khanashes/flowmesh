@@ -102,6 +102,7 @@ func (m *mockStorageBackend) StreamManager() storage.StreamManager              
 func (m *mockStorageBackend) QueueManager() storage.QueueManager                 { return nil }
 func (m *mockStorageBackend) KVManager() storage.KVManager                       { return nil }
 func (m *mockStorageBackend) ConsumerGroupManager() storage.ConsumerGroupManager { return nil }
+func (m *mockStorageBackend) ReplayManager() storage.ReplayManager               { return nil }
 func (m *mockStorageBackend) SchemaRegistry() storage.SchemaRegistry             { return nil }
 func (m *mockStorageBackend) MetricsCollector() interface{ GetRegistry() *prometheus.Registry } {
 	return nil

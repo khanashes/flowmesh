@@ -11,6 +11,7 @@ import (
 	logpkg "github.com/flowmesh/engine/internal/storage/log"
 	"github.com/flowmesh/engine/internal/storage/metastore"
 	"github.com/flowmesh/engine/internal/storage/queues"
+	"github.com/flowmesh/engine/internal/storage/replay"
 	"github.com/flowmesh/engine/internal/storage/schema"
 	"github.com/flowmesh/engine/internal/storage/streams"
 	"github.com/flowmesh/engine/internal/tracing"
@@ -170,6 +171,13 @@ func (b *Builder) Build() (*Storage, error) {
 	// Initialize schema registry
 	schemaReg := schema.NewRegistry(b.metaStore)
 
+	// Initialize replay executor
+	replayExecutor := replay.NewExecutor(nil, streamMgr, consumerGroupMgr) // Manager will be set after creation
+
+	// Initialize replay manager
+	replayMgr := replay.NewManager(b.metaStore, paths.MetadataDir, replayExecutor)
+	replayExecutor.SetManager(replayMgr) // Set manager reference
+
 	storage := &Storage{
 		paths:                paths,
 		metaStore:            b.metaStore,
@@ -179,6 +187,7 @@ func (b *Builder) Build() (*Storage, error) {
 		kvManager:            kvMgr,
 		consumerGroupManager: consumerGroupMgr,
 		schemaRegistry:       schemaReg,
+		replayManager:        replayMgr,
 		metricsCollector:     metricsCollector,
 		nodeMetrics:          nodeMetrics,
 		tracerProvider:       tracerProvider,

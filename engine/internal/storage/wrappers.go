@@ -8,6 +8,7 @@ import (
 	"github.com/flowmesh/engine/internal/storage/kv"
 	"github.com/flowmesh/engine/internal/storage/log"
 	"github.com/flowmesh/engine/internal/storage/queues"
+	"github.com/flowmesh/engine/internal/storage/replay"
 	"github.com/flowmesh/engine/internal/storage/schema"
 	"github.com/flowmesh/engine/internal/storage/streams"
 )
@@ -111,29 +112,22 @@ func (w *queueManagerWrapper) Reserve(ctx context.Context, resourcePath string, 
 	default:
 	}
 
-	// Use Manager's Reserve method which properly handles popping and adding to InFlight atomically
-	options := queues.ReserveOptions{
+	queueOptions := queues.ReserveOptions{
 		VisibilityTimeout: visibilityTimeout,
-		LongPollTimeout:   0, // No long polling for this interface
-		MaxWaitTime:       0,
 	}
-
-	jobMeta, err := w.Manager.Reserve(ctx, resourcePath, options)
+	job, err := w.Manager.Reserve(ctx, resourcePath, queueOptions)
 	if err != nil {
 		return nil, err
 	}
-	if jobMeta == nil {
-		return nil, nil // No jobs available
-	}
 
 	return &QueueJob{
-		ID:           jobMeta.ID,
-		Seq:          jobMeta.Seq,
-		VisibleAt:    jobMeta.VisibleAt,
-		ReserveUntil: jobMeta.ReserveUntil,
-		PayloadPos:   jobMeta.PayloadPos,
-		Attempts:     jobMeta.Attempts,
-		CreatedAt:    jobMeta.CreatedAt,
+		ID:           job.ID,
+		Seq:          job.Seq,
+		VisibleAt:    job.VisibleAt,
+		ReserveUntil: job.ReserveUntil,
+		PayloadPos:   job.PayloadPos,
+		Attempts:     job.Attempts,
+		CreatedAt:    job.CreatedAt,
 	}, nil
 }
 
@@ -149,8 +143,92 @@ func (w *queueManagerWrapper) PopReadyJob(ctx context.Context, resourcePath stri
 	if err != nil {
 		return nil, err
 	}
+
 	if job == nil {
 		return nil, nil
+	}
+
+	return &QueueJob{
+		ID:           job.ID,
+		Seq:          job.Seq,
+		VisibleAt:    job.VisibleAt,
+		ReserveUntil: job.ReserveUntil,
+		PayloadPos:   job.PayloadPos,
+		Attempts:     job.Attempts,
+		CreatedAt:    job.CreatedAt,
+	}, nil
+}
+
+// Start implements Lifecycle interface
+func (w *queueManagerWrapper) Start(ctx context.Context) error {
+	return w.Manager.Start(ctx)
+}
+
+// Stop implements Lifecycle interface
+func (w *queueManagerWrapper) Stop(ctx context.Context) error {
+	return w.Manager.Stop(ctx)
+}
+
+// Ready implements Lifecycle interface
+func (w *queueManagerWrapper) Ready() bool {
+	return w.Manager.Ready()
+}
+
+// InitializeQueue implements QueueManager interface
+func (w *queueManagerWrapper) InitializeQueue(ctx context.Context, resourcePath string) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+	return w.Manager.InitializeQueue(resourcePath)
+}
+
+// AddToInFlight implements QueueManager interface
+func (w *queueManagerWrapper) AddToInFlight(ctx context.Context, resourcePath string, jobID string, visibilityTimeout time.Duration) (*QueueJob, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+
+	job, err := w.Manager.AddToInFlight(resourcePath, jobID, visibilityTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	return &QueueJob{
+		ID:           job.ID,
+		Seq:          job.Seq,
+		VisibleAt:    job.VisibleAt,
+		ReserveUntil: job.ReserveUntil,
+		PayloadPos:   job.PayloadPos,
+		Attempts:     job.Attempts,
+		CreatedAt:    job.CreatedAt,
+	}, nil
+}
+
+// RemoveFromInFlight implements QueueManager interface
+func (w *queueManagerWrapper) RemoveFromInFlight(ctx context.Context, resourcePath string, jobID string) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+	return w.Manager.RemoveFromInFlight(resourcePath, jobID)
+}
+
+// GetInFlight implements QueueManager interface
+func (w *queueManagerWrapper) GetInFlight(ctx context.Context, resourcePath string, jobID string) (*QueueJob, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+
+	job, err := w.Manager.GetInFlight(resourcePath, jobID)
+	if err != nil {
+		return nil, err
 	}
 
 	return &QueueJob{
@@ -201,10 +279,12 @@ func (w *queueManagerWrapper) GetQueueStats(ctx context.Context, resourcePath st
 		return nil, ctx.Err()
 	default:
 	}
+
 	stats, err := w.Manager.GetQueueStats(ctx, resourcePath)
 	if err != nil {
 		return nil, err
 	}
+
 	return &QueueStats{
 		TotalJobs:     stats.TotalJobs,
 		PendingJobs:   stats.PendingJobs,
@@ -222,21 +302,21 @@ func (w *queueManagerWrapper) Receive(ctx context.Context, resourcePath string, 
 		return nil, ctx.Err()
 	default:
 	}
+
 	queueOptions := queues.ReserveOptions{
 		VisibilityTimeout: options.VisibilityTimeout,
 		LongPollTimeout:   options.LongPollTimeout,
 		MaxWaitTime:       options.MaxWaitTime,
 	}
+
 	jobs, err := w.Manager.Receive(ctx, resourcePath, maxJobs, queueOptions)
 	if err != nil {
 		return nil, err
 	}
-	if jobs == nil {
-		return nil, nil
-	}
-	result := make([]*QueueJob, 0, len(jobs))
-	for _, job := range jobs {
-		result = append(result, &QueueJob{
+
+	result := make([]*QueueJob, len(jobs))
+	for i, job := range jobs {
+		result[i] = &QueueJob{
 			ID:           job.ID,
 			Seq:          job.Seq,
 			VisibleAt:    job.VisibleAt,
@@ -244,92 +324,10 @@ func (w *queueManagerWrapper) Receive(ctx context.Context, resourcePath string, 
 			PayloadPos:   job.PayloadPos,
 			Attempts:     job.Attempts,
 			CreatedAt:    job.CreatedAt,
-		})
+		}
 	}
+
 	return result, nil
-}
-
-// InitializeQueue implements QueueManager interface
-func (w *queueManagerWrapper) InitializeQueue(ctx context.Context, resourcePath string) error {
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	default:
-	}
-	return w.Manager.InitializeQueue(resourcePath)
-}
-
-// AddToInFlight implements QueueManager interface
-func (w *queueManagerWrapper) AddToInFlight(ctx context.Context, resourcePath string, jobID string, visibilityTimeout time.Duration) (*QueueJob, error) {
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	default:
-	}
-
-	jobMeta, err := w.Manager.AddToInFlight(resourcePath, jobID, visibilityTimeout)
-	if err != nil {
-		return nil, err
-	}
-
-	return &QueueJob{
-		ID:           jobMeta.ID,
-		Seq:          jobMeta.Seq,
-		VisibleAt:    jobMeta.VisibleAt,
-		ReserveUntil: jobMeta.ReserveUntil,
-		PayloadPos:   jobMeta.PayloadPos,
-		Attempts:     jobMeta.Attempts,
-		CreatedAt:    jobMeta.CreatedAt,
-	}, nil
-}
-
-// RemoveFromInFlight implements QueueManager interface
-func (w *queueManagerWrapper) RemoveFromInFlight(ctx context.Context, resourcePath string, jobID string) error {
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	default:
-	}
-	return w.Manager.RemoveFromInFlight(resourcePath, jobID)
-}
-
-// GetInFlight implements QueueManager interface
-func (w *queueManagerWrapper) GetInFlight(ctx context.Context, resourcePath string, jobID string) (*QueueJob, error) {
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	default:
-	}
-
-	jobMeta, err := w.Manager.GetInFlight(resourcePath, jobID)
-	if err != nil {
-		return nil, err
-	}
-
-	return &QueueJob{
-		ID:           jobMeta.ID,
-		Seq:          jobMeta.Seq,
-		VisibleAt:    jobMeta.VisibleAt,
-		ReserveUntil: jobMeta.ReserveUntil,
-		PayloadPos:   jobMeta.PayloadPos,
-		Attempts:     jobMeta.Attempts,
-		CreatedAt:    jobMeta.CreatedAt,
-	}, nil
-}
-
-// Start implements Lifecycle interface
-func (w *queueManagerWrapper) Start(ctx context.Context) error {
-	return nil // Queue manager doesn't need explicit startup
-}
-
-// Stop implements Lifecycle interface
-func (w *queueManagerWrapper) Stop(ctx context.Context) error {
-	return nil // Queue manager cleanup if needed
-}
-
-// Ready implements Lifecycle interface
-func (w *queueManagerWrapper) Ready() bool {
-	return true
 }
 
 // SetRetryPolicy implements QueueManager interface
@@ -380,26 +378,25 @@ func (w *queueManagerWrapper) ListDLQJobs(ctx context.Context, resourcePath stri
 	default:
 	}
 
-	dlqJobs, err := w.Manager.ListDLQJobs(ctx, resourcePath, maxJobs)
+	jobs, err := w.Manager.ListDLQJobs(ctx, resourcePath, maxJobs)
 	if err != nil {
 		return nil, err
 	}
 
-	// Convert JobMetadata to QueueJob
-	queueJobs := make([]*QueueJob, 0, len(dlqJobs))
-	for _, jobMeta := range dlqJobs {
-		queueJobs = append(queueJobs, &QueueJob{
-			ID:           jobMeta.ID,
-			Seq:          jobMeta.Seq,
-			VisibleAt:    jobMeta.VisibleAt,
-			ReserveUntil: jobMeta.ReserveUntil,
-			PayloadPos:   jobMeta.PayloadPos,
-			Attempts:     jobMeta.Attempts,
-			CreatedAt:    jobMeta.CreatedAt,
-		})
+	result := make([]*QueueJob, len(jobs))
+	for i, job := range jobs {
+		result[i] = &QueueJob{
+			ID:           job.ID,
+			Seq:          job.Seq,
+			VisibleAt:    job.VisibleAt,
+			ReserveUntil: job.ReserveUntil,
+			PayloadPos:   job.PayloadPos,
+			Attempts:     job.Attempts,
+			CreatedAt:    job.CreatedAt,
+		}
 	}
 
-	return queueJobs, nil
+	return result, nil
 }
 
 // kvManagerWrapper wraps kv.Manager to implement KVManager interface
@@ -409,39 +406,6 @@ type kvManagerWrapper struct {
 
 // Ensure kvManagerWrapper implements KVManager interface
 var _ KVManager = (*kvManagerWrapper)(nil)
-
-// Set implements KVManager interface
-func (w *kvManagerWrapper) Set(ctx context.Context, resourcePath, key string, value []byte, options KVSetOptions) error {
-	kvOptions := kv.SetOptions{
-		TTL: options.TTL,
-	}
-	return w.Manager.Set(ctx, resourcePath, key, value, kvOptions)
-}
-
-// Get implements KVManager interface
-func (w *kvManagerWrapper) Get(ctx context.Context, resourcePath, key string) ([]byte, error) {
-	return w.Manager.Get(ctx, resourcePath, key)
-}
-
-// Delete implements KVManager interface
-func (w *kvManagerWrapper) Delete(ctx context.Context, resourcePath, key string) error {
-	return w.Manager.Delete(ctx, resourcePath, key)
-}
-
-// Exists implements KVManager interface
-func (w *kvManagerWrapper) Exists(ctx context.Context, resourcePath, key string) (bool, error) {
-	return w.Manager.Exists(ctx, resourcePath, key)
-}
-
-// ListKeys implements KVManager interface
-func (w *kvManagerWrapper) ListKeys(ctx context.Context, resourcePath, prefix string) ([]string, error) {
-	return w.Manager.ListKeys(ctx, resourcePath, prefix)
-}
-
-// InitializeKVStore implements KVManager interface
-func (w *kvManagerWrapper) InitializeKVStore(ctx context.Context, resourcePath string) error {
-	return w.Manager.InitializeKVStore(ctx, resourcePath)
-}
 
 // Start implements Lifecycle interface
 func (w *kvManagerWrapper) Start(ctx context.Context) error {
@@ -458,6 +422,70 @@ func (w *kvManagerWrapper) Ready() bool {
 	return w.Manager.Ready()
 }
 
+// Set implements KVManager interface
+func (w *kvManagerWrapper) Set(ctx context.Context, resourcePath, key string, value []byte, options KVSetOptions) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+
+	kvOptions := kv.SetOptions{
+		TTL: options.TTL,
+	}
+	return w.Manager.Set(ctx, resourcePath, key, value, kvOptions)
+}
+
+// Get implements KVManager interface
+func (w *kvManagerWrapper) Get(ctx context.Context, resourcePath, key string) ([]byte, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+	return w.Manager.Get(ctx, resourcePath, key)
+}
+
+// Delete implements KVManager interface
+func (w *kvManagerWrapper) Delete(ctx context.Context, resourcePath, key string) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+	return w.Manager.Delete(ctx, resourcePath, key)
+}
+
+// Exists implements KVManager interface
+func (w *kvManagerWrapper) Exists(ctx context.Context, resourcePath, key string) (bool, error) {
+	select {
+	case <-ctx.Done():
+		return false, ctx.Err()
+	default:
+	}
+	return w.Manager.Exists(ctx, resourcePath, key)
+}
+
+// ListKeys implements KVManager interface
+func (w *kvManagerWrapper) ListKeys(ctx context.Context, resourcePath, prefix string) ([]string, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+	return w.Manager.ListKeys(ctx, resourcePath, prefix)
+}
+
+// InitializeKVStore implements KVManager interface
+func (w *kvManagerWrapper) InitializeKVStore(ctx context.Context, resourcePath string) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+	return w.Manager.InitializeKVStore(ctx, resourcePath)
+}
+
 // consumerGroupManagerWrapper wraps consumers.Manager to implement ConsumerGroupManager interface
 type consumerGroupManagerWrapper struct {
 	*consumers.Manager
@@ -465,6 +493,21 @@ type consumerGroupManagerWrapper struct {
 
 // Ensure consumerGroupManagerWrapper implements ConsumerGroupManager interface
 var _ ConsumerGroupManager = (*consumerGroupManagerWrapper)(nil)
+
+// Start implements Lifecycle interface
+func (w *consumerGroupManagerWrapper) Start(ctx context.Context) error {
+	return w.Manager.Start(ctx)
+}
+
+// Stop implements Lifecycle interface
+func (w *consumerGroupManagerWrapper) Stop(ctx context.Context) error {
+	return w.Manager.Stop(ctx)
+}
+
+// Ready implements Lifecycle interface
+func (w *consumerGroupManagerWrapper) Ready() bool {
+	return w.Manager.Ready()
+}
 
 // CommitOffset implements ConsumerGroupManager interface
 func (w *consumerGroupManagerWrapper) CommitOffset(ctx context.Context, stream, group string, partition int32, offset int64) error {
@@ -497,7 +540,7 @@ func (w *consumerGroupManagerWrapper) GetConsumerGroupState(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-	// Convert consumers.ConsumerGroupState to storage.ConsumerGroupState
+	// Convert from consumers.ConsumerGroupState to interface ConsumerGroupState
 	return &ConsumerGroupState{
 		Stream:          state.Stream,
 		Group:           state.Group,
@@ -512,7 +555,7 @@ func (w *consumerGroupManagerWrapper) GetConsumerGroupState(ctx context.Context,
 func (w *consumerGroupManagerWrapper) CalculateLag(ctx context.Context, stream, group string, partition int32) (int64, error) {
 	select {
 	case <-ctx.Done():
-		return -1, ctx.Err()
+		return 0, ctx.Err()
 	default:
 	}
 	return w.Manager.CalculateLag(ctx, stream, group, partition)
@@ -538,21 +581,6 @@ func (w *consumerGroupManagerWrapper) DeleteConsumerGroup(ctx context.Context, s
 	return w.Manager.DeleteConsumerGroup(ctx, stream, group)
 }
 
-// Start implements Lifecycle interface
-func (w *consumerGroupManagerWrapper) Start(ctx context.Context) error {
-	return w.Manager.Start(ctx)
-}
-
-// Stop implements Lifecycle interface
-func (w *consumerGroupManagerWrapper) Stop(ctx context.Context) error {
-	return w.Manager.Stop(ctx)
-}
-
-// Ready implements Lifecycle interface
-func (w *consumerGroupManagerWrapper) Ready() bool {
-	return w.Manager.Ready()
-}
-
 // schemaRegistryWrapper wraps schema.Registry to implement SchemaRegistry interface
 type schemaRegistryWrapper struct {
 	*schema.Registry
@@ -574,4 +602,115 @@ func (w *schemaRegistryWrapper) Stop(ctx context.Context) error {
 // Ready implements Lifecycle interface
 func (w *schemaRegistryWrapper) Ready() bool {
 	return true
+}
+
+// replayManagerWrapper wraps replay.Manager to implement ReplayManager interface
+type replayManagerWrapper struct {
+	*replay.Manager
+}
+
+// Ensure replayManagerWrapper implements ReplayManager interface
+var _ ReplayManager = (*replayManagerWrapper)(nil)
+
+// CreateSession implements ReplayManager interface
+func (w *replayManagerWrapper) CreateSession(ctx context.Context, stream string, startOffset int64, startTime *time.Time, endOffset *int64, endTime *time.Time, sandboxGroup string) (*ReplaySession, error) {
+	session, err := w.Manager.CreateSession(ctx, stream, startOffset, startTime, endOffset, endTime, sandboxGroup)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ReplaySession{
+		ID:                   session.ID,
+		Stream:               session.Stream,
+		Partition:            session.Partition,
+		StartOffset:          session.StartOffset,
+		StartTime:            session.StartTime,
+		EndOffset:            session.EndOffset,
+		EndTime:              session.EndTime,
+		SandboxConsumerGroup: session.SandboxConsumerGroup,
+		Status:               string(session.Status),
+		CreatedAt:            session.CreatedAt,
+		UpdatedAt:            session.UpdatedAt,
+	}, nil
+}
+
+// GetSession implements ReplayManager interface
+func (w *replayManagerWrapper) GetSession(ctx context.Context, sessionID string) (*ReplaySession, error) {
+	session, err := w.Manager.GetSession(ctx, sessionID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ReplaySession{
+		ID:                   session.ID,
+		Stream:               session.Stream,
+		Partition:            session.Partition,
+		StartOffset:          session.StartOffset,
+		StartTime:            session.StartTime,
+		EndOffset:            session.EndOffset,
+		EndTime:              session.EndTime,
+		SandboxConsumerGroup: session.SandboxConsumerGroup,
+		Status:               string(session.Status),
+		CreatedAt:            session.CreatedAt,
+		UpdatedAt:            session.UpdatedAt,
+	}, nil
+}
+
+// ListSessions implements ReplayManager interface
+func (w *replayManagerWrapper) ListSessions(ctx context.Context, stream string) ([]*ReplaySession, error) {
+	sessions, err := w.Manager.ListSessions(ctx, stream)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*ReplaySession, len(sessions))
+	for i, session := range sessions {
+		result[i] = &ReplaySession{
+			ID:                   session.ID,
+			Stream:               session.Stream,
+			Partition:            session.Partition,
+			StartOffset:          session.StartOffset,
+			StartTime:            session.StartTime,
+			EndOffset:            session.EndOffset,
+			EndTime:              session.EndTime,
+			SandboxConsumerGroup: session.SandboxConsumerGroup,
+			Status:               string(session.Status),
+			CreatedAt:            session.CreatedAt,
+			UpdatedAt:            session.UpdatedAt,
+		}
+	}
+
+	return result, nil
+}
+
+// GetReplayProgress implements ReplayManager interface
+func (w *replayManagerWrapper) GetReplayProgress(ctx context.Context, sessionID string) (*ReplayProgress, error) {
+	progress, err := w.Manager.GetReplayProgress(ctx, sessionID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ReplayProgress{
+		CurrentOffset:    progress.CurrentOffset,
+		MessagesReplayed: progress.MessagesReplayed,
+		Errors:           progress.Errors,
+		StartedAt:        progress.StartedAt,
+		PausedAt:         progress.PausedAt,
+		CompletedAt:      progress.CompletedAt,
+	}, nil
+}
+
+// Start implements Lifecycle interface
+func (w *replayManagerWrapper) Start(ctx context.Context) error {
+	return w.Manager.Start(ctx)
+}
+
+// Stop implements Lifecycle interface
+func (w *replayManagerWrapper) Stop(ctx context.Context) error {
+	return w.Manager.Stop(ctx)
+}
+
+// Ready implements Lifecycle interface
+func (w *replayManagerWrapper) Ready() bool {
+	return w.Manager.Ready()
 }

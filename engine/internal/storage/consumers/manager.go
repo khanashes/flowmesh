@@ -148,6 +148,7 @@ func (m *Manager) CommitOffset(ctx context.Context, stream, group string, partit
 		Str("group", group).
 		Int32("partition", partition).
 		Int64("offset", offset).
+		Bool("sandbox", IsSandboxGroup(group)).
 		Msg("Offset committed")
 
 	// Record metrics
