@@ -34,6 +34,7 @@ func NewRouter(storage storage.StorageBackend) *Router {
 		queueHandlers:  handlers.NewQueueHandlers(storage),
 		kvHandlers:     handlers.NewKVHandlers(storage),
 		schemaHandlers: handlers.NewSchemaHandlers(storage),
+		replayHandlers: handlers.NewReplayHandlers(storage),
 	}
 
 	// Set up metrics handler with custom registry if available
