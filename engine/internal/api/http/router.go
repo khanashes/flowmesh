@@ -191,6 +191,25 @@ func (r *Router) handleStreamRoutes(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// POST /api/v1/streams/{tenant}/{namespace}/{name}/consumer-groups/{group}/offsets
+	// This must come before /events to avoid pattern conflicts
+	if req.Method == http.MethodPost && matchPattern(path, "/consumer-groups/", "/offsets") {
+		r.streamHandlers.CommitOffset(w, req)
+		return
+	}
+
+	// GET /api/v1/streams/{tenant}/{namespace}/{name}/consumer-groups/{group}/offsets
+	if req.Method == http.MethodGet && matchPattern(path, "/consumer-groups/", "/offsets") {
+		r.streamHandlers.GetOffset(w, req)
+		return
+	}
+
+	// GET /api/v1/streams/{tenant}/{namespace}/{name}/consumer-groups/{group}/state
+	if req.Method == http.MethodGet && matchPattern(path, "/consumer-groups/", "/state") {
+		r.streamHandlers.GetConsumerGroupState(w, req)
+		return
+	}
+
 	// GET /api/v1/streams/{tenant}/{namespace}/{name}/consumer-groups
 	if req.Method == http.MethodGet && matchPattern(path, "/consumer-groups") {
 		r.streamHandlers.ListConsumerGroups(w, req)
@@ -212,24 +231,6 @@ func (r *Router) handleStreamRoutes(w http.ResponseWriter, req *http.Request) {
 	// GET /api/v1/streams/{tenant}/{namespace}/{name}/offsets/latest
 	if req.Method == http.MethodGet && matchPattern(path, "/offsets/latest") {
 		r.streamHandlers.GetLatestOffset(w, req)
-		return
-	}
-
-	// POST /api/v1/streams/{tenant}/{namespace}/{name}/consumer-groups/{group}/offsets
-	if req.Method == http.MethodPost && matchPattern(path, "/consumer-groups/", "/offsets") {
-		r.streamHandlers.CommitOffset(w, req)
-		return
-	}
-
-	// GET /api/v1/streams/{tenant}/{namespace}/{name}/consumer-groups/{group}/offsets
-	if req.Method == http.MethodGet && matchPattern(path, "/consumer-groups/", "/offsets") {
-		r.streamHandlers.GetOffset(w, req)
-		return
-	}
-
-	// GET /api/v1/streams/{tenant}/{namespace}/{name}/consumer-groups/{group}/state
-	if req.Method == http.MethodGet && matchPattern(path, "/consumer-groups/", "/state") {
-		r.streamHandlers.GetConsumerGroupState(w, req)
 		return
 	}
 

@@ -153,12 +153,12 @@ func (m *Manager) CommitOffset(ctx context.Context, stream, group string, partit
 
 	// Record metrics
 	if m.metrics != nil {
-		// Extract tenant/namespace from stream path (format: tenant/namespaces/namespace/streams/name)
+		// Extract tenant/namespace from stream path (format: tenant/namespace/stream/name)
 		parts := strings.Split(stream, "/")
 		if len(parts) >= 4 {
 			tenant := parts[0]
-			namespace := parts[2]
-			streamName := parts[4]
+			namespace := parts[1]
+			streamName := parts[3]
 			m.metrics.RecordOffsetCommit(tenant, namespace, streamName, group, partition)
 			m.metrics.UpdateCommittedOffset(tenant, namespace, streamName, group, partition, offset)
 		}
@@ -238,8 +238,8 @@ func (m *Manager) GetConsumerGroupState(ctx context.Context, stream, group strin
 		parts := strings.Split(stream, "/")
 		if len(parts) >= 4 {
 			tenant := parts[0]
-			namespace := parts[2]
-			streamName := parts[4]
+			namespace := parts[1]
+			streamName := parts[3]
 			m.metrics.UpdateLag(tenant, namespace, streamName, group, partition, lag)
 		}
 	}
