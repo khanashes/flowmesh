@@ -175,6 +175,28 @@ func (r *Router) setupStaticFileServing() {
 func (r *Router) handleStreamRoutes(w http.ResponseWriter, req *http.Request) {
 	path := req.URL.Path
 
+	// GET /api/v1/streams (list all streams)
+	// Check if path is exactly /api/v1/streams (no additional segments)
+	if req.Method == http.MethodGet {
+		parts := strings.Split(strings.Trim(path, "/"), "/")
+		if len(parts) == 3 && parts[0] == "api" && parts[1] == "v1" && parts[2] == "streams" {
+			r.streamHandlers.ListStreams(w, req)
+			return
+		}
+	}
+
+	// GET /api/v1/streams/{tenant}/{namespace}/{name}/stats
+	if req.Method == http.MethodGet && matchPattern(path, "/stats") {
+		r.streamHandlers.GetStreamStats(w, req)
+		return
+	}
+
+	// GET /api/v1/streams/{tenant}/{namespace}/{name}/consumer-groups
+	if req.Method == http.MethodGet && matchPattern(path, "/consumer-groups") {
+		r.streamHandlers.ListConsumerGroups(w, req)
+		return
+	}
+
 	// POST /api/v1/streams/{tenant}/{namespace}/{name}/events
 	if req.Method == http.MethodPost && matchPattern(path, "/events") {
 		r.streamHandlers.WriteEvents(w, req)

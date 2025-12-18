@@ -234,6 +234,47 @@ export interface ListQueuesResponse {
   queues: QueueListItem[];
 }
 
+// Stream types
+export interface StreamListItem {
+  tenant: string;
+  namespace: string;
+  name: string;
+  type: string;
+  partitions: number;
+  created_at: string; // ISO 8601 string
+  updated_at: string; // ISO 8601 string
+}
+
+export interface ListStreamsResponse {
+  status: string;
+  message?: string;
+  streams: StreamListItem[];
+}
+
+export interface StreamStats {
+  latest_offset: number;
+}
+
+export interface StreamStatsResponse {
+  status: string;
+  message?: string;
+  stats: StreamStats;
+}
+
+export interface ConsumerGroupInfo {
+  group: string;
+  partition: number;
+  committed_offset: number;
+  latest_offset: number;
+  lag: number;
+}
+
+export interface ListConsumerGroupsResponse {
+  status: string;
+  message?: string;
+  consumer_groups: ConsumerGroupInfo[];
+}
+
 // KV API
 
 export interface SetRequest {

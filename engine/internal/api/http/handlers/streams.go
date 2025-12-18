@@ -2,12 +2,14 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 
 	"github.com/flowmesh/engine/internal/api/validation"
 	"github.com/flowmesh/engine/internal/storage"
 	"github.com/flowmesh/engine/internal/storage/consumers"
+	"github.com/flowmesh/engine/internal/storage/metastore"
 	streamserrors "github.com/flowmesh/engine/internal/storage/streams"
 )
 
@@ -489,6 +491,192 @@ func (h *StreamHandlers) GetConsumerGroupState(w http.ResponseWriter, r *http.Re
 			LatestOffset:    state.LatestOffset,
 			Lag:             state.Lag,
 		},
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
+
+// ListStreamsResponse represents a response to listing streams
+type ListStreamsResponse struct {
+	Status  string                      `json:"status"`
+	Message string                      `json:"message,omitempty"`
+	Streams []*metastore.ResourceConfig `json:"streams"`
+}
+
+// ListStreams handles GET /api/v1/streams
+func (h *StreamHandlers) ListStreams(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Get optional query parameters
+	tenant := r.URL.Query().Get("tenant")
+	namespace := r.URL.Query().Get("namespace")
+
+	// Get meta store
+	metaStore := h.storage.MetaStore()
+	if metaStore == nil {
+		h.writeError(w, errors.New("meta store not available"), "")
+		return
+	}
+
+	// List stream resources
+	streams, err := metaStore.ListResources(tenant, namespace, metastore.ResourceStream)
+	if err != nil {
+		h.writeError(w, err, "")
+		return
+	}
+
+	// Write response
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(ListStreamsResponse{
+		Status:  "success",
+		Message: "streams retrieved successfully",
+		Streams: streams,
+	})
+}
+
+// StreamStats represents stream statistics
+type StreamStats struct {
+	LatestOffset int64 `json:"latest_offset"`
+}
+
+// StreamStatsResponse represents a response to getting stream statistics
+type StreamStatsResponse struct {
+	Status  string      `json:"status"`
+	Message string      `json:"message,omitempty"`
+	Stats   StreamStats `json:"stats"`
+}
+
+// GetStreamStats handles GET /api/v1/streams/{tenant}/{namespace}/{name}/stats
+func (h *StreamHandlers) GetStreamStats(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Extract path parameters
+	tenant, namespace, name, err := extractStreamPathParams(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Build resource path
+	resourcePath, err := validation.BuildResourcePath(tenant, namespace, "stream", name)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Parse partition from query (default 0)
+	partition := int32(0)
+	if p := r.URL.Query().Get("partition"); p != "" {
+		pInt, err := strconv.ParseInt(p, 10, 32)
+		if err != nil {
+			http.Error(w, "invalid partition parameter", http.StatusBadRequest)
+			return
+		}
+		partition = int32(pInt)
+	}
+
+	// Get latest offset (for partition 0 in MVP)
+	streamMgr := h.storage.StreamManager()
+	latestOffset, err := streamMgr.GetLatestOffset(r.Context(), resourcePath, partition)
+	if err != nil {
+		h.writeError(w, err, resourcePath)
+		return
+	}
+
+	// Write response
+	response := StreamStatsResponse{
+		Status:  "success",
+		Message: "stream statistics retrieved successfully",
+		Stats: StreamStats{
+			LatestOffset: latestOffset,
+		},
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
+
+// ConsumerGroupInfo represents consumer group information with state
+type ConsumerGroupInfo struct {
+	Group           string `json:"group"`
+	Partition       int32  `json:"partition"`
+	CommittedOffset int64  `json:"committed_offset"`
+	LatestOffset    int64  `json:"latest_offset"`
+	Lag             int64  `json:"lag"`
+}
+
+// ListConsumerGroupsResponse represents a response to listing consumer groups
+type ListConsumerGroupsResponse struct {
+	Status         string              `json:"status"`
+	Message        string              `json:"message,omitempty"`
+	ConsumerGroups []ConsumerGroupInfo `json:"consumer_groups"`
+}
+
+// ListConsumerGroups handles GET /api/v1/streams/{tenant}/{namespace}/{name}/consumer-groups
+func (h *StreamHandlers) ListConsumerGroups(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Extract path parameters
+	tenant, namespace, name, err := extractStreamPathParams(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Build resource path
+	resourcePath, err := validation.BuildResourcePath(tenant, namespace, "stream", name)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Get consumer group manager
+	consumerMgr := h.storage.ConsumerGroupManager()
+
+	// List consumer groups (returns group names)
+	groupNames, err := consumerMgr.ListConsumerGroups(r.Context(), resourcePath)
+	if err != nil {
+		h.writeError(w, err, resourcePath)
+		return
+	}
+
+	// For each group, get state for partition 0 (MVP)
+	partition := int32(0)
+	consumerGroups := make([]ConsumerGroupInfo, 0, len(groupNames))
+	for _, groupName := range groupNames {
+		state, err := consumerMgr.GetConsumerGroupState(r.Context(), resourcePath, groupName, partition)
+		if err != nil {
+			// Skip groups that we can't get state for
+			continue
+		}
+
+		consumerGroups = append(consumerGroups, ConsumerGroupInfo{
+			Group:           state.Group,
+			Partition:       state.Partition,
+			CommittedOffset: state.CommittedOffset,
+			LatestOffset:    state.LatestOffset,
+			Lag:             state.Lag,
+		})
+	}
+
+	// Write response
+	response := ListConsumerGroupsResponse{
+		Status:         "success",
+		Message:        "consumer groups retrieved successfully",
+		ConsumerGroups: consumerGroups,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
