@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -71,6 +72,15 @@ func (h *ReplayHandlers) CreateReplaySession(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	// Convert stream path format (tenant/namespace/name) to resource path format (tenant/namespace/stream/name)
+	// The stream parameter comes as "tenant/namespace/name", but MetaStore expects "tenant/namespace/stream/name"
+	parts := strings.Split(stream, "/")
+	if len(parts) != 3 {
+		http.Error(w, "invalid stream format, expected tenant/namespace/name", http.StatusBadRequest)
+		return
+	}
+	resourcePath := fmt.Sprintf("%s/%s/stream/%s", parts[0], parts[1], parts[2])
+
 	// Parse request body
 	var req CreateReplaySessionRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -108,7 +118,7 @@ func (h *ReplayHandlers) CreateReplaySession(w http.ResponseWriter, r *http.Requ
 
 	// Create session
 	replayMgr := h.storage.ReplayManager()
-	session, err := replayMgr.CreateSession(r.Context(), stream, startOffset, startTime, endOffset, endTime, req.SandboxConsumerGroup)
+	session, err := replayMgr.CreateSession(r.Context(), resourcePath, startOffset, startTime, endOffset, endTime, req.SandboxConsumerGroup)
 	if err != nil {
 		h.writeError(w, err, stream)
 		return
