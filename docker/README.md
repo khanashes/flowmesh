@@ -4,13 +4,15 @@ This directory contains Docker configuration files for containerizing FlowMesh.
 
 ## Files
 
-- **Dockerfile**: Multi-stage build file for creating optimized FlowMesh images
+- **Dockerfile**: Multi-stage build file for creating optimized FlowMesh images (includes Web UI build)
 - **docker-compose.yml**: Production-ready Docker Compose configuration
 - **docker-compose.dev.yml**: Development Docker Compose configuration with debug settings
 
 ## Quick Start
 
 ### Build Docker Image
+
+The Docker build process includes building both the Go binary and the React Web UI:
 
 ```bash
 # Using Makefile
@@ -19,6 +21,8 @@ make docker-build
 # Or using Docker directly
 docker build -t flowmesh:latest -f docker/Dockerfile .
 ```
+
+**Note**: The build process will compile the Go binary and build the React Web UI. The Web UI is automatically included in the final image and served at `http://localhost:8080` when the container is running.
 
 ### Run with Docker Compose
 
@@ -32,6 +36,12 @@ docker-compose -f docker-compose.dev.yml up -d
 # View logs
 docker-compose logs -f
 ```
+
+Once running, access:
+- **API**: `http://localhost:8080/api/v1/...`
+- **Web UI**: `http://localhost:8080` (served automatically)
+- **gRPC**: `localhost:50051`
+- **Metrics**: `http://localhost:9090/metrics`
 
 ### Run with Makefile
 
@@ -55,7 +65,8 @@ make docker-clean
 ## Image Details
 
 ### Base Images
-- **Builder**: `golang:1.23-alpine` - For compiling the Go binary
+- **Go Builder**: `golang:1.24-alpine` - For compiling the Go binary
+- **Web Builder**: `node:20-alpine` - For building the React Web UI
 - **Runtime**: `alpine:latest` - Minimal runtime image (~5MB)
 
 ### Security Features
@@ -66,8 +77,11 @@ make docker-clean
 
 ### Exposed Ports
 - **50051**: gRPC API
-- **8080**: HTTP/REST API
+- **8080**: HTTP/REST API and Web UI
 - **9090**: Metrics endpoint
+
+### Web UI
+The Web UI is built during the Docker build process and included in the final image at `/app/web-ui/dist`. It is automatically served by the HTTP server at `http://localhost:8080` when the container is running.
 
 ### Volumes
 - `/app/data`: Persistent storage for streams, queues, and metadata
@@ -155,6 +169,21 @@ docker exec flowmesh nc -z localhost 8080
 docker port flowmesh
 ```
 
+### Web UI not loading
+If the Web UI is not accessible:
+
+1. Verify the build completed successfully:
+   ```bash
+   docker run --rm flowmesh:latest ls -la /app/web-ui/dist/
+   ```
+
+2. Check that the container is running and the HTTP server is responding:
+   ```bash
+   curl http://localhost:8080/health
+   ```
+
+3. Ensure port 8080 is properly exposed in docker-compose.yml
+
 ## Production Deployment
 
 For production deployments:
@@ -189,4 +218,3 @@ services:
           cpus: '1'
           memory: 1G
 ```
-

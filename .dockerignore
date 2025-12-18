@@ -64,8 +64,9 @@ examples/
 # Helm charts
 helm/
 
-# Web UI
-web-ui/
+# Web UI - exclude node_modules and dist (will be built in container)
+web-ui/node_modules/
+web-ui/dist/
 
 # Scripts (not needed in container)
 scripts/

@@ -1,5 +1,5 @@
-# Build stage
-FROM golang:1.23-alpine AS builder
+# Build stage for Go binary
+FROM golang:1.24-alpine AS go-builder
 
 # Install build dependencies
 RUN apk add --no-cache git make
@@ -20,6 +20,21 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo \
     -ldflags "-X github.com/flowmesh/engine/internal/version.Version=${VERSION}" \
     -o flowmesh ./cmd/flowmesh
 
+# Build stage for Web UI
+FROM node:20-alpine AS web-builder
+
+# Set working directory
+WORKDIR /build
+
+# Copy web-ui directory
+COPY web-ui/ ./
+
+# Install dependencies
+RUN npm install
+
+# Build the web UI
+RUN npm run build
+
 # Runtime stage
 FROM alpine:latest
 
@@ -31,8 +46,11 @@ RUN addgroup -S flowmesh && adduser -S flowmesh -G flowmesh
 
 WORKDIR /app
 
-# Copy binary from builder
-COPY --from=builder /build/flowmesh .
+# Copy binary from Go builder
+COPY --from=go-builder /build/flowmesh .
+
+# Copy web-ui build from web builder
+COPY --from=web-builder /build/dist ./web-ui/dist
 
 # Create data directory with proper permissions
 RUN mkdir -p /app/data && chown -R flowmesh:flowmesh /app
@@ -49,4 +67,3 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 
 # Run the binary
 ENTRYPOINT ["./flowmesh"]
-

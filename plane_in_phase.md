@@ -44,27 +44,30 @@ This document outlines the development phases of the FlowMesh Unified Event Fabr
 - [x] Consumer group state management
 - [x] Lag calculation
 
-## Phase 8: API Server Foundation [PENDING]
-- [ ] gRPC server setup
-- [ ] HTTP/REST API setup
-- [ ] Authentication/authorization basics
-- [ ] Request routing infrastructure
-> **Note**: Originally planned here, but deferred to allow for more advanced core features first (Replay, Recovery, Advanced Querying).
+## Phase 8: API Server Foundation [COMPLETED]
+- [x] gRPC server setup
+- [x] HTTP/REST API setup
+- [x] Authentication/authorization basics
+- [x] Request routing infrastructure
+> **Note**: Implemented alongside other phases. Full gRPC and HTTP servers with auth middleware, token store, and request routing.
 
-## Phase 9: Streams API Endpoints [PENDING]
-- [ ] WriteEvents gRPC endpoint
-- [ ] ReadStream/Subscribe endpoints
-- [ ] Consumer group subscription
+## Phase 9: Streams API Endpoints [COMPLETED]
+- [x] WriteEvents gRPC endpoint
+- [x] ReadStream/Subscribe endpoints
+- [x] Consumer group subscription
+> **Note**: Full implementation with gRPC and HTTP endpoints for all stream operations.
 
-## Phase 10: Queues API Endpoints [PENDING]
-- [ ] Enqueue endpoint
-- [ ] Reserve/Receive endpoint
-- [ ] ACK/NACK endpoints
+## Phase 10: Queues API Endpoints [COMPLETED]
+- [x] Enqueue endpoint
+- [x] Reserve/Receive endpoint
+- [x] ACK/NACK endpoints
+> **Note**: Full implementation with gRPC and HTTP endpoints including DLQ operations.
 
-## Phase 11: KV API Endpoints [PENDING]
-- [ ] Set/Get endpoints
-- [ ] Delete operations
-- [ ] Key scanning
+## Phase 11: KV API Endpoints [COMPLETED]
+- [x] Set/Get endpoints
+- [x] Delete operations
+- [x] Key scanning
+> **Note**: Full implementation with gRPC and HTTP endpoints for all KV operations.
 
 ## Phase 12: Dead Letter Queue & Advanced Retry [COMPLETED]
 - [x] DLQ implementation

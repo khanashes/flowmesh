@@ -15,6 +15,7 @@ import (
 	"github.com/flowmesh/engine/internal/api/validation"
 	"github.com/flowmesh/engine/internal/storage"
 	"github.com/flowmesh/engine/internal/storage/log"
+	"github.com/flowmesh/engine/internal/storage/metastore"
 	"github.com/flowmesh/engine/internal/storage/queues"
 	queueerrors "github.com/flowmesh/engine/internal/storage/queues"
 )
@@ -553,6 +554,41 @@ func (h *QueueHandlers) GetQueueStats(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// ListQueues handles GET /api/v1/queues
+func (h *QueueHandlers) ListQueues(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Get optional query parameters
+	tenant := r.URL.Query().Get("tenant")
+	namespace := r.URL.Query().Get("namespace")
+
+	// Get meta store
+	metaStore := h.storage.MetaStore()
+	if metaStore == nil {
+		h.writeError(w, errors.New("meta store not available"), "")
+		return
+	}
+
+	// List queue resources
+	queues, err := metaStore.ListResources(tenant, namespace, metastore.ResourceQueue)
+	if err != nil {
+		h.writeError(w, err, "")
+		return
+	}
+
+	// Write response
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(ListQueuesResponse{
+		Status:  "success",
+		Message: "queues retrieved successfully",
+		Queues:  queues,
+	})
+}
+
 // Helper methods
 
 // extractQueuePathParams extracts tenant, namespace, and name from URL path
@@ -720,6 +756,13 @@ type ReplayDLQJobResponse struct {
 	Message string `json:"message,omitempty"`
 	JobID   string `json:"job_id"`
 	Seq     int64  `json:"seq"`
+}
+
+// ListQueuesResponse represents a response to listing queues
+type ListQueuesResponse struct {
+	Status  string                      `json:"status"`
+	Message string                      `json:"message,omitempty"`
+	Queues  []*metastore.ResourceConfig `json:"queues"`
 }
 
 // SetRetryPolicy handles PUT /api/v1/queues/{tenant}/{namespace}/{name}/retry-policy

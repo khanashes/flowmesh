@@ -7,16 +7,31 @@ import (
 	"github.com/flowmesh/engine/internal/storage"
 )
 
-// HealthResponse represents a health check response
-type HealthResponse struct {
-	Status  string `json:"status"`
+// Status represents a status response
+type Status struct {
+	Code    int    `json:"code"`
 	Message string `json:"message,omitempty"`
+	Details string `json:"details,omitempty"`
+}
+
+// HealthCheckResponse represents a health check response
+type HealthCheckResponse struct {
+	Status Status `json:"status"`
+}
+
+// ReadinessCheckResponse represents a readiness check response
+type ReadinessCheckResponse struct {
+	Status Status `json:"status"`
+	Ready  bool   `json:"ready"`
 }
 
 // HealthCheck handles health check requests
 func HealthCheck(w http.ResponseWriter, r *http.Request) {
-	response := HealthResponse{
-		Status: "healthy",
+	response := HealthCheckResponse{
+		Status: Status{
+			Code:    http.StatusOK,
+			Message: "healthy",
+		},
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -29,18 +44,26 @@ func ReadinessCheck(storage storage.StorageBackend) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ready := storage != nil && storage.Ready()
 
-		response := HealthResponse{
-			Status: "ready",
+		var statusCode int
+		var statusMessage string
+		if ready {
+			statusCode = http.StatusOK
+			statusMessage = "ready"
+		} else {
+			statusCode = http.StatusServiceUnavailable
+			statusMessage = "not ready"
 		}
 
-		if !ready {
-			response.Status = "not ready"
-			w.WriteHeader(http.StatusServiceUnavailable)
-		} else {
-			w.WriteHeader(http.StatusOK)
+		response := ReadinessCheckResponse{
+			Status: Status{
+				Code:    statusCode,
+				Message: statusMessage,
+			},
+			Ready: ready,
 		}
 
 		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(statusCode)
 		json.NewEncoder(w).Encode(response)
 	}
 }

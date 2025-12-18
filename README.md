@@ -97,8 +97,10 @@ make build
 
 ### Using Docker
 
+The Docker image includes both the FlowMesh engine and the Web UI:
+
 ```bash
-# Build Docker image
+# Build Docker image (builds both Go binary and Web UI)
 make docker-build
 
 # Run with Docker Compose (production)
@@ -113,6 +115,12 @@ make docker-logs
 # Stop containers
 make docker-stop
 ```
+
+Once running, access:
+- **API**: `http://localhost:8080/api/v1/...`
+- **Web UI**: `http://localhost:8080` (served automatically)
+- **gRPC**: `localhost:50051`
+- **Metrics**: `http://localhost:9090/metrics`
 
 For more Docker details, see [docker/README.md](docker/README.md).
 
@@ -146,7 +154,7 @@ FlowMesh is built as a single-node Go service (Phase 1) with:
 - **Storage Engine**: Append-only segmented logs + embedded KV store
 - **API Layer**: gRPC + HTTP REST APIs
 - **SDKs**: Node.js, Python, Go (coming soon)
-- **Web UI**: React-based dashboard for monitoring and debugging (coming soon)
+- **Web UI**: React-based dashboard for monitoring and debugging
 
 For detailed architecture documentation, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
@@ -158,7 +166,7 @@ flowmesh/
 ├── sdk-node/           # Node.js SDK (coming soon)
 ├── sdk-python/         # Python SDK (coming soon)
 ├── sdk-go/             # Go SDK (coming soon)
-├── web-ui/             # React dashboard (coming soon)
+├── web-ui/             # React dashboard
 ├── examples/           # Example applications
 ├── docs/               # Documentation
 └── helm/               # Kubernetes deployment (coming soon)

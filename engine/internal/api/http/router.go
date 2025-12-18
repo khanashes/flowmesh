@@ -2,6 +2,8 @@ package http
 
 import (
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/flowmesh/engine/internal/api/http/handlers"
@@ -90,6 +92,83 @@ func (r *Router) setupRoutes() {
 	r.mux.Handle("/api/v1/", chain(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		http.NotFound(w, req)
 	})))
+
+	// Serve static files from web-ui/dist (if it exists)
+	// This should be the last route to handle SPA routing
+	r.setupStaticFileServing()
+}
+
+// setupStaticFileServing sets up static file serving for the web UI
+func (r *Router) setupStaticFileServing() {
+	// Try to find web-ui/dist directory relative to the engine directory
+	// We'll try a few common locations
+	possiblePaths := []string{
+		"/app/web-ui/dist",  // Docker container path
+		"../web-ui/dist",    // If running from engine/bin or engine/
+		"../../web-ui/dist", // If running from engine/cmd/flowmesh
+		"./web-ui/dist",     // Current directory
+		"web-ui/dist",       // Relative to workspace root
+	}
+
+	var staticDir string
+	for _, path := range possiblePaths {
+		absPath, err := filepath.Abs(path)
+		if err != nil {
+			continue
+		}
+		if info, err := os.Stat(absPath); err == nil && info.IsDir() {
+			// Check if index.html exists
+			if _, err := os.Stat(filepath.Join(absPath, "index.html")); err == nil {
+				staticDir = absPath
+				break
+			}
+		}
+	}
+
+	if staticDir == "" {
+		// Static files not found, skip serving (development mode)
+		r.mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+			http.NotFound(w, req)
+		})
+		return
+	}
+
+	// Serve static files
+	fileServer := http.FileServer(http.Dir(staticDir))
+
+	// Handle all non-API routes by serving static files
+	// For SPA routing, serve index.html for all non-file requests
+	r.mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+		// Skip API routes
+		if strings.HasPrefix(req.URL.Path, "/api/") {
+			http.NotFound(w, req)
+			return
+		}
+
+		// Skip health/metrics endpoints
+		if req.URL.Path == "/health" || req.URL.Path == "/ready" || req.URL.Path == "/metrics" {
+			http.NotFound(w, req)
+			return
+		}
+
+		// Check if the requested path is a file
+		requestedPath := filepath.Join(staticDir, req.URL.Path)
+		if info, err := os.Stat(requestedPath); err == nil && !info.IsDir() {
+			// Serve the file
+			fileServer.ServeHTTP(w, req)
+			return
+		}
+
+		// For SPA routing, serve index.html for all other requests
+		indexPath := filepath.Join(staticDir, "index.html")
+		if _, err := os.Stat(indexPath); err == nil {
+			http.ServeFile(w, req, indexPath)
+			return
+		}
+
+		// Fallback to file server
+		fileServer.ServeHTTP(w, req)
+	})
 }
 
 // handleStreamRoutes routes stream-related requests to appropriate handlers
@@ -139,6 +218,16 @@ func (r *Router) handleStreamRoutes(w http.ResponseWriter, req *http.Request) {
 // handleQueueRoutes routes queue-related requests to appropriate handlers
 func (r *Router) handleQueueRoutes(w http.ResponseWriter, req *http.Request) {
 	path := req.URL.Path
+
+	// GET /api/v1/queues (list all queues)
+	// Check if path is exactly /api/v1/queues (no additional segments)
+	if req.Method == http.MethodGet {
+		parts := strings.Split(strings.Trim(path, "/"), "/")
+		if len(parts) == 3 && parts[0] == "api" && parts[1] == "v1" && parts[2] == "queues" {
+			r.queueHandlers.ListQueues(w, req)
+			return
+		}
+	}
 
 	// POST /api/v1/queues/{tenant}/{namespace}/{name}/jobs
 	if req.Method == http.MethodPost && matchPattern(path, "/jobs") {
