@@ -16,13 +16,20 @@ import (
 // StreamHandlers provides HTTP handlers for stream operations
 type StreamHandlers struct {
 	storage storage.StorageBackend
+	wsHub   *Hub // WebSocket hub for real-time updates
 }
 
 // NewStreamHandlers creates new stream handlers
 func NewStreamHandlers(storage storage.StorageBackend) *StreamHandlers {
 	return &StreamHandlers{
 		storage: storage,
+		wsHub:   nil, // Will be set by router if WebSocket is enabled
 	}
+}
+
+// SetWSHub sets the WebSocket hub
+func (h *StreamHandlers) SetWSHub(hub *Hub) {
+	h.wsHub = hub
 }
 
 // WriteEventsRequest represents a request to write events
@@ -111,6 +118,16 @@ func (h *StreamHandlers) WriteEvents(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
+
+	// Broadcast stream stats update after writing events
+	if h.wsHub != nil {
+		// Get updated stats to broadcast
+		if latestOffset, err := streamMgr.GetLatestOffset(r.Context(), resourcePath, int32(0)); err == nil {
+			h.wsHub.BroadcastStreamStats(tenant, namespace, name, StreamStats{
+				LatestOffset: latestOffset,
+			})
+		}
+	}
 }
 
 // ReadStreamRequest represents query parameters for reading
@@ -604,6 +621,11 @@ func (h *StreamHandlers) GetStreamStats(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
+
+	// Broadcast stats update via WebSocket
+	if h.wsHub != nil {
+		h.wsHub.BroadcastStreamStats(tenant, namespace, name, response.Stats)
+	}
 }
 
 // ConsumerGroupInfo represents consumer group information with state

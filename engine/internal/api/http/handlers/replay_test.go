@@ -47,7 +47,7 @@ func TestReplayHandlers_CreateReplaySession(t *testing.T) {
 		}
 		bodyBytes, _ := json.Marshal(reqBody)
 
-		req := httptest.NewRequest("POST", "/api/v1/replay/sessions?stream=test-tenant/namespaces/test-ns/streams/test-stream", bytes.NewReader(bodyBytes))
+		req := httptest.NewRequest("POST", "/api/v1/replay/sessions?stream=test-tenant/test-ns/test-stream", bytes.NewReader(bodyBytes))
 		w := httptest.NewRecorder()
 
 		handlers.CreateReplaySession(w, req)
@@ -92,7 +92,7 @@ func TestReplayHandlers_CreateReplaySession(t *testing.T) {
 		}
 		bodyBytes, _ := json.Marshal(reqBody)
 
-		req := httptest.NewRequest("POST", "/api/v1/replay/sessions?stream=test-stream", bytes.NewReader(bodyBytes))
+		req := httptest.NewRequest("POST", "/api/v1/replay/sessions?stream=test-tenant/test-ns/test-stream", bytes.NewReader(bodyBytes))
 		w := httptest.NewRecorder()
 
 		handlers.CreateReplaySession(w, req)

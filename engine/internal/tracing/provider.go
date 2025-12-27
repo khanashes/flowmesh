@@ -85,11 +85,56 @@ func NewProvider(config TracingConfig) (*Provider, error) {
 		}
 	}
 
+	// Create sampler based on configuration
+	var sampler sdktrace.Sampler
+	switch config.SamplingStrategy {
+	case "probabilistic":
+		rate := config.SamplingRate
+		if rate < 0.0 {
+			rate = 0.0
+		}
+		if rate > 1.0 {
+			rate = 1.0
+		}
+		sampler = sdktrace.TraceIDRatioBased(rate)
+		log := logger.WithComponent("tracing")
+		log.Info().
+			Str("strategy", "probabilistic").
+			Float64("rate", rate).
+			Msg("Using probabilistic sampling")
+	case "rate":
+		// Rate-based sampling (traces per second)
+		// Note: OpenTelemetry doesn't have built-in rate sampling,
+		// so we'll use a probabilistic approximation based on expected rate
+		// For high rates (>100), this is a reasonable approximation
+		rate := config.SamplingRate
+		if rate <= 0.0 {
+			rate = 100.0
+		}
+		// Approximate: if we expect 100 traces/sec, sample at ~100% for <100 req/sec
+		// For higher rates, use probabilistic sampling
+		prob := 1.0
+		if rate > 100.0 {
+			prob = 100.0 / rate
+		}
+		sampler = sdktrace.TraceIDRatioBased(prob)
+		log := logger.WithComponent("tracing")
+		log.Info().
+			Str("strategy", "rate").
+			Float64("rate_per_sec", rate).
+			Float64("probability", prob).
+			Msg("Using rate-based sampling (probabilistic approximation)")
+	case "always":
+		fallthrough
+	default:
+		sampler = sdktrace.AlwaysSample()
+	}
+
 	// Create tracer provider
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithBatcher(exporter),
 		sdktrace.WithResource(res),
-		sdktrace.WithSampler(sdktrace.AlwaysSample()), // TODO: Make configurable
+		sdktrace.WithSampler(sampler),
 	)
 
 	// Set as global tracer provider

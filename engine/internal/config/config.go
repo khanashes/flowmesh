@@ -102,6 +102,14 @@ type MetricsConfig struct {
 
 	// OpenTelemetry endpoint
 	TracingEndpoint string `env:"TRACING_ENDPOINT" envDefault:""`
+
+	// Tracing sampling strategy: "always", "probabilistic", or "rate"
+	TracingSamplingStrategy string `env:"TRACING_SAMPLING_STRATEGY" envDefault:"always"`
+
+	// Tracing sampling rate
+	// For "probabilistic": probability (0.0 to 1.0, default: 1.0)
+	// For "rate": traces per second (default: 100.0)
+	TracingSamplingRate float64 `env:"TRACING_SAMPLING_RATE" envDefault:"1.0"`
 }
 
 // Load loads configuration from multiple sources:

@@ -23,13 +23,20 @@ import (
 // QueueHandlers provides HTTP handlers for queue operations
 type QueueHandlers struct {
 	storage storage.StorageBackend
+	wsHub   *Hub // WebSocket hub for real-time updates
 }
 
 // NewQueueHandlers creates new queue handlers
 func NewQueueHandlers(storage storage.StorageBackend) *QueueHandlers {
 	return &QueueHandlers{
 		storage: storage,
+		wsHub:   nil, // Will be set by router if WebSocket is enabled
 	}
+}
+
+// SetWSHub sets the WebSocket hub
+func (h *QueueHandlers) SetWSHub(hub *Hub) {
+	h.wsHub = hub
 }
 
 // EnqueueRequest represents a request to enqueue a job
@@ -187,6 +194,21 @@ func (h *QueueHandlers) Enqueue(w http.ResponseWriter, r *http.Request) {
 		JobID:   jobID,
 		Seq:     seq,
 	})
+
+	// Broadcast queue stats update after enqueueing
+	if h.wsHub != nil {
+		// Get updated stats to broadcast
+		if queueStats, err := queueMgr.GetQueueStats(r.Context(), resourcePath); err == nil {
+			h.wsHub.BroadcastQueueStats(tenant, namespace, name, &QueueStats{
+				TotalJobs:           queueStats.TotalJobs,
+				PendingJobs:         queueStats.PendingJobs,
+				InFlightJobs:        queueStats.InFlightJobs,
+				CompletedJobs:       queueStats.CompletedJobs,
+				FailedJobs:          queueStats.FailedJobs,
+				OldestJobAgeSeconds: int64(queueStats.OldestJobAge.Seconds()),
+			})
+		}
+	}
 }
 
 // Reserve handles POST /api/v1/queues/{tenant}/{namespace}/{name}/reserve
@@ -449,6 +471,20 @@ func (h *QueueHandlers) ACK(w http.ResponseWriter, r *http.Request) {
 		Status:  "success",
 		Message: "job acknowledged successfully",
 	})
+
+	// Broadcast queue stats update after ACK
+	if h.wsHub != nil {
+		if queueStats, err := queueMgr.GetQueueStats(r.Context(), resourcePath); err == nil {
+			h.wsHub.BroadcastQueueStats(tenant, namespace, name, &QueueStats{
+				TotalJobs:           queueStats.TotalJobs,
+				PendingJobs:         queueStats.PendingJobs,
+				InFlightJobs:        queueStats.InFlightJobs,
+				CompletedJobs:       queueStats.CompletedJobs,
+				FailedJobs:          queueStats.FailedJobs,
+				OldestJobAgeSeconds: int64(queueStats.OldestJobAge.Seconds()),
+			})
+		}
+	}
 }
 
 // NACK handles POST /api/v1/queues/{tenant}/{namespace}/{name}/jobs/{job_id}/nack
@@ -506,6 +542,20 @@ func (h *QueueHandlers) NACK(w http.ResponseWriter, r *http.Request) {
 		Status:  "success",
 		Message: "job NACKed successfully",
 	})
+
+	// Broadcast queue stats update after NACK
+	if h.wsHub != nil {
+		if queueStats, err := queueMgr.GetQueueStats(r.Context(), resourcePath); err == nil {
+			h.wsHub.BroadcastQueueStats(tenant, namespace, name, &QueueStats{
+				TotalJobs:           queueStats.TotalJobs,
+				PendingJobs:         queueStats.PendingJobs,
+				InFlightJobs:        queueStats.InFlightJobs,
+				CompletedJobs:       queueStats.CompletedJobs,
+				FailedJobs:          queueStats.FailedJobs,
+				OldestJobAgeSeconds: int64(queueStats.OldestJobAge.Seconds()),
+			})
+		}
+	}
 }
 
 // GetQueueStats handles GET /api/v1/queues/{tenant}/{namespace}/{name}/stats
@@ -537,21 +587,29 @@ func (h *QueueHandlers) GetQueueStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Prepare stats response
+	statsResponse := &QueueStats{
+		TotalJobs:           stats.TotalJobs,
+		PendingJobs:         stats.PendingJobs,
+		InFlightJobs:        stats.InFlightJobs,
+		CompletedJobs:       stats.CompletedJobs,
+		FailedJobs:          stats.FailedJobs,
+		OldestJobAgeSeconds: int64(stats.OldestJobAge.Seconds()),
+	}
+
 	// Write response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(QueueStatsResponse{
 		Status:  "success",
 		Message: "queue statistics retrieved successfully",
-		Stats: &QueueStats{
-			TotalJobs:           stats.TotalJobs,
-			PendingJobs:         stats.PendingJobs,
-			InFlightJobs:        stats.InFlightJobs,
-			CompletedJobs:       stats.CompletedJobs,
-			FailedJobs:          stats.FailedJobs,
-			OldestJobAgeSeconds: int64(stats.OldestJobAge.Seconds()),
-		},
+		Stats:   statsResponse,
 	})
+
+	// Broadcast stats update via WebSocket
+	if h.wsHub != nil {
+		h.wsHub.BroadcastQueueStats(tenant, namespace, name, statsResponse)
+	}
 }
 
 // ListQueues handles GET /api/v1/queues

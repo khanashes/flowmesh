@@ -16,7 +16,7 @@ func (s *Server) unaryInterceptorChain() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		// Apply interceptors in order: tracing, logging, auth, error handling
 		tracingInterceptor := s.tracingInterceptorWithInfo(info)
-		loggingHandler := s.loggingInterceptor(s.authInterceptor(s.errorInterceptor(handler)))
+		loggingHandler := s.loggingInterceptor(s.authInterceptorWithInfo(info)(s.errorInterceptor(handler)))
 		return tracingInterceptor(ctx, req, info, loggingHandler)
 	}
 }
@@ -50,25 +50,37 @@ func (s *Server) loggingInterceptor(handler grpc.UnaryHandler) grpc.UnaryHandler
 	}
 }
 
+// authInterceptorWithInfo creates an auth interceptor with method info
+func (s *Server) authInterceptorWithInfo(info *grpc.UnaryServerInfo) func(grpc.UnaryHandler) grpc.UnaryHandler {
+	return func(handler grpc.UnaryHandler) grpc.UnaryHandler {
+		return s.authInterceptor(handler, info)
+	}
+}
+
 // authInterceptor authenticates requests
-func (s *Server) authInterceptor(handler grpc.UnaryHandler) grpc.UnaryHandler {
+func (s *Server) authInterceptor(handler grpc.UnaryHandler, info *grpc.UnaryServerInfo) grpc.UnaryHandler {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		// Extract method from context for auth skipping
-		// Note: We can't access info here, so auth skipping will be done in the actual handler
-		// For now, we'll allow all requests and enforce auth in handlers
+		// Skip auth for health check endpoints
+		if info != nil {
+			methodName := info.FullMethod
+			if methodName == "/flowmesh.v1.HealthService/HealthCheck" ||
+				methodName == "/flowmesh.v1.HealthService/ReadinessCheck" {
+				return handler(ctx, req)
+			}
+		}
 
 		// Extract token from metadata
 		md, ok := metadata.FromIncomingContext(ctx)
 		if !ok {
-			// No metadata, continue without auth (for health checks)
-			return handler(ctx, req)
+			// No metadata, require auth (except for health checks above)
+			return nil, status.Error(codes.Unauthenticated, "authentication required")
 		}
 
 		// Get authorization header
 		authHeaders := md.Get("authorization")
 		if len(authHeaders) == 0 {
-			// No auth header, continue (for health checks)
-			return handler(ctx, req)
+			// No auth header, require auth
+			return nil, status.Error(codes.Unauthenticated, "authentication required")
 		}
 
 		// Extract Bearer token
@@ -77,13 +89,24 @@ func (s *Server) authInterceptor(handler grpc.UnaryHandler) grpc.UnaryHandler {
 			return nil, status.Error(codes.Unauthenticated, "invalid authorization header format")
 		}
 
-		// Validate token (for now, skip - will be implemented when we have token store)
-		// TODO: Integrate with auth store when available
-		_ = token
+		// Validate token using token store
+		if s.tokenStore != nil {
+			apiToken, err := s.tokenStore.ValidateToken(token)
+			if err != nil {
+				return nil, status.Error(codes.Unauthenticated, "invalid or expired token")
+			}
 
-		// Create auth context (placeholder for now)
-		// authCtx := &auth.AuthContext{...}
-		// ctx = auth.WithAuthContext(ctx, authCtx)
+			// Create auth context
+			authCtx := &auth.AuthContext{
+				TokenHash:   apiToken.TokenHash,
+				Tenant:      apiToken.Tenant,
+				AllowedNS:   apiToken.AllowedNS,
+				Permissions: apiToken.Permissions,
+			}
+
+			// Attach auth context to request context
+			ctx = auth.WithAuthContext(ctx, authCtx)
+		}
 
 		return handler(ctx, req)
 	}

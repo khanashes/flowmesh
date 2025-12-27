@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/flowmesh/engine/internal/logger"
+	"github.com/flowmesh/engine/internal/storage/metastore"
 	"github.com/rs/zerolog"
 )
 
@@ -123,19 +125,89 @@ func (cm *CheckpointManager) SaveCheckpoint() error {
 // collectState collects state from all storage managers
 func (cm *CheckpointManager) collectState() *Checkpoint {
 	checkpoint := NewCheckpoint()
+	ctx := context.Background()
 
 	// Collect stream offsets
-	// TODO: Add method to StreamManager to get all stream offsets
-	// For now, leave empty - will be populated when we add recovery methods
+	streamResources, err := cm.storage.metaStore.ListResources("", "", metastore.ResourceStream)
+	if err == nil {
+		streamMgr := cm.storage.StreamManager()
+		for _, resource := range streamResources {
+			resourcePath := resource.GetPath()
+			// Get latest offset for partition 0 (MVP)
+			partition := int32(0)
+			offset, err := streamMgr.GetLatestOffset(ctx, resourcePath, partition)
+			if err == nil && offset >= 0 {
+				if checkpoint.StreamOffsets[resourcePath] == nil {
+					checkpoint.StreamOffsets[resourcePath] = make(map[int32]int64)
+				}
+				checkpoint.StreamOffsets[resourcePath][partition] = offset
+			}
+		}
+	} else {
+		cm.log.Warn().Err(err).Msg("Failed to list streams for checkpoint")
+	}
 
 	// Collect consumer group offsets
-	// TODO: Add method to ConsumerGroupManager to get all group offsets
+	consumerMgr := cm.storage.ConsumerGroupManager()
+	streamResources, err = cm.storage.metaStore.ListResources("", "", metastore.ResourceStream)
+	if err == nil {
+		for _, resource := range streamResources {
+			resourcePath := resource.GetPath()
+			// List all consumer groups for this stream
+			groups, err := consumerMgr.ListConsumerGroups(ctx, resourcePath)
+			if err != nil {
+				continue
+			}
+
+			// Get offset for each consumer group
+			for _, group := range groups {
+				partition := int32(0)
+				offset, err := consumerMgr.GetCommittedOffset(ctx, resourcePath, group, partition)
+				if err == nil {
+					if checkpoint.ConsumerGroupOffsets[group] == nil {
+						checkpoint.ConsumerGroupOffsets[group] = make(map[string]map[int32]int64)
+					}
+					if checkpoint.ConsumerGroupOffsets[group][resourcePath] == nil {
+						checkpoint.ConsumerGroupOffsets[group][resourcePath] = make(map[int32]int64)
+					}
+					checkpoint.ConsumerGroupOffsets[group][resourcePath][partition] = offset
+				}
+			}
+		}
+	} else {
+		cm.log.Warn().Err(err).Msg("Failed to list streams for consumer group checkpoint")
+	}
 
 	// Collect queue metadata
-	// TODO: Add method to QueueManager to get queue stats
+	queueResources, err := cm.storage.metaStore.ListResources("", "", metastore.ResourceQueue)
+	if err == nil {
+		queueMgr := cm.storage.QueueManager()
+		for _, resource := range queueResources {
+			resourcePath := resource.GetPath()
+			stats, err := queueMgr.GetQueueStats(ctx, resourcePath)
+			if err == nil {
+				checkpoint.QueueMetadata[resourcePath] = &QueueCheckpoint{
+					ReadyCount:    stats.PendingJobs,
+					InflightCount: stats.InFlightJobs,
+					DLQCount:      0,  // DLQ count would need separate tracking
+					LastJobID:     "", // Last job ID would need separate tracking
+				}
+			}
+		}
+	} else {
+		cm.log.Warn().Err(err).Msg("Failed to list queues for checkpoint")
+	}
 
 	// Collect replay sessions
-	// TODO: Add method to ReplayManager to get active sessions
+	replayMgr := cm.storage.ReplayManager()
+	sessions, err := replayMgr.ListSessions(ctx, "")
+	if err == nil {
+		for _, session := range sessions {
+			checkpoint.ReplaySessions[session.ID] = session.Status
+		}
+	} else {
+		cm.log.Warn().Err(err).Msg("Failed to list replay sessions for checkpoint")
+	}
 
 	return checkpoint
 }

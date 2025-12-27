@@ -8,6 +8,7 @@ import type {
   ListConsumerGroupsResponse,
   APIError,
 } from '../types/api';
+import { useWebSocket, type WSMessage } from './useWebSocket';
 
 // Stream list hook
 export interface UseStreamListResult {
@@ -74,6 +75,29 @@ export function useStreamStats(
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
   const intervalRef = useRef<number | null>(null);
 
+  const topic = `stream.stats.${tenant}/${namespace}/${name}`;
+
+  // WebSocket for real-time updates
+  const { connected: wsConnected } = useWebSocket({
+    topics: [topic],
+    onMessage: useCallback((message: WSMessage) => {
+      if (message.type === 'stream.stats' && message.topic === topic) {
+        try {
+          const statsData = message.payload as StreamStatsResponse['stats'];
+          setStats({
+            status: 'success',
+            message: 'stream statistics retrieved successfully',
+            stats: statsData,
+          });
+          setLastChecked(new Date());
+          setError(null);
+        } catch (err) {
+          console.error('Failed to parse WebSocket stream stats:', err);
+        }
+      }
+    }, [topic]),
+  });
+
   const fetchStats = useCallback(async () => {
     try {
       const result = await getStreamStats(tenant, namespace, name);
@@ -104,11 +128,16 @@ export function useStreamStats(
     // Initial fetch
     fetchStats();
 
-    // Set up polling interval
-    if (intervalMs > 0) {
+    // Set up polling interval as fallback (only if WebSocket is not connected)
+    if (intervalMs > 0 && !wsConnected) {
       intervalRef.current = window.setInterval(() => {
         fetchStats();
       }, intervalMs);
+    } else {
+      if (intervalRef.current !== null) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
     }
 
     return () => {
@@ -116,7 +145,7 @@ export function useStreamStats(
         clearInterval(intervalRef.current);
       }
     };
-  }, [fetchStats, intervalMs, tenant, namespace, name]);
+  }, [fetchStats, intervalMs, tenant, namespace, name, wsConnected]);
 
   return {
     stats,

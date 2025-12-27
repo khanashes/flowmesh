@@ -13,6 +13,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Partition replication (Raft/Paxos)
 - Leader election
 
+## [0.2.0] - 2025-12-28
+
+### Added
+- **WebSocket Support**: Real-time updates for Web UI with topic-based subscriptions
+- **WebSocket Hub**: Backend hub for managing client connections and broadcasting updates
+- **Real-time Stats**: Stream and queue statistics update automatically via WebSocket
+- **KV Dashboard UI**: Complete UI for KV store management (list, view, set, get, delete, TTL)
+- **Replay Session Updates**: Real-time replay session status and progress updates
+- **WebSocket Connection Status**: Visual indicator in UI header showing connection status
+- **Enhanced Auth**: Token validation in gRPC interceptors with AuthContext
+- **Tracing Configuration**: Configurable sampling strategies (always, probabilistic, rate-based)
+- **Checkpoint Recovery**: Full state collection from all storage managers for system recovery
+- **API Documentation**: Comprehensive API reference for all gRPC and HTTP endpoints
+- **Deployment Guide**: Complete production deployment documentation
+
+### Improved
+- Frontend hooks now use WebSocket with automatic polling fallback
+- Better error handling and connection management in Web UI
+- Improved auth interceptor with proper health check skipping
+
+### Fixed
+- Test fixes for replay handler stream path format
+- WebSocket handler error handling improvements
+
 ## [0.1.0] - 2025-12-28
 
 ### Added

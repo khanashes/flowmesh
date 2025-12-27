@@ -2,24 +2,33 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"time"
 
 	"github.com/flowmesh/engine/internal/api/validation"
 	"github.com/flowmesh/engine/internal/storage"
 	kverrors "github.com/flowmesh/engine/internal/storage/kv"
+	"github.com/flowmesh/engine/internal/storage/metastore"
 )
 
 // KVHandlers provides HTTP handlers for KV store operations
 type KVHandlers struct {
 	storage storage.StorageBackend
+	wsHub   *Hub // WebSocket hub for real-time updates
 }
 
 // NewKVHandlers creates new KV handlers
 func NewKVHandlers(storage storage.StorageBackend) *KVHandlers {
 	return &KVHandlers{
 		storage: storage,
+		wsHub:   nil, // Will be set by router if WebSocket is enabled
 	}
+}
+
+// SetWSHub sets the WebSocket hub
+func (h *KVHandlers) SetWSHub(hub *Hub) {
+	h.wsHub = hub
 }
 
 // SetRequest represents a request to set a key-value pair
@@ -130,6 +139,14 @@ func (h *KVHandlers) Set(w http.ResponseWriter, r *http.Request) {
 		Status:  "success",
 		Message: "key-value pair set successfully",
 	})
+
+	// Broadcast KV update
+	if h.wsHub != nil {
+		h.wsHub.BroadcastKVUpdate(tenant, namespace, name, map[string]interface{}{
+			"action": "set",
+			"key":    key,
+		})
+	}
 }
 
 // Get handles GET /api/v1/kv/{tenant}/{namespace}/{name}/keys/{key}
@@ -207,6 +224,14 @@ func (h *KVHandlers) Delete(w http.ResponseWriter, r *http.Request) {
 		Status:  "success",
 		Message: "key deleted successfully",
 	})
+
+	// Broadcast KV update
+	if h.wsHub != nil {
+		h.wsHub.BroadcastKVUpdate(tenant, namespace, name, map[string]interface{}{
+			"action": "delete",
+			"key":    key,
+		})
+	}
 }
 
 // Exists handles HEAD /api/v1/kv/{tenant}/{namespace}/{name}/keys/{key}
@@ -256,6 +281,48 @@ func (h *KVHandlers) Exists(w http.ResponseWriter, r *http.Request) {
 			Exists:  false,
 		})
 	}
+}
+
+// ListKVStoresResponse represents a response to listing KV stores
+type ListKVStoresResponse struct {
+	Status  string                      `json:"status"`
+	Message string                      `json:"message,omitempty"`
+	Stores  []*metastore.ResourceConfig `json:"stores"`
+}
+
+// ListKVStores handles GET /api/v1/kv
+func (h *KVHandlers) ListKVStores(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Get optional query parameters
+	tenant := r.URL.Query().Get("tenant")
+	namespace := r.URL.Query().Get("namespace")
+
+	// Get meta store
+	metaStore := h.storage.MetaStore()
+	if metaStore == nil {
+		h.writeError(w, errors.New("meta store not available"), "")
+		return
+	}
+
+	// List KV store resources
+	stores, err := metaStore.ListResources(tenant, namespace, metastore.ResourceKV)
+	if err != nil {
+		h.writeError(w, err, "")
+		return
+	}
+
+	// Write response
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(ListKVStoresResponse{
+		Status:  "success",
+		Message: "KV stores retrieved successfully",
+		Stores:  stores,
+	})
 }
 
 // ListKeys handles GET /api/v1/kv/{tenant}/{namespace}/{name}/keys

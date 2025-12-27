@@ -277,6 +277,21 @@ export interface ListConsumerGroupsResponse {
 
 // KV API
 
+export interface KVStoreListItem {
+  tenant: string;
+  namespace: string;
+  name: string;
+  type: string;
+  created_at: string; // ISO 8601 timestamp
+  updated_at: string; // ISO 8601 timestamp
+}
+
+export interface ListKVStoresResponse {
+  status: string;
+  message?: string;
+  stores: KVStoreListItem[];
+}
+
 export interface SetRequest {
   value: string | Uint8Array; // base64 encoded bytes or Uint8Array
   ttl_seconds?: number; // 0 = no expiration

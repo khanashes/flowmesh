@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/flowmesh/engine/api/proto/flowmeshpb"
+	"github.com/flowmesh/engine/internal/api/auth"
 	"github.com/flowmesh/engine/internal/logger"
 	"github.com/flowmesh/engine/internal/storage"
 	"github.com/rs/zerolog"
@@ -15,6 +16,7 @@ import (
 // Server represents a gRPC server
 type Server struct {
 	storage    storage.StorageBackend
+	tokenStore auth.TokenStore
 	grpcServer *grpc.Server
 	addr       string
 	log        zerolog.Logger
@@ -29,17 +31,21 @@ type Server struct {
 }
 
 // NewServer creates a new gRPC server
-func NewServer(addr string, storage storage.StorageBackend) *Server {
+func NewServer(addr string, storage storage.StorageBackend, tokenStore auth.TokenStore) *Server {
+	if tokenStore == nil {
+		tokenStore = auth.NewInMemoryTokenStore()
+	}
 	s := &Server{
-		storage:   storage,
-		addr:      addr,
-		log:       logger.WithComponent("grpc"),
-		healthSvc: NewHealthService(storage),
-		streamSvc: NewStreamService(storage),
-		queueSvc:  NewQueueService(storage),
-		kvSvc:     NewKVService(storage),
-		schemaSvc: NewSchemaService(storage),
-		replaySvc: NewReplayService(storage),
+		storage:    storage,
+		tokenStore: tokenStore,
+		addr:       addr,
+		log:        logger.WithComponent("grpc"),
+		healthSvc:  NewHealthService(storage),
+		streamSvc:  NewStreamService(storage),
+		queueSvc:   NewQueueService(storage),
+		kvSvc:      NewKVService(storage),
+		schemaSvc:  NewSchemaService(storage),
+		replaySvc:  NewReplayService(storage),
 	}
 
 	// Create gRPC server with interceptors

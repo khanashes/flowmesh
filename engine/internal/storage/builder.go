@@ -126,16 +126,10 @@ func (b *Builder) Build() (*Storage, error) {
 	// Initialize tracing if enabled
 	var tracerProvider *tracing.Provider
 	if b.config.EnableTracing {
-		tracingConfig := tracing.TracingConfig{
-			Enabled:        true,
-			ServiceName:    "flowmesh",
-			ServiceVersion: "0.1.0",
-			Endpoint:       "", // Will be set from config if available
-			Insecure:       false,
-			Headers:        make(map[string]string),
-			ExporterType:   "grpc",
-		}
-		// TODO: Load from config when available
+		tracingConfig := tracing.DefaultTracingConfig()
+		tracingConfig.Enabled = true
+		// Endpoint will be set from higher-level config if available
+		// Sampling config uses defaults from DefaultTracingConfig (always sample)
 		var err error
 		tracerProvider, err = tracing.NewProvider(tracingConfig)
 		if err != nil {

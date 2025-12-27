@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { listQueues, getQueueStats } from '../lib/api';
 import type { QueueListItem, QueueStatsResponse, APIError } from '../types/api';
+import { useWebSocket, type WSMessage } from './useWebSocket';
 
 // Queue list hook
 export interface UseQueueListResult {
@@ -70,6 +71,29 @@ export function useQueueStats(
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
   const intervalRef = useRef<number | null>(null);
 
+  const topic = `queue.stats.${tenant}/${namespace}/${name}`;
+
+  // WebSocket for real-time updates
+  const { connected: wsConnected } = useWebSocket({
+    topics: [topic],
+    onMessage: useCallback((message: WSMessage) => {
+      if (message.type === 'queue.stats' && message.topic === topic) {
+        try {
+          const statsData = message.payload as QueueStatsResponse['stats'];
+          setStats({
+            status: 'success',
+            message: 'queue statistics retrieved successfully',
+            stats: statsData,
+          });
+          setLastChecked(new Date());
+          setError(null);
+        } catch (err) {
+          console.error('Failed to parse WebSocket queue stats:', err);
+        }
+      }
+    }, [topic]),
+  });
+
   const fetchStats = useCallback(async () => {
     try {
       const result = await getQueueStats(tenant, namespace, name);
@@ -101,11 +125,16 @@ export function useQueueStats(
     // Initial fetch
     fetchStats();
 
-    // Set up polling interval
-    if (intervalMs > 0) {
+    // Set up polling interval as fallback (only if WebSocket is not connected)
+    if (intervalMs > 0 && !wsConnected) {
       intervalRef.current = window.setInterval(() => {
         fetchStats();
       }, intervalMs);
+    } else {
+      if (intervalRef.current !== null) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
     }
 
     return () => {
@@ -113,7 +142,7 @@ export function useQueueStats(
         clearInterval(intervalRef.current);
       }
     };
-  }, [fetchStats, intervalMs, tenant, namespace, name]);
+  }, [fetchStats, intervalMs, tenant, namespace, name, wsConnected]);
 
   return {
     stats,

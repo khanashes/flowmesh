@@ -42,7 +42,7 @@ func NewServer(cfg Config, storage storage.StorageBackend) *Server {
 		s.log.Warn().Err(err).Msg("Failed to create default token")
 	}
 
-	s.grpcServer = grpcapi.NewServer(cfg.GRPCAddr, storage)
+	s.grpcServer = grpcapi.NewServer(cfg.GRPCAddr, storage, s.tokenStore)
 	s.httpServer = httpapi.NewServer(cfg.HTTPAddr, storage)
 
 	return s

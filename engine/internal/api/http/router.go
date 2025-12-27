@@ -23,10 +23,13 @@ type Router struct {
 	schemaHandlers *handlers.SchemaHandlers
 	replayHandlers *handlers.ReplayHandlers
 	metricsHandler http.Handler
+	wsHub          *handlers.Hub
 }
 
 // NewRouter creates a new router
 func NewRouter(storage storage.StorageBackend) *Router {
+	wsHub := handlers.NewHub()
+
 	r := &Router{
 		mux:            http.NewServeMux(),
 		storage:        storage,
@@ -35,7 +38,17 @@ func NewRouter(storage storage.StorageBackend) *Router {
 		kvHandlers:     handlers.NewKVHandlers(storage),
 		schemaHandlers: handlers.NewSchemaHandlers(storage),
 		replayHandlers: handlers.NewReplayHandlers(storage),
+		wsHub:          wsHub,
 	}
+
+	// Set WebSocket hub on handlers that need it
+	r.streamHandlers.SetWSHub(wsHub)
+	r.queueHandlers.SetWSHub(wsHub)
+	r.replayHandlers.SetWSHub(wsHub)
+	r.kvHandlers.SetWSHub(wsHub)
+
+	// Start WebSocket hub
+	go wsHub.Run()
 
 	// Set up metrics handler with custom registry if available
 	if storage != nil {
@@ -89,6 +102,11 @@ func (r *Router) setupRoutes() {
 	// Replay API endpoints
 	r.mux.Handle("/api/v1/replay/", chain(http.HandlerFunc(r.handleReplayRoutes)))
 
+	// WebSocket endpoint for real-time updates
+	r.mux.Handle("/ws", chain(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		handlers.ServeWebSocket(r.wsHub, w, req)
+	})))
+
 	// Default API v1 route (for unmatched paths)
 	r.mux.Handle("/api/v1/", chain(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		http.NotFound(w, req)
@@ -97,6 +115,11 @@ func (r *Router) setupRoutes() {
 	// Serve static files from web-ui/dist (if it exists)
 	// This should be the last route to handle SPA routing
 	r.setupStaticFileServing()
+}
+
+// GetWSHub returns the WebSocket hub
+func (r *Router) GetWSHub() *handlers.Hub {
+	return r.wsHub
 }
 
 // setupStaticFileServing sets up static file serving for the web UI
@@ -320,6 +343,16 @@ func (r *Router) handleQueueRoutes(w http.ResponseWriter, req *http.Request) {
 // handleKVRoutes routes KV-related requests to appropriate handlers
 func (r *Router) handleKVRoutes(w http.ResponseWriter, req *http.Request) {
 	path := req.URL.Path
+
+	// GET /api/v1/kv (list all KV stores)
+	// Check if path is exactly /api/v1/kv (no additional segments)
+	if req.Method == http.MethodGet {
+		parts := strings.Split(strings.Trim(path, "/"), "/")
+		if len(parts) == 3 && parts[0] == "api" && parts[1] == "v1" && parts[2] == "kv" {
+			r.kvHandlers.ListKVStores(w, req)
+			return
+		}
+	}
 
 	// PUT /api/v1/kv/{tenant}/{namespace}/{name}/keys/{key}
 	if req.Method == http.MethodPut && matchPattern(path, "/keys/") {

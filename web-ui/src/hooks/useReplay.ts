@@ -16,6 +16,7 @@ import type {
   ReplayControlResponse,
   APIError,
 } from '../types/api';
+import { useWebSocket, type WSMessage } from './useWebSocket';
 
 // Replay sessions list hook
 export interface UseReplaySessionsResult {
@@ -93,6 +94,24 @@ export function useReplaySession(
   const [error, setError] = useState<APIError | null>(null);
   const intervalRef = useRef<number | null>(null);
 
+  const topic = sessionId ? `replay.session.${sessionId}` : null;
+
+  // WebSocket for real-time updates
+  const { connected: wsConnected } = useWebSocket({
+    topics: topic ? [topic] : [],
+    onMessage: useCallback((message: WSMessage) => {
+      if (message.type === 'replay.session' && topic && message.topic === topic) {
+        try {
+          const sessionData = message.payload as GetReplaySessionResponse;
+          setSession(sessionData);
+          setError(null);
+        } catch (err) {
+          console.error('Failed to parse WebSocket replay session:', err);
+        }
+      }
+    }, [topic]),
+  });
+
   const fetchSession = useCallback(async () => {
     if (!sessionId) {
       setLoading(false);
@@ -126,14 +145,19 @@ export function useReplaySession(
     // Initial fetch
     fetchSession();
 
-    // Poll more frequently when session is active or paused
+    // Poll more frequently when session is active or paused (as fallback if WebSocket not connected)
     const shouldPoll = session?.session?.status === 'active' || session?.session?.status === 'paused';
-    const pollInterval = shouldPoll ? intervalMs : 0;
+    const pollInterval = shouldPoll && !wsConnected ? intervalMs : 0;
 
     if (pollInterval > 0) {
       intervalRef.current = window.setInterval(() => {
         fetchSession();
       }, pollInterval);
+    } else {
+      if (intervalRef.current !== null) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
     }
 
     return () => {
@@ -141,7 +165,7 @@ export function useReplaySession(
         clearInterval(intervalRef.current);
       }
     };
-  }, [fetchSession, intervalMs, sessionId, session?.session?.status]);
+  }, [fetchSession, intervalMs, sessionId, session?.session?.status, wsConnected]);
 
   return {
     session,

@@ -14,13 +14,20 @@ import (
 // ReplayHandlers provides HTTP handlers for replay operations
 type ReplayHandlers struct {
 	storage storage.StorageBackend
+	wsHub   *Hub // WebSocket hub for real-time updates
 }
 
 // NewReplayHandlers creates new replay handlers
 func NewReplayHandlers(storage storage.StorageBackend) *ReplayHandlers {
 	return &ReplayHandlers{
 		storage: storage,
+		wsHub:   nil, // Will be set by router if WebSocket is enabled
 	}
+}
+
+// SetWSHub sets the WebSocket hub
+func (h *ReplayHandlers) SetWSHub(hub *Hub) {
+	h.wsHub = hub
 }
 
 // CreateReplaySessionRequest represents a request to create a replay session
@@ -186,9 +193,16 @@ func (h *ReplayHandlers) GetReplaySession(w http.ResponseWriter, r *http.Request
 
 	progress, _ := replayMgr.GetReplayProgress(r.Context(), session.ID)
 
+	response := h.sessionToResponse(session, progress)
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(h.sessionToResponse(session, progress))
+	json.NewEncoder(w).Encode(response)
+
+	// Broadcast replay session update via WebSocket
+	if h.wsHub != nil {
+		h.wsHub.BroadcastReplaySession(session.ID, response)
+	}
 }
 
 // StartReplay handles POST /api/v1/replay/sessions/{session_id}/start
@@ -216,6 +230,15 @@ func (h *ReplayHandlers) StartReplay(w http.ResponseWriter, r *http.Request) {
 		"status":  "success",
 		"message": "replay started successfully",
 	})
+
+	// Broadcast replay session update
+	if h.wsHub != nil {
+		if session, err := replayMgr.GetSession(r.Context(), sessionID); err == nil {
+			progress, _ := replayMgr.GetReplayProgress(r.Context(), sessionID)
+			response := h.sessionToResponse(session, progress)
+			h.wsHub.BroadcastReplaySession(sessionID, response)
+		}
+	}
 }
 
 // PauseReplay handles POST /api/v1/replay/sessions/{session_id}/pause
@@ -243,6 +266,15 @@ func (h *ReplayHandlers) PauseReplay(w http.ResponseWriter, r *http.Request) {
 		"status":  "success",
 		"message": "replay paused successfully",
 	})
+
+	// Broadcast replay session update
+	if h.wsHub != nil {
+		if session, err := replayMgr.GetSession(r.Context(), sessionID); err == nil {
+			progress, _ := replayMgr.GetReplayProgress(r.Context(), sessionID)
+			response := h.sessionToResponse(session, progress)
+			h.wsHub.BroadcastReplaySession(sessionID, response)
+		}
+	}
 }
 
 // ResumeReplay handles POST /api/v1/replay/sessions/{session_id}/resume
@@ -270,6 +302,15 @@ func (h *ReplayHandlers) ResumeReplay(w http.ResponseWriter, r *http.Request) {
 		"status":  "success",
 		"message": "replay resumed successfully",
 	})
+
+	// Broadcast replay session update
+	if h.wsHub != nil {
+		if session, err := replayMgr.GetSession(r.Context(), sessionID); err == nil {
+			progress, _ := replayMgr.GetReplayProgress(r.Context(), sessionID)
+			response := h.sessionToResponse(session, progress)
+			h.wsHub.BroadcastReplaySession(sessionID, response)
+		}
+	}
 }
 
 // StopReplay handles POST /api/v1/replay/sessions/{session_id}/stop
@@ -297,6 +338,15 @@ func (h *ReplayHandlers) StopReplay(w http.ResponseWriter, r *http.Request) {
 		"status":  "success",
 		"message": "replay stopped successfully",
 	})
+
+	// Broadcast replay session update
+	if h.wsHub != nil {
+		if session, err := replayMgr.GetSession(r.Context(), sessionID); err == nil {
+			progress, _ := replayMgr.GetReplayProgress(r.Context(), sessionID)
+			response := h.sessionToResponse(session, progress)
+			h.wsHub.BroadcastReplaySession(sessionID, response)
+		}
+	}
 }
 
 // DeleteReplaySession handles DELETE /api/v1/replay/sessions/{session_id}
@@ -324,6 +374,14 @@ func (h *ReplayHandlers) DeleteReplaySession(w http.ResponseWriter, r *http.Requ
 		"status":  "success",
 		"message": "replay session deleted successfully",
 	})
+
+	// Broadcast replay session deletion
+	if h.wsHub != nil {
+		h.wsHub.BroadcastReplaySession(sessionID, map[string]interface{}{
+			"id":     sessionID,
+			"status": "deleted",
+		})
+	}
 }
 
 // Helper functions
