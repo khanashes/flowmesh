@@ -1,0 +1,8 @@
+include README.md
+include LICENSE
+recursive-include flowmesh *.py
+recursive-exclude flowmesh/_generated *.py
+recursive-exclude flowmesh/_generated __pycache__
+global-exclude __pycache__
+global-exclude *.py[co]
+
