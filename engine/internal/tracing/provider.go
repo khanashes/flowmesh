@@ -107,21 +107,30 @@ func NewProvider(config TracingConfig) (*Provider, error) {
 		// Note: OpenTelemetry doesn't have built-in rate sampling,
 		// so we'll use a probabilistic approximation based on expected rate
 		// For high rates (>100), this is a reasonable approximation
-		rate := config.SamplingRate
-		if rate <= 0.0 {
-			rate = 100.0
+		desiredRate := config.SamplingRate
+		if desiredRate <= 0.0 {
+			desiredRate = 100.0
 		}
-		// Approximate: if we expect 100 traces/sec, sample at ~100% for <100 req/sec
-		// For higher rates, use probabilistic sampling
-		prob := 1.0
-		if rate > 100.0 {
-			prob = 100.0 / rate
+
+		// Baseline assumption: assume system processes ~100 requests/sec on average
+		// This baseline is used to convert "traces per second" to a sampling probability.
+		// If actual request rate differs, the effective trace rate will scale proportionally.
+		// Example: If user wants 50 traces/sec and baseline is 100 req/sec:
+		//   prob = 50/100 = 0.5 (sample 50% of requests = ~50 traces/sec if ~100 req/sec)
+		baselineRequestRate := 100.0
+		prob := desiredRate / baselineRequestRate
+
+		// Cap probability at 1.0 (100% sampling)
+		// If desired rate >= baseline, we sample everything (prob = 1.0)
+		if prob > 1.0 {
+			prob = 1.0
 		}
 		sampler = sdktrace.TraceIDRatioBased(prob)
 		log := logger.WithComponent("tracing")
 		log.Info().
 			Str("strategy", "rate").
-			Float64("rate_per_sec", rate).
+			Float64("rate_per_sec", desiredRate).
+			Float64("baseline_req_per_sec", baselineRequestRate).
 			Float64("probability", prob).
 			Msg("Using rate-based sampling (probabilistic approximation)")
 	case "always":

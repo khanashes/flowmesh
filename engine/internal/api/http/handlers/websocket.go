@@ -93,6 +93,9 @@ func (h *Hub) Run() {
 			h.log.Debug().Int("clients", len(h.clients)).Msg("Client unregistered")
 
 		case message := <-h.broadcast:
+			// Collect clients that need to be removed (those with full send buffers)
+			var clientsToRemove []*Client
+
 			h.mu.RLock()
 			for client := range h.clients {
 				// Check if client is subscribed to this topic
@@ -104,13 +107,24 @@ func (h *Hub) Run() {
 					select {
 					case client.send <- h.messageToBytes(message):
 					default:
-						// Client's send buffer is full, close connection
-						close(client.send)
-						delete(h.clients, client)
+						// Client's send buffer is full, mark for removal
+						clientsToRemove = append(clientsToRemove, client)
 					}
 				}
 			}
 			h.mu.RUnlock()
+
+			// Remove clients that had full send buffers (requires write lock)
+			if len(clientsToRemove) > 0 {
+				h.mu.Lock()
+				for _, client := range clientsToRemove {
+					if _, ok := h.clients[client]; ok {
+						delete(h.clients, client)
+						close(client.send)
+					}
+				}
+				h.mu.Unlock()
+			}
 		}
 	}
 }
