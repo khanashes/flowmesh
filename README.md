@@ -78,10 +78,42 @@ Developers get: **FlowMesh**
 
 ### Prerequisites
 
-- Go 1.21 or later
+- **Docker & Docker Compose** (recommended - easiest way to get started)
+- OR **Go 1.24+** (for building from source)
 - Git
 
-### Installation
+### Option 1: Docker (Recommended - Easiest)
+
+The fastest way to get started with FlowMesh:
+
+```bash
+# Clone the repository
+git clone https://github.com/flowmesh/flowmesh.git
+cd flowmesh
+
+# Start FlowMesh with Docker Compose (includes engine + Web UI)
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+```
+
+That's it! FlowMesh is now running. Access:
+- **Web UI**: http://localhost:8080 (interactive dashboard)
+- **API**: http://localhost:8080/api/v1/...
+- **gRPC**: localhost:50051
+- **Metrics**: http://localhost:9090/metrics
+
+To stop:
+```bash
+docker-compose down
+```
+
+For more Docker options and advanced usage, see [docker/README.md](docker/README.md).
+
+### Option 2: Build from Source
+
+If you prefer to build from source:
 
 ```bash
 # Clone the repository
@@ -90,42 +122,13 @@ cd flowmesh
 
 # Build the engine
 cd engine
-make build
+go build -o ../bin/flowmesh ./cmd/flowmesh
 
 # Run FlowMesh
-./bin/flowmesh
+../bin/flowmesh
 ```
 
-### Using Docker
-
-The Docker image includes both the FlowMesh engine and the Web UI:
-
-```bash
-# Build Docker image (builds both Go binary and Web UI)
-make docker-build
-
-# Run with Docker Compose (production)
-make docker-run
-
-# Run in development mode
-make docker-dev
-
-# View logs
-make docker-logs
-
-# Stop containers
-make docker-stop
-```
-
-Once running, access:
-- **API**: `http://localhost:8080/api/v1/...`
-- **Web UI**: `http://localhost:8080` (served automatically)
-- **gRPC**: `localhost:50051`
-- **Metrics**: `http://localhost:9090/metrics`
-
-For more Docker details, see [docker/README.md](docker/README.md).
-
-### Using the Binary
+### Using the Binary (Configuration Options)
 
 ```bash
 # Run with defaults (gRPC on :50051, HTTP on :8080)
@@ -148,6 +151,15 @@ export FLOWMESH_DATA_DIR=./data
 export FLOWMESH_LOG_LEVEL=info
 ./bin/flowmesh
 ```
+
+### Next Steps
+
+1. **Explore the Web UI**: Open http://localhost:8080 to see the interactive dashboard
+2. **Try the SDKs**: 
+   - [Go SDK](sdk-go/README.md) - `go get github.com/flowmesh/sdk-go`
+   - [Python SDK](sdk-python/README.md) - `pip install -e sdk-python/`
+3. **Read the Examples**: Check out the [examples directory](./examples/) for code samples
+4. **Read the Docs**: See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for deep dive
 
 ## 🏗️ Architecture
 
