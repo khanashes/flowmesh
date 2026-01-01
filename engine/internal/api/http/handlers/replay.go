@@ -138,7 +138,10 @@ func (h *ReplayHandlers) CreateReplaySession(w http.ResponseWriter, r *http.Requ
 	// Write response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(h.sessionToResponse(session, progress))
+	if err := json.NewEncoder(w).Encode(h.sessionToResponse(session, progress)); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 }
 
 // ListReplaySessions handles GET /api/v1/replay/sessions
@@ -166,10 +169,13 @@ func (h *ReplayHandlers) ListReplaySessions(w http.ResponseWriter, r *http.Reque
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	if err := json.NewEncoder(w).Encode(map[string]interface{}{
 		"status":   "success",
 		"sessions": responses,
-	})
+	}); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 }
 
 // GetReplaySession handles GET /api/v1/replay/sessions/{session_id}
@@ -200,7 +206,10 @@ func (h *ReplayHandlers) GetReplaySession(w http.ResponseWriter, r *http.Request
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 
 	// Broadcast replay session update via WebSocket
 	if h.wsHub != nil {
@@ -229,10 +238,13 @@ func (h *ReplayHandlers) StartReplay(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{
+	if err := json.NewEncoder(w).Encode(map[string]string{
 		"status":  "success",
 		"message": "replay started successfully",
-	})
+	}); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 
 	// Broadcast replay session update
 	if h.wsHub != nil {
@@ -266,10 +278,13 @@ func (h *ReplayHandlers) PauseReplay(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{
+	if err := json.NewEncoder(w).Encode(map[string]string{
 		"status":  "success",
 		"message": "replay paused successfully",
-	})
+	}); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 
 	// Broadcast replay session update
 	if h.wsHub != nil {
@@ -303,10 +318,13 @@ func (h *ReplayHandlers) ResumeReplay(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{
+	if err := json.NewEncoder(w).Encode(map[string]string{
 		"status":  "success",
 		"message": "replay resumed successfully",
-	})
+	}); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 
 	// Broadcast replay session update
 	if h.wsHub != nil {
@@ -340,10 +358,13 @@ func (h *ReplayHandlers) StopReplay(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{
+	if err := json.NewEncoder(w).Encode(map[string]string{
 		"status":  "success",
 		"message": "replay stopped successfully",
-	})
+	}); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 
 	// Broadcast replay session update
 	if h.wsHub != nil {
@@ -377,10 +398,13 @@ func (h *ReplayHandlers) DeleteReplaySession(w http.ResponseWriter, r *http.Requ
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{
+	if err := json.NewEncoder(w).Encode(map[string]string{
 		"status":  "success",
 		"message": "replay session deleted successfully",
-	})
+	}); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 
 	// Broadcast replay session deletion
 	if h.wsHub != nil {
