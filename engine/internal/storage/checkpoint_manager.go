@@ -127,6 +127,11 @@ func (cm *CheckpointManager) collectState() *Checkpoint {
 	checkpoint := NewCheckpoint()
 	ctx := context.Background()
 
+	// Check if metaStore is available
+	if cm.storage.metaStore == nil {
+		return checkpoint
+	}
+
 	// Collect stream offsets
 	streamResources, err := cm.storage.metaStore.ListResources("", "", metastore.ResourceStream)
 	if err == nil {

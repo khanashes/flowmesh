@@ -84,9 +84,9 @@ func (s *ReplayService) CreateReplaySession(ctx context.Context, req *flowmeshpb
 	// Convert to proto
 	protoSession := s.sessionToProto(session)
 
-	// Get progress
-	progress, _ := replayMgr.GetReplayProgress(ctx, session.ID)
-	if progress != nil {
+	// Get progress (ignore errors as progress is optional)
+	progress, err := replayMgr.GetReplayProgress(ctx, session.ID)
+	if err == nil && progress != nil {
 		protoSession.Progress = s.progressToProto(progress)
 	}
 
@@ -113,9 +113,9 @@ func (s *ReplayService) GetReplaySession(ctx context.Context, req *flowmeshpb.Ge
 
 	protoSession := s.sessionToProto(session)
 
-	// Get progress
-	progress, _ := replayMgr.GetReplayProgress(ctx, session.ID)
-	if progress != nil {
+	// Get progress (ignore errors as progress is optional)
+	progress, err := replayMgr.GetReplayProgress(ctx, session.ID)
+	if err == nil && progress != nil {
 		protoSession.Progress = s.progressToProto(progress)
 	}
 

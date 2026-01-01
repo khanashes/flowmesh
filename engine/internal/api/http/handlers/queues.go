@@ -16,7 +16,6 @@ import (
 	"github.com/flowmesh/engine/internal/storage"
 	"github.com/flowmesh/engine/internal/storage/log"
 	"github.com/flowmesh/engine/internal/storage/metastore"
-	"github.com/flowmesh/engine/internal/storage/queues"
 	queueerrors "github.com/flowmesh/engine/internal/storage/queues"
 )
 
@@ -868,12 +867,12 @@ func (h *QueueHandlers) SetRetryPolicy(w http.ResponseWriter, r *http.Request) {
 
 	// Convert to storage RetryPolicy
 	queueMgr := h.storage.QueueManager()
-	policy := queues.RetryPolicy{
+	policy := queueerrors.RetryPolicy{
 		MaxAttempts:       req.MaxAttempts,
 		InitialBackoff:    time.Duration(req.InitialBackoffSeconds) * time.Second,
 		MaxBackoff:        time.Duration(req.MaxBackoffSeconds) * time.Second,
 		BackoffMultiplier: req.BackoffMultiplier,
-		BackoffStrategy:   queues.BackoffStrategy(req.BackoffStrategy),
+		BackoffStrategy:   queueerrors.BackoffStrategy(req.BackoffStrategy),
 	}
 
 	// Set retry policy

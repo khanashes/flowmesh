@@ -366,7 +366,7 @@ func (m *Manager) ACK(ctx context.Context, resourcePath string, jobID string) er
 	}
 
 	// Start tracing span
-	ctx, span := StartACKSpan(ctx, resourcePath, jobID)
+	_, span := StartACKSpan(ctx, resourcePath, jobID)
 	defer span.End()
 
 	err := m.RemoveFromInFlight(resourcePath, jobID)
@@ -1227,7 +1227,7 @@ func (m *Manager) longPollForJob(ctx context.Context, resourcePath string, pollT
 // Peek returns a list of messages from the queue without consuming them
 func (m *Manager) Peek(ctx context.Context, resourcePath string, filterStr string, limit int) ([]*log.Message, error) {
 	// Start tracing span
-	ctx, span := StartPeekSpan(ctx, resourcePath)
+	_, span := StartPeekSpan(ctx, resourcePath)
 	defer span.End()
 
 	// Parse filter if present

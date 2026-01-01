@@ -323,7 +323,7 @@ func (m *Manager) ReadWithOptions(ctx context.Context, resourcePath string, part
 	maxMessages := opts.MaxMessages
 
 	// Start tracing span
-	ctx, span := StartReadSpan(ctx, resourcePath, partition, offset, maxMessages)
+	_, span := StartReadSpan(ctx, resourcePath, partition, offset, maxMessages)
 	defer span.End()
 
 	// Parse filter if present

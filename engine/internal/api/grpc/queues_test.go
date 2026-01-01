@@ -9,7 +9,6 @@ import (
 	"github.com/flowmesh/engine/internal/storage"
 	"github.com/flowmesh/engine/internal/storage/log"
 	queueerrors "github.com/flowmesh/engine/internal/storage/queues"
-	queues "github.com/flowmesh/engine/internal/storage/queues"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
@@ -622,12 +621,12 @@ func TestQueueService_SetRetryPolicy(t *testing.T) {
 
 func TestQueueService_GetRetryPolicy(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		expectedPolicy := queues.RetryPolicy{
+		expectedPolicy := queueerrors.RetryPolicy{
 			MaxAttempts:       3,
 			InitialBackoff:    1 * time.Second,
 			MaxBackoff:        60 * time.Second,
 			BackoffMultiplier: 2.0,
-			BackoffStrategy:   queues.BackoffStrategyExponential,
+			BackoffStrategy:   queueerrors.BackoffStrategyExponential,
 		}
 		mockMgr := &mockQueueManager{
 			getRetryPolicyFunc: func(ctx context.Context, resourcePath string) (*queueerrors.RetryPolicy, error) {

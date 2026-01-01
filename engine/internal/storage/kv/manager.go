@@ -172,7 +172,7 @@ func decodeValue(data []byte) (*Value, error) {
 // Set sets a key-value pair in the KV store
 func (m *Manager) Set(ctx context.Context, resourcePath, key string, value []byte, options SetOptions) error {
 	// Start tracing span
-	ctx, span := StartSetSpan(ctx, resourcePath, key)
+	_, span := StartSetSpan(ctx, resourcePath, key)
 	defer span.End()
 
 	if key == "" {
@@ -291,7 +291,7 @@ func (m *Manager) Get(ctx context.Context, resourcePath, key string) ([]byte, er
 // Delete deletes a key from the KV store
 func (m *Manager) Delete(ctx context.Context, resourcePath, key string) error {
 	// Start tracing span
-	ctx, span := StartDeleteSpan(ctx, resourcePath, key)
+	_, span := StartDeleteSpan(ctx, resourcePath, key)
 	defer span.End()
 
 	if key == "" {
@@ -591,7 +591,7 @@ func (m *Manager) recoverKV(ctx context.Context, resourcePath string) error {
 // Scan scans the KV store for keys matching the prefix and optional filter
 func (m *Manager) Scan(ctx context.Context, resourcePath, prefix, filterStr string, limit int) ([]ScanResult, error) {
 	// Start tracing span
-	ctx, span := StartScanSpan(ctx, resourcePath)
+	_, span := StartScanSpan(ctx, resourcePath)
 	defer span.End()
 
 	// Parse filter if present

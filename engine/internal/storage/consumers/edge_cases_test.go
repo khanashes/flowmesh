@@ -69,7 +69,7 @@ func TestCommitOffset_EdgeCases(t *testing.T) {
 
 	t.Run("Commit offset with context cancellation", func(t *testing.T) {
 		// Note: Manager doesn't check context at start, wrapper does
-		// This test verifies the method still works even with cancelled context
+		// This test verifies the method still works even with canceled context
 		// (context is only used for stream validation via MetaStore)
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
@@ -177,7 +177,7 @@ func TestGetCommittedOffset_EdgeCases(t *testing.T) {
 
 	t.Run("Get offset with context cancellation", func(t *testing.T) {
 		// Note: Manager doesn't check context at start, wrapper does
-		// This test verifies the method still works even with cancelled context
+		// This test verifies the method still works even with canceled context
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
 
@@ -290,7 +290,7 @@ func TestGetConsumerGroupState_EdgeCases(t *testing.T) {
 
 	t.Run("State with context cancellation", func(t *testing.T) {
 		// Note: Manager doesn't check context at start, wrapper does
-		// This test verifies the method still works even with cancelled context
+		// This test verifies the method still works even with canceled context
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
 
@@ -331,7 +331,7 @@ func TestListConsumerGroups_EdgeCases(t *testing.T) {
 
 	t.Run("List groups with context cancellation", func(t *testing.T) {
 		// Note: Manager doesn't check context at start, wrapper does
-		// This test verifies the method still works even with cancelled context
+		// This test verifies the method still works even with canceled context
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
 
@@ -405,7 +405,7 @@ func TestDeleteConsumerGroup_EdgeCases(t *testing.T) {
 
 	t.Run("Delete group with context cancellation", func(t *testing.T) {
 		// Note: Manager doesn't check context at start, wrapper does
-		// This test verifies the method still works even with cancelled context
+		// This test verifies the method still works even with canceled context
 		group := "cancel-group"
 		err := manager.CommitOffset(ctx, stream, group, partition, 10)
 		require.NoError(t, err)

@@ -53,7 +53,7 @@ func TestServer_EdgeCases(t *testing.T) {
 		assert.False(t, server.Ready())
 	})
 
-	t.Run("Stop with cancelled context", func(t *testing.T) {
+	t.Run("Stop with canceled context", func(t *testing.T) {
 		storageBackend := &mockStorageBackend{ready: true}
 		server := NewServer(":0", storageBackend)
 

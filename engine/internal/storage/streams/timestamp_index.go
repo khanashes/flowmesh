@@ -75,8 +75,6 @@ func (idx *TimestampIndex) ShouldIndex(offset int64, timestamp time.Time) bool {
 	}
 
 	return false
-
-	return false
 }
 
 // AddEntry adds a timestamp index entry

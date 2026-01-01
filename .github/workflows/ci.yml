@@ -112,6 +112,7 @@ jobs:
         if [ "${{ matrix.goos }}" = "windows" ]; then
           BINARY_NAME=flowmesh.exe
         fi
+        mkdir -p ../bin/${{ matrix.goos }}-${{ matrix.goarch }}
         go build -o ../bin/${{ matrix.goos }}-${{ matrix.goarch }}/$BINARY_NAME \
           -ldflags "-X github.com/flowmesh/engine/internal/version.Version=${{ steps.version.outputs.version }}" \
           ./cmd/flowmesh

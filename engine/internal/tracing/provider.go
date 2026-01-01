@@ -13,6 +13,7 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 
 	"github.com/flowmesh/engine/internal/logger"
 	"github.com/rs/zerolog"
@@ -172,7 +173,7 @@ func NewProvider(config TracingConfig) (*Provider, error) {
 // GetTracer returns a tracer instance for a component
 func (p *Provider) GetTracer(name string) trace.Tracer {
 	if p.tracerProvider == nil {
-		return trace.NewNoopTracerProvider().Tracer(name)
+		return noop.NewTracerProvider().Tracer(name)
 	}
 	return p.tracerProvider.Tracer(name)
 }

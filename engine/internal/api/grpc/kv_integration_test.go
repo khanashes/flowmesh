@@ -137,7 +137,7 @@ func TestKVService_Integration_SetWithTTL(t *testing.T) {
 	time.Sleep(1100 * time.Millisecond)
 
 	// Get after TTL expires - should return not found
-	getResp, err = service.Get(context.Background(), getReq)
+	_, err = service.Get(context.Background(), getReq)
 	assert.Error(t, err)
 	// Error should be NotFound
 }
