@@ -82,10 +82,13 @@ linters:
       - vendor
       - bin
       - dist
-    files:
-      - ".*\\.pb\\.go$"
-      - ".*_gen\\.go$"
     rules:
+    - path: ".*\\.pb\\.go$"
+      linters:
+        - all
+    - path: ".*_gen\\.go$"
+      linters:
+        - all
     - path: _test\.go
       linters:
         - errcheck
