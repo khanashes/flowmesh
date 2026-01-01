@@ -159,6 +159,7 @@ func (h *ReplayHandlers) ListReplaySessions(w http.ResponseWriter, r *http.Reque
 
 	responses := make([]ReplaySessionResponse, len(sessions))
 	for i, session := range sessions {
+		//nolint:errcheck // Progress is optional, ignore errors
 		progress, _ := replayMgr.GetReplayProgress(r.Context(), session.ID)
 		responses[i] = h.sessionToResponse(session, progress)
 	}
@@ -236,6 +237,7 @@ func (h *ReplayHandlers) StartReplay(w http.ResponseWriter, r *http.Request) {
 	// Broadcast replay session update
 	if h.wsHub != nil {
 		if session, err := replayMgr.GetSession(r.Context(), sessionID); err == nil {
+			//nolint:errcheck // Progress is optional, ignore errors
 			progress, _ := replayMgr.GetReplayProgress(r.Context(), sessionID)
 			response := h.sessionToResponse(session, progress)
 			h.wsHub.BroadcastReplaySession(sessionID, response)
@@ -272,6 +274,7 @@ func (h *ReplayHandlers) PauseReplay(w http.ResponseWriter, r *http.Request) {
 	// Broadcast replay session update
 	if h.wsHub != nil {
 		if session, err := replayMgr.GetSession(r.Context(), sessionID); err == nil {
+			//nolint:errcheck // Progress is optional, ignore errors
 			progress, _ := replayMgr.GetReplayProgress(r.Context(), sessionID)
 			response := h.sessionToResponse(session, progress)
 			h.wsHub.BroadcastReplaySession(sessionID, response)
@@ -308,6 +311,7 @@ func (h *ReplayHandlers) ResumeReplay(w http.ResponseWriter, r *http.Request) {
 	// Broadcast replay session update
 	if h.wsHub != nil {
 		if session, err := replayMgr.GetSession(r.Context(), sessionID); err == nil {
+			//nolint:errcheck // Progress is optional, ignore errors
 			progress, _ := replayMgr.GetReplayProgress(r.Context(), sessionID)
 			response := h.sessionToResponse(session, progress)
 			h.wsHub.BroadcastReplaySession(sessionID, response)
@@ -344,6 +348,7 @@ func (h *ReplayHandlers) StopReplay(w http.ResponseWriter, r *http.Request) {
 	// Broadcast replay session update
 	if h.wsHub != nil {
 		if session, err := replayMgr.GetSession(r.Context(), sessionID); err == nil {
+			//nolint:errcheck // Progress is optional, ignore errors
 			progress, _ := replayMgr.GetReplayProgress(r.Context(), sessionID)
 			response := h.sessionToResponse(session, progress)
 			h.wsHub.BroadcastReplaySession(sessionID, response)

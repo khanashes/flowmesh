@@ -84,6 +84,10 @@ linters:
     - whitespace
 
 issues:
+  # Maximum issues count per one linter
+  max-issues-per-linter: 0
+  # Maximum count of issues with the same text
+  max-same-issues: 0
   exclude-rules:
     - path: _test\.go
       linters:
@@ -111,4 +115,12 @@ issues:
         - gocyclo
         - funlen
         - gocognit
+    # Exclude line length warnings for function signatures (common with gRPC)
+    - linters:
+        - lll
+      text: "^func.*\\(.*\\)"
+    # Exclude unused parameter warnings for error mapping functions
+    - linters:
+        - unparam
+      text: "unused.*(resourcePath|schemaID|resource)"
 

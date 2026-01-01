@@ -187,12 +187,15 @@ func (h *QueueHandlers) Enqueue(w http.ResponseWriter, r *http.Request) {
 	// Write response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(EnqueueResponse{
+	if err := json.NewEncoder(w).Encode(EnqueueResponse{
 		Status:  "success",
 		Message: "job enqueued successfully",
 		JobID:   jobID,
 		Seq:     seq,
-	})
+	}); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 
 	// Broadcast queue stats update after enqueueing
 	if h.wsHub != nil {
@@ -274,10 +277,13 @@ func (h *QueueHandlers) Reserve(w http.ResponseWriter, r *http.Request) {
 	if job == nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(ReserveResponse{
+		if err := json.NewEncoder(w).Encode(ReserveResponse{
 			Status:  "success",
 			Message: "no jobs available",
-		})
+		}); err != nil {
+			// Failed to encode response, but we've already written the status code
+			return
+		}
 		return
 	}
 
@@ -308,11 +314,14 @@ func (h *QueueHandlers) Reserve(w http.ResponseWriter, r *http.Request) {
 	// Write response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(ReserveResponse{
+	if err := json.NewEncoder(w).Encode(ReserveResponse{
 		Status:  "success",
 		Message: "job reserved successfully",
 		Job:     protoJob,
-	})
+	}); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 }
 
 // Receive handles POST /api/v1/queues/{tenant}/{namespace}/{name}/receive
