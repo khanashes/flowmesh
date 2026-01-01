@@ -287,11 +287,14 @@ func (h *KVHandlers) Exists(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(ExistsResponse{
+		if err := json.NewEncoder(w).Encode(ExistsResponse{
 			Status:  "success",
 			Message: "key does not exist",
 			Exists:  false,
-		})
+		}); err != nil {
+			// Failed to encode response, but we've already written the status code
+			return
+		}
 	}
 }
 
@@ -330,11 +333,14 @@ func (h *KVHandlers) ListKVStores(w http.ResponseWriter, r *http.Request) {
 	// Write response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(ListKVStoresResponse{
+	if err := json.NewEncoder(w).Encode(ListKVStoresResponse{
 		Status:  "success",
 		Message: "KV stores retrieved successfully",
 		Stores:  stores,
-	})
+	}); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 }
 
 // ListKeys handles GET /api/v1/kv/{tenant}/{namespace}/{name}/keys
@@ -372,11 +378,14 @@ func (h *KVHandlers) ListKeys(w http.ResponseWriter, r *http.Request) {
 	// Write response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(ListKeysResponse{
+	if err := json.NewEncoder(w).Encode(ListKeysResponse{
 		Status:  "success",
 		Message: "keys listed successfully",
 		Keys:    keys,
-	})
+	}); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 }
 
 // Helper methods
