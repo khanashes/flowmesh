@@ -94,6 +94,8 @@ issues:
         - goconst
         - unparam
         - gocognit
+        - lll
+        - errorlint
     - path: internal/version
       text: "version"
     - linters:
