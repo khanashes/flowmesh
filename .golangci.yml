@@ -10,39 +10,38 @@ output:
   print-issued-lines: true
   print-linter-name: true
 
-linters-settings:
-  errcheck:
-    check-type-assertions: true
-    check-blank: true
-  gocyclo:
-    min-complexity: 15
-  dupl:
-    threshold: 100
-  goconst:
-    min-len: 2
-    min-occurrences: 2
-  misspell:
-    locale: US
-  lll:
-    line-length: 120
-  funlen:
-    lines: 100
-    statements: 50
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - experimental
-      - opinionated
-      - performance
-      - style
-    disabled-checks:
-      - dupImport
-      - ifElseChain
-      - octalLiteral
-      - whyNoLint
-      - wrapperFunc
-
 linters:
+  settings:
+    errcheck:
+      check-type-assertions: true
+      check-blank: true
+    gocyclo:
+      min-complexity: 15
+    dupl:
+      threshold: 100
+    goconst:
+      min-len: 2
+      min-occurrences: 2
+    misspell:
+      locale: US
+    lll:
+      line-length: 120
+    funlen:
+      lines: 100
+      statements: 50
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - experimental
+        - opinionated
+        - performance
+        - style
+      disabled-checks:
+        - dupImport
+        - ifElseChain
+        - octalLiteral
+        - whyNoLint
+        - wrapperFunc
   enable:
     - errcheck
     - gosimple
