@@ -138,7 +138,10 @@ func (h *KVHandlers) Set(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(SetResponse{
 		Status:  "success",
 		Message: "key-value pair set successfully",
-	})
+	}); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 
 	// Broadcast KV update
 	if h.wsHub != nil {

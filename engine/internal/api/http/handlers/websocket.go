@@ -155,9 +155,13 @@ func (c *Client) readPump() {
 		c.conn.Close()
 	}()
 
-	c.conn.SetReadDeadline(time.Now().Add(pongWait))
+	if err := c.conn.SetReadDeadline(time.Now().Add(pongWait)); err != nil {
+		c.log.Warn().Err(err).Msg("Failed to set read deadline")
+	}
 	c.conn.SetPongHandler(func(string) error {
-		c.conn.SetReadDeadline(time.Now().Add(pongWait))
+		if err := c.conn.SetReadDeadline(time.Now().Add(pongWait)); err != nil {
+			c.log.Warn().Err(err).Msg("Failed to set read deadline in pong handler")
+		}
 		return nil
 	})
 
