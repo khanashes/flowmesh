@@ -43,7 +43,6 @@ linters-settings:
       - wrapperFunc
 
 linters:
-  disable-all: true
   enable:
     - errcheck
     - gosimple
