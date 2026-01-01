@@ -281,6 +281,7 @@ func (m *Manager) Get(ctx context.Context, resourcePath, key string) ([]byte, er
 	// Check expiration
 	if val.ExpiresAt != nil && time.Now().After(*val.ExpiresAt) {
 		// Key has expired, delete it (ignore delete error since we're already returning an error)
+		//nolint:errcheck // Delete error is intentionally ignored - we're already returning KeyExpiredError
 		_ = m.Delete(ctx, resourcePath, key)
 		return nil, KeyExpiredError{ResourcePath: resourcePath, Key: key}
 	}
