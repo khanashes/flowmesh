@@ -6,7 +6,8 @@ run:
 
 output:
   formats:
-    - colored-line-number
+    colored-line-number:
+      path: stdout
 
 linters:
   settings:
