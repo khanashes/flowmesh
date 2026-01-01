@@ -8,15 +8,6 @@ output:
   print-issued-lines: true
   print-linter-name: true
 
-issues:
-  exclude-dirs:
-    - vendor
-    - bin
-    - dist
-  exclude-files:
-    - ".*\\.pb\\.go$"
-    - ".*_gen\\.go$"
-
 linters-settings:
   errcheck:
     check-type-assertions: true
@@ -87,10 +78,13 @@ linters:
     - whitespace
 
 issues:
-  # Maximum issues count per one linter
-  max-issues-per-linter: 0
-  # Maximum count of issues with the same text
-  max-same-issues: 0
+  exclude-dirs:
+    - vendor
+    - bin
+    - dist
+  exclude-files:
+    - ".*\\.pb\\.go$"
+    - ".*_gen\\.go$"
   exclude-rules:
     - path: _test\.go
       linters:
@@ -126,4 +120,3 @@ issues:
     - linters:
         - unparam
       text: "unused.*(resourcePath|schemaID|resource)"
-
