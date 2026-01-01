@@ -1,18 +1,21 @@
 run:
   timeout: 5m
   tests: true
-  skip-dirs:
+
+output:
+  formats:
+    - format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+
+issues:
+  exclude-dirs:
     - vendor
     - bin
     - dist
-  skip-files:
+  exclude-files:
     - ".*\\.pb\\.go$"
     - ".*_gen\\.go$"
-
-output:
-  format: colored-line-number
-  print-issued-lines: true
-  print-linter-name: true
 
 linters-settings:
   errcheck:
