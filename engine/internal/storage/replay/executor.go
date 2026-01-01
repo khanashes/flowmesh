@@ -111,7 +111,9 @@ func (e *Executor) StartReplay(ctx context.Context, sessionID string) error {
 		now := time.Now()
 		progress.StartedAt = &now
 		progress.PausedAt = nil
-		e.manager.UpdateProgress(ctx, sessionID, progress)
+		if err := e.manager.UpdateProgress(ctx, sessionID, progress); err != nil {
+			e.log.Warn().Err(err).Str("session", sessionID).Msg("Failed to update progress on start")
+		}
 	}
 
 	// Start replay goroutine
@@ -153,7 +155,9 @@ func (e *Executor) PauseReplay(ctx context.Context, sessionID string) error {
 	if progress != nil {
 		now := time.Now()
 		progress.PausedAt = &now
-		e.manager.UpdateProgress(ctx, sessionID, progress)
+		if err := e.manager.UpdateProgress(ctx, sessionID, progress); err != nil {
+			e.log.Warn().Err(err).Str("session", sessionID).Msg("Failed to update progress on pause")
+		}
 	}
 
 	e.log.Info().Str("session", sessionID).Msg("Replay paused")
