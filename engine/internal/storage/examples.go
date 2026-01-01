@@ -17,7 +17,11 @@ func ExampleUsage() {
 	if err != nil {
 		panic(err)
 	}
-	defer storage.Stop(ctx)
+	defer func() {
+		if err := storage.Stop(ctx); err != nil {
+			// Ignore stop errors in example
+		}
+	}()
 
 	// Example 2: Using the factory pattern to create resources
 	factory := NewResourceFactory(storage.MetaStore())

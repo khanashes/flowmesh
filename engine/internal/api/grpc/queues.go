@@ -34,7 +34,10 @@ func NewQueueService(storage storage.StorageBackend) *QueueService {
 }
 
 // Enqueue enqueues a job to a queue and returns job ID and sequence number
-func (s *QueueService) Enqueue(ctx context.Context, req *flowmeshpb.EnqueueRequest) (*flowmeshpb.EnqueueResponse, error) {
+func (s *QueueService) Enqueue(
+	ctx context.Context,
+	req *flowmeshpb.EnqueueRequest,
+) (*flowmeshpb.EnqueueResponse, error) {
 	// Validate request
 	if req.ResourcePath == nil {
 		return nil, status.Error(codes.InvalidArgument, "resource_path is required")
@@ -353,7 +356,10 @@ func (s *QueueService) NACK(ctx context.Context, req *flowmeshpb.NACKRequest) (*
 }
 
 // GetQueueStats retrieves queue statistics
-func (s *QueueService) GetQueueStats(ctx context.Context, req *flowmeshpb.GetQueueStatsRequest) (*flowmeshpb.GetQueueStatsResponse, error) {
+func (s *QueueService) GetQueueStats(
+	ctx context.Context,
+	req *flowmeshpb.GetQueueStatsRequest,
+) (*flowmeshpb.GetQueueStatsResponse, error) {
 	// Validate request
 	if req.ResourcePath == nil {
 		return nil, status.Error(codes.InvalidArgument, "resource_path is required")
@@ -497,7 +503,10 @@ func (s *QueueService) mapQueueError(err error, resourcePath string) error {
 }
 
 // SetRetryPolicy sets the retry policy for a queue
-func (s *QueueService) SetRetryPolicy(ctx context.Context, req *flowmeshpb.SetRetryPolicyRequest) (*flowmeshpb.SetRetryPolicyResponse, error) {
+func (s *QueueService) SetRetryPolicy(
+	ctx context.Context,
+	req *flowmeshpb.SetRetryPolicyRequest,
+) (*flowmeshpb.SetRetryPolicyResponse, error) {
 	// Validate request
 	if req.ResourcePath == nil {
 		return nil, status.Error(codes.InvalidArgument, "resource_path is required")
@@ -543,7 +552,10 @@ func (s *QueueService) SetRetryPolicy(ctx context.Context, req *flowmeshpb.SetRe
 }
 
 // GetRetryPolicy gets the retry policy for a queue
-func (s *QueueService) GetRetryPolicy(ctx context.Context, req *flowmeshpb.GetRetryPolicyRequest) (*flowmeshpb.GetRetryPolicyResponse, error) {
+func (s *QueueService) GetRetryPolicy(
+	ctx context.Context,
+	req *flowmeshpb.GetRetryPolicyRequest,
+) (*flowmeshpb.GetRetryPolicyResponse, error) {
 	// Validate request
 	if req.ResourcePath == nil {
 		return nil, status.Error(codes.InvalidArgument, "resource_path is required")

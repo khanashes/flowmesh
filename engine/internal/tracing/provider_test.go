@@ -30,7 +30,7 @@ func TestRateBasedSampling(t *testing.T) {
 		{
 			name:         "rate 150 should give prob 1.0 (capped)",
 			samplingRate: 150.0,
-			expectedProb: 1.0, // min(150/100, 1.0) = 1.0
+			expectedProb: 1.0,
 		},
 		{
 			name:         "rate 200 should give prob 1.0 (capped)",

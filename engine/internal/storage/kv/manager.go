@@ -280,8 +280,8 @@ func (m *Manager) Get(ctx context.Context, resourcePath, key string) ([]byte, er
 
 	// Check expiration
 	if val.ExpiresAt != nil && time.Now().After(*val.ExpiresAt) {
-		// Key has expired, delete it
-		m.Delete(ctx, resourcePath, key)
+		// Key has expired, delete it (ignore delete error since we're already returning an error)
+		_ = m.Delete(ctx, resourcePath, key)
 		return nil, KeyExpiredError{ResourcePath: resourcePath, Key: key}
 	}
 
@@ -690,7 +690,10 @@ func (m *Manager) Scan(ctx context.Context, resourcePath, prefix, filterStr stri
 		if filterExpr != nil {
 			// Try to unmarshal JSON value
 			var jsonValue interface{}
-			_ = json.Unmarshal(val.Payload, &jsonValue)
+			if err := json.Unmarshal(val.Payload, &jsonValue); err != nil {
+				// If unmarshal fails, skip this key (not valid JSON)
+				continue
+			}
 
 			matchCtx := filter.Context{
 				"key":        userKey,

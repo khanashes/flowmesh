@@ -71,8 +71,10 @@ func (s *Server) Start(ctx context.Context) error {
 
 	// Start HTTP server
 	if err := s.httpServer.Start(ctx); err != nil {
-		// Stop gRPC server if HTTP fails
-		s.grpcServer.Stop(ctx)
+		// Stop gRPC server if HTTP fails (ignore stop error as we're already returning an error)
+		if stopErr := s.grpcServer.Stop(ctx); stopErr != nil {
+			s.log.Warn().Err(stopErr).Msg("Failed to stop gRPC server after HTTP server start failure")
+		}
 		return err
 	}
 

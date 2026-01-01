@@ -210,7 +210,10 @@ func (s *KVService) Exists(ctx context.Context, req *flowmeshpb.ExistsRequest) (
 }
 
 // ListKeys lists all keys, optionally filtered by prefix
-func (s *KVService) ListKeys(ctx context.Context, req *flowmeshpb.ListKeysRequest) (*flowmeshpb.ListKeysResponse, error) {
+func (s *KVService) ListKeys(
+	ctx context.Context,
+	req *flowmeshpb.ListKeysRequest,
+) (*flowmeshpb.ListKeysResponse, error) {
 	// Validate request
 	if req.ResourcePath == nil {
 		return nil, status.Error(codes.InvalidArgument, "resource_path is required")

@@ -185,7 +185,9 @@ func (e *Executor) ResumeReplay(ctx context.Context, sessionID string) error {
 	progress, _ := e.manager.GetReplayProgress(ctx, sessionID)
 	if progress != nil {
 		progress.PausedAt = nil
-		e.manager.UpdateProgress(ctx, sessionID, progress)
+		if err := e.manager.UpdateProgress(ctx, sessionID, progress); err != nil {
+			e.log.Warn().Err(err).Str("session", sessionID).Msg("Failed to update progress on resume")
+		}
 	}
 
 	e.log.Info().Str("session", sessionID).Msg("Replay resumed")
@@ -238,7 +240,9 @@ func (e *Executor) runReplay(ar *activeReplay, session *Session) {
 		offset, err := e.streamReader.FindOffsetByTimestamp(ar.ctx, session.Stream, session.Partition, *session.StartTime)
 		if err != nil {
 			e.log.Error().Err(err).Str("session", ar.sessionID).Msg("Failed to find offset by timestamp")
-			e.manager.UpdateSessionStatus(ar.ctx, ar.sessionID, SessionStatusError)
+			if updateErr := e.manager.UpdateSessionStatus(ar.ctx, ar.sessionID, SessionStatusError); updateErr != nil {
+				e.log.Warn().Err(updateErr).Str("session", ar.sessionID).Msg("Failed to update session status to error")
+			}
 			return
 		}
 		startOffset = offset
@@ -253,7 +257,9 @@ func (e *Executor) runReplay(ar *activeReplay, session *Session) {
 		offset, err := e.streamReader.FindOffsetByTimestamp(ar.ctx, session.Stream, session.Partition, *session.EndTime)
 		if err != nil {
 			e.log.Error().Err(err).Str("session", ar.sessionID).Msg("Failed to find end offset by timestamp")
-			e.manager.UpdateSessionStatus(ar.ctx, ar.sessionID, SessionStatusError)
+			if updateErr := e.manager.UpdateSessionStatus(ar.ctx, ar.sessionID, SessionStatusError); updateErr != nil {
+				e.log.Warn().Err(updateErr).Str("session", ar.sessionID).Msg("Failed to update session status to error")
+			}
 			return
 		}
 		endOffset = offset
@@ -290,7 +296,9 @@ func (e *Executor) runReplay(ar *activeReplay, session *Session) {
 			// Check if we've reached the end
 			if endOffset >= 0 && currentOffset > endOffset {
 				// Replay completed
-				e.manager.UpdateSessionStatus(ar.ctx, ar.sessionID, SessionStatusCompleted)
+				if err := e.manager.UpdateSessionStatus(ar.ctx, ar.sessionID, SessionStatusCompleted); err != nil {
+					e.log.Warn().Err(err).Str("session", ar.sessionID).Msg("Failed to update session status to completed")
+				}
 				now := time.Now()
 				progress.CompletedAt = &now
 				e.manager.UpdateProgress(ar.ctx, ar.sessionID, progress)
