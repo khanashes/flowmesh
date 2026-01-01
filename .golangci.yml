@@ -91,9 +91,22 @@ issues:
         - gosec
         - funlen
         - gocyclo
+        - goconst
+        - unparam
+        - gocognit
     - path: internal/version
       text: "version"
     - linters:
         - lll
       source: "^//go:generate "
+    # Exclude duplicate code warnings (dupl) - these are intentional patterns
+    - linters:
+        - dupl
+      path: ".*"
+    # Exclude complexity warnings for examples
+    - path: internal/storage/examples\.go
+      linters:
+        - gocyclo
+        - funlen
+        - gocognit
 

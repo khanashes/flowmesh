@@ -36,7 +36,10 @@ func HealthCheck(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 }
 
 // ReadinessCheck returns a handler that checks if the storage is ready
@@ -64,6 +67,9 @@ func ReadinessCheck(storage storage.StorageBackend) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(statusCode)
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			// Failed to encode response, but we've already written the status code
+			return
+		}
 	}
 }

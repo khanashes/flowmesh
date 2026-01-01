@@ -135,7 +135,7 @@ func (h *KVHandlers) Set(w http.ResponseWriter, r *http.Request) {
 	// Write response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(SetResponse{
+	if err := json.NewEncoder(w).Encode(SetResponse{
 		Status:  "success",
 		Message: "key-value pair set successfully",
 	})

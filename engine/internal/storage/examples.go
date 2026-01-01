@@ -18,9 +18,8 @@ func ExampleUsage() {
 		panic(err)
 	}
 	defer func() {
-		if err := storage.Stop(ctx); err != nil {
-			// Ignore stop errors in example
-		}
+		//nolint:errcheck // Ignore stop errors in example code
+		_ = storage.Stop(ctx)
 	}()
 
 	// Example 2: Using the factory pattern to create resources

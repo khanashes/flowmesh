@@ -44,7 +44,12 @@ func (h *JobMinHeap) Swap(i, j int) {
 // Push adds a job to the heap (implements heap.Interface)
 // Note: heap.Interface methods should NOT lock - they're called by heap package
 func (h *JobMinHeap) Push(x interface{}) {
-	h.jobs = append(h.jobs, x.(*JobMetadata))
+	job, ok := x.(*JobMetadata)
+	if !ok {
+		// This should never happen if used correctly
+		panic("JobMinHeap.Push: invalid type")
+	}
+	h.jobs = append(h.jobs, job)
 }
 
 // Pop removes and returns the job with the earliest VisibleAt (implements heap.Interface)
@@ -74,7 +79,12 @@ func (h *JobMinHeap) PopJob() *JobMetadata {
 	if len(h.jobs) == 0 {
 		return nil
 	}
-	return heap.Pop(h).(*JobMetadata)
+	job, ok := heap.Pop(h).(*JobMetadata)
+	if !ok {
+		// This should never happen if used correctly
+		return nil
+	}
+	return job
 }
 
 // Peek returns the job with the earliest VisibleAt without removing it
