@@ -4,11 +4,6 @@ run:
   timeout: 5m
   tests: true
 
-output:
-  formats:
-    tab:
-      path: stdout
-
 linters:
   settings:
     errcheck:
