@@ -94,10 +94,13 @@ func (h *SchemaHandlers) RegisterSchema(w http.ResponseWriter, r *http.Request) 
 	// Write response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(RegisterSchemaResponse{
+	if err := json.NewEncoder(w).Encode(RegisterSchemaResponse{
 		Status:  "success",
 		Message: "schema registered successfully",
-	})
+	}); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 }
 
 // GetSchema handles GET /api/v1/schemas/{schema_id}/v{version}
@@ -136,7 +139,7 @@ func (h *SchemaHandlers) GetSchema(w http.ResponseWriter, r *http.Request) {
 	// Write response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	if err := json.NewEncoder(w).Encode(map[string]interface{}{
 		"status": "success",
 		"schema": map[string]interface{}{
 			"id":         schemaDef.ID,
@@ -145,7 +148,10 @@ func (h *SchemaHandlers) GetSchema(w http.ResponseWriter, r *http.Request) {
 			"definition": string(schemaDef.Definition),
 			"created_at": schemaDef.CreatedAt.UnixNano(),
 		},
-	})
+	}); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 }
 
 // ListSchemas handles GET /api/v1/schemas
@@ -187,10 +193,13 @@ func (h *SchemaHandlers) ListSchemas(w http.ResponseWriter, r *http.Request) {
 	// Write response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	if err := json.NewEncoder(w).Encode(map[string]interface{}{
 		"status":  "success",
 		"schemas": schemaList,
-	})
+	}); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 }
 
 // DeleteSchema handles DELETE /api/v1/schemas/{schema_id}/v{version}
@@ -224,10 +233,13 @@ func (h *SchemaHandlers) DeleteSchema(w http.ResponseWriter, r *http.Request) {
 	// Write response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	if err := json.NewEncoder(w).Encode(map[string]interface{}{
 		"status":  "success",
 		"message": "schema deleted successfully",
-	})
+	}); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 }
 
 // SetResourceSchema handles PUT /api/v1/{resource_type}/{tenant}/{namespace}/{name}/schema
@@ -314,10 +326,13 @@ func (h *SchemaHandlers) SetResourceSchema(w http.ResponseWriter, r *http.Reques
 	// Write response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	if err := json.NewEncoder(w).Encode(map[string]interface{}{
 		"status":  "success",
 		"message": "schema attached to resource successfully",
-	})
+	}); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 }
 
 // Helper functions
