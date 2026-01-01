@@ -43,8 +43,6 @@ linters:
     - ineffassign
     - staticcheck
     - unused
-    - gofmt
-    - goimports
     - gocyclo
     - misspell
     - unparam
@@ -67,7 +65,6 @@ linters:
     - rowserrcheck
     - sqlclosecheck
     - stylecheck
-    - typecheck
     - unconvert
     - whitespace
   exclusions:
