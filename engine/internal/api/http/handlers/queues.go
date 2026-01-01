@@ -436,11 +436,14 @@ func (h *QueueHandlers) Receive(w http.ResponseWriter, r *http.Request) {
 	// Write response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(ReceiveResponse{
+	if err := json.NewEncoder(w).Encode(ReceiveResponse{
 		Status:  "success",
 		Message: "jobs received successfully",
 		Jobs:    jobs,
-	})
+	}); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 }
 
 // CommitOffset handles POST /api/v1/queues/{tenant}/{namespace}/{name}/jobs/{job_id}/ack
@@ -475,10 +478,13 @@ func (h *QueueHandlers) ACK(w http.ResponseWriter, r *http.Request) {
 	// Write response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(ACKResponse{
+	if err := json.NewEncoder(w).Encode(ACKResponse{
 		Status:  "success",
 		Message: "job acknowledged successfully",
-	})
+	}); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 
 	// Broadcast queue stats update after ACK
 	if h.wsHub != nil {
@@ -546,10 +552,13 @@ func (h *QueueHandlers) NACK(w http.ResponseWriter, r *http.Request) {
 	// Write response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(NACKResponse{
+	if err := json.NewEncoder(w).Encode(NACKResponse{
 		Status:  "success",
 		Message: "job NACKed successfully",
-	})
+	}); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 
 	// Broadcast queue stats update after NACK
 	if h.wsHub != nil {
@@ -608,11 +617,14 @@ func (h *QueueHandlers) GetQueueStats(w http.ResponseWriter, r *http.Request) {
 	// Write response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(QueueStatsResponse{
+	if err := json.NewEncoder(w).Encode(QueueStatsResponse{
 		Status:  "success",
 		Message: "queue statistics retrieved successfully",
 		Stats:   statsResponse,
-	})
+	}); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 
 	// Broadcast stats update via WebSocket
 	if h.wsHub != nil {
@@ -648,11 +660,14 @@ func (h *QueueHandlers) ListQueues(w http.ResponseWriter, r *http.Request) {
 	// Write response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(ListQueuesResponse{
+	if err := json.NewEncoder(w).Encode(ListQueuesResponse{
 		Status:  "success",
 		Message: "queues retrieved successfully",
 		Queues:  queues,
-	})
+	}); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 }
 
 // Helper methods
@@ -894,10 +909,13 @@ func (h *QueueHandlers) SetRetryPolicy(w http.ResponseWriter, r *http.Request) {
 	// Return success response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(SetRetryPolicyResponse{
+	if err := json.NewEncoder(w).Encode(SetRetryPolicyResponse{
 		Status:  "ok",
 		Message: "retry policy set successfully",
-	})
+	}); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 }
 
 // GetRetryPolicy handles GET /api/v1/queues/{tenant}/{namespace}/{name}/retry-policy
@@ -945,7 +963,10 @@ func (h *QueueHandlers) GetRetryPolicy(w http.ResponseWriter, r *http.Request) {
 	// Return response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(resp)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 }
 
 // ListDLQJobs handles GET /api/v1/queues/{tenant}/{namespace}/{name}/dlq/jobs
@@ -1016,10 +1037,13 @@ func (h *QueueHandlers) ListDLQJobs(w http.ResponseWriter, r *http.Request) {
 	// Return response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(ListDLQJobsResponse{
+	if err := json.NewEncoder(w).Encode(ListDLQJobsResponse{
 		Status: "ok",
 		Jobs:   jobs,
-	})
+	}); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 }
 
 // ReplayDLQJob handles POST /api/v1/queues/{tenant}/{namespace}/{name}/dlq/jobs/{job_id}/replay
@@ -1083,10 +1107,13 @@ func (h *QueueHandlers) ReplayDLQJob(w http.ResponseWriter, r *http.Request) {
 	// Return response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(ReplayDLQJobResponse{
+	if err := json.NewEncoder(w).Encode(ReplayDLQJobResponse{
 		Status:  "ok",
 		Message: "job replayed successfully",
 		JobID:   newJobID,
 		Seq:     seq,
-	})
+	}); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 }

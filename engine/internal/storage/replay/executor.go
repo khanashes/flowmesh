@@ -276,7 +276,8 @@ func (e *Executor) runReplay(ar *activeReplay, session *Session) {
 	batchSize := 100
 	paused := false
 
-	// Get initial progress
+	// Get initial progress (ignore errors as progress is optional)
+	//nolint:errcheck // Progress is optional, ignore errors
 	progress, _ := e.manager.GetReplayProgress(ar.ctx, ar.sessionID)
 	if progress == nil {
 		progress = &Progress{CurrentOffset: startOffset}

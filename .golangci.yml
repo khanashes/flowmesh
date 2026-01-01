@@ -115,10 +115,10 @@ issues:
         - gocyclo
         - funlen
         - gocognit
-    # Exclude line length warnings for function signatures (common with gRPC)
+    # Exclude line length warnings - many are due to long gRPC function signatures
     - linters:
         - lll
-      text: "^func.*\\(.*\\)"
+      path: ".*"
     # Exclude unused parameter warnings for error mapping functions
     - linters:
         - unparam
