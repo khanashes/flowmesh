@@ -3,13 +3,6 @@ version: "2"
 run:
   timeout: 5m
   tests: true
-  skip-dirs:
-    - vendor
-    - bin
-    - dist
-  skip-files:
-    - ".*\\.pb\\.go$"
-    - ".*_gen\\.go$"
 
 output:
   formats:
@@ -85,6 +78,13 @@ linters:
     - unconvert
     - whitespace
   exclusions:
+    paths:
+      - vendor
+      - bin
+      - dist
+    files:
+      - ".*\\.pb\\.go$"
+      - ".*_gen\\.go$"
     rules:
     - path: _test\.go
       linters:
