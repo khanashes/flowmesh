@@ -105,7 +105,7 @@ func (e *Executor) StartReplay(ctx context.Context, sessionID string) error {
 		return err
 	}
 
-	// Update progress
+	// Update progress (ignore errors as progress is optional)
 	progress, _ := e.manager.GetReplayProgress(ctx, sessionID)
 	if progress != nil {
 		now := time.Now()
@@ -150,7 +150,7 @@ func (e *Executor) PauseReplay(ctx context.Context, sessionID string) error {
 	default:
 	}
 
-	// Update progress
+	// Update progress (ignore errors as progress is optional)
 	progress, _ := e.manager.GetReplayProgress(ctx, sessionID)
 	if progress != nil {
 		now := time.Now()
@@ -185,7 +185,7 @@ func (e *Executor) ResumeReplay(ctx context.Context, sessionID string) error {
 	default:
 	}
 
-	// Update progress
+	// Update progress (ignore errors as progress is optional)
 	progress, _ := e.manager.GetReplayProgress(ctx, sessionID)
 	if progress != nil {
 		progress.PausedAt = nil
@@ -305,7 +305,9 @@ func (e *Executor) runReplay(ar *activeReplay, session *Session) {
 				}
 				now := time.Now()
 				progress.CompletedAt = &now
-				e.manager.UpdateProgress(ar.ctx, ar.sessionID, progress)
+				if err := e.manager.UpdateProgress(ar.ctx, ar.sessionID, progress); err != nil {
+					e.log.Warn().Err(err).Str("session", ar.sessionID).Msg("Failed to update progress")
+				}
 				e.mu.Lock()
 				delete(e.activeReplays, ar.sessionID)
 				e.mu.Unlock()
@@ -317,7 +319,9 @@ func (e *Executor) runReplay(ar *activeReplay, session *Session) {
 			if err != nil {
 				e.log.Error().Err(err).Str("session", ar.sessionID).Int64("offset", currentOffset).Msg("Failed to read messages")
 				progress.Errors++
-				e.manager.UpdateProgress(ar.ctx, ar.sessionID, progress)
+				if updateErr := e.manager.UpdateProgress(ar.ctx, ar.sessionID, progress); updateErr != nil {
+					e.log.Warn().Err(updateErr).Str("session", ar.sessionID).Msg("Failed to update progress after error")
+				}
 				continue
 			}
 
@@ -326,10 +330,14 @@ func (e *Executor) runReplay(ar *activeReplay, session *Session) {
 				// This might mean we're waiting for more messages or reached the end
 				if endOffset >= 0 && currentOffset >= endOffset {
 					// Replay completed
-					e.manager.UpdateSessionStatus(ar.ctx, ar.sessionID, SessionStatusCompleted)
+					if err := e.manager.UpdateSessionStatus(ar.ctx, ar.sessionID, SessionStatusCompleted); err != nil {
+						e.log.Warn().Err(err).Str("session", ar.sessionID).Msg("Failed to update session status to completed")
+					}
 					now := time.Now()
 					progress.CompletedAt = &now
-					e.manager.UpdateProgress(ar.ctx, ar.sessionID, progress)
+					if err := e.manager.UpdateProgress(ar.ctx, ar.sessionID, progress); err != nil {
+						e.log.Warn().Err(err).Str("session", ar.sessionID).Msg("Failed to update progress")
+					}
 					e.mu.Lock()
 					delete(e.activeReplays, ar.sessionID)
 					e.mu.Unlock()

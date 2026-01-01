@@ -132,6 +132,7 @@ func (h *ReplayHandlers) CreateReplaySession(w http.ResponseWriter, r *http.Requ
 	}
 
 	// Get progress (ignore errors as progress is optional)
+	//nolint:errcheck // Progress is optional, ignore errors
 	progress, _ := replayMgr.GetReplayProgress(r.Context(), session.ID)
 
 	// Write response

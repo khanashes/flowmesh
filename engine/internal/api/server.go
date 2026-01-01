@@ -38,8 +38,10 @@ func NewServer(cfg Config, storage storage.StorageBackend) *Server {
 	}
 
 	// Create default token for development/testing
-	if _, err := s.tokenStore.(*auth.InMemoryTokenStore).AddDefaultToken(); err != nil {
-		s.log.Warn().Err(err).Msg("Failed to create default token")
+	if inMemStore, ok := s.tokenStore.(*auth.InMemoryTokenStore); ok {
+		if _, err := inMemStore.AddDefaultToken(); err != nil {
+			s.log.Warn().Err(err).Msg("Failed to create default token")
+		}
 	}
 
 	s.grpcServer = grpcapi.NewServer(cfg.GRPCAddr, storage, s.tokenStore)

@@ -184,11 +184,14 @@ func (h *KVHandlers) Get(w http.ResponseWriter, r *http.Request) {
 	// Write response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(GetResponse{
+	if err := json.NewEncoder(w).Encode(GetResponse{
 		Status:  "success",
 		Message: "value retrieved successfully",
 		Value:   value,
-	})
+	}); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 }
 
 // Delete handles DELETE /api/v1/kv/{tenant}/{namespace}/{name}/keys/{key}
@@ -223,10 +226,13 @@ func (h *KVHandlers) Delete(w http.ResponseWriter, r *http.Request) {
 	// Write response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(DeleteResponse{
+	if err := json.NewEncoder(w).Encode(DeleteResponse{
 		Status:  "success",
 		Message: "key deleted successfully",
-	})
+	}); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 
 	// Broadcast KV update
 	if h.wsHub != nil {
@@ -270,11 +276,14 @@ func (h *KVHandlers) Exists(w http.ResponseWriter, r *http.Request) {
 	if exists {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(ExistsResponse{
+		if err := json.NewEncoder(w).Encode(ExistsResponse{
 			Status:  "success",
 			Message: "key exists",
 			Exists:  true,
-		})
+		}); err != nil {
+			// Failed to encode response, but we've already written the status code
+			return
+		}
 	} else {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
