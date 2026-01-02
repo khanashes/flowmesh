@@ -181,7 +181,8 @@ func (idx *TimestampIndex) Save(path string) error {
 	}
 
 	if err := os.Rename(tmpFile, path); err != nil {
-		os.Remove(tmpFile)
+		//nolint:errcheck // Ignore remove error
+		_ = os.Remove(tmpFile)
 		return fmt.Errorf("failed to rename timestamp index file: %w", err)
 	}
 
