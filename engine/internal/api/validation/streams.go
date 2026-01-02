@@ -81,9 +81,9 @@ func ValidateConsumerGroupName(group string) error {
 		if (char < 'a' || char > 'z') &&
 			(char < 'A' || char > 'Z') &&
 			(char < '0' || char > '9') &&
-			char == '-' ||
-			char == '_' ||
-			char == '.') {
+			char != '-' &&
+			char != '_' &&
+			char != '.' {
 			return fmt.Errorf("consumer_group name contains invalid character: %c (allowed: alphanumeric, dash, underscore, dot)", char)
 		}
 	}

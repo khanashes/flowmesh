@@ -75,7 +75,7 @@ func (w *streamManagerWrapper) Start(ctx context.Context) error {
 
 // Stop implements Lifecycle interface
 func (w *streamManagerWrapper) Stop(ctx context.Context) error {
-	return w.Manager.SaveIndexes()
+	return w.SaveIndexes()
 }
 
 // Ready implements Lifecycle interface
