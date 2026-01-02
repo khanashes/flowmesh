@@ -431,7 +431,7 @@ func (m *Manager) ReadWithOptions(ctx context.Context, resourcePath string, part
 			}
 		}
 
-		reader.Close()
+		_ = reader.Close() // Ignore close error
 	}
 
 	// Record metrics
