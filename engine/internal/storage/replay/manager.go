@@ -446,7 +446,7 @@ func (m *Manager) flush() error {
 	}
 
 	if err := os.Rename(tmpFile, m.filePath); err != nil {
-		os.Remove(tmpFile)
+		_ = os.Remove(tmpFile) // Ignore remove error
 		return fmt.Errorf("failed to rename replay sessions file: %w", err)
 	}
 

@@ -545,7 +545,11 @@ func (m *Manager) recoverLatestOffset(resourcePath string, partition int32) (int
 	if err != nil {
 		return -1, err
 	}
-	defer reader.Close()
+	defer func() {
+		if err := reader.Close(); err != nil {
+			// Ignore close errors in defer
+		}
+	}()
 
 	var lastOffset int64 = -1
 	for {
