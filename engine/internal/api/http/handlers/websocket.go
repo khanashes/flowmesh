@@ -152,9 +152,7 @@ func (h *Hub) messageToBytes(msg *WSMessage) []byte {
 func (c *Client) readPump() {
 	defer func() {
 		c.hub.unregister <- c
-		if err := c.conn.Close(); err != nil {
-			// Ignore close errors in defer
-		}
+		_ = c.conn.Close() // Ignore close errors in defer
 	}()
 
 	if err := c.conn.SetReadDeadline(time.Now().Add(pongWait)); err != nil {

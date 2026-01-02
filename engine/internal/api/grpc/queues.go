@@ -442,9 +442,7 @@ func (s *QueueService) readJobMessageFromLog(ctx context.Context, filePath strin
 		return nil, nil, fmt.Errorf("failed to open segment: %w", err)
 	}
 	defer func() {
-		if err := reader.Close(); err != nil {
-			// Ignore close errors in defer
-		}
+		_ = reader.Close() // Ignore close errors in defer
 	}()
 
 	// Read entries until we find the one at the correct offset

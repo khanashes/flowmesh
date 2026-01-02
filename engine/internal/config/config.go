@@ -209,6 +209,7 @@ func (c *Config) Validate() error {
 // Currently supports basic key=value format
 // Future: add YAML/TOML support
 func loadFromFile(path string) error {
+	//nolint:gosec // Acceptable: path comes from config, not user input
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return err

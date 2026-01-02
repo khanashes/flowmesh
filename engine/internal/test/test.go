@@ -45,10 +45,13 @@ func CleanupDir(dir string) error {
 func CreateTestDataDir(t *testing.T, baseDir string) string {
 	t.Helper()
 	dataDir := filepath.Join(baseDir, "data")
+	//nolint:gosec // Acceptable: test directory permissions
 	err := os.MkdirAll(filepath.Join(dataDir, "streams"), 0755)
 	require.NoError(t, err)
+	//nolint:gosec // Acceptable: test directory permissions
 	err = os.MkdirAll(filepath.Join(dataDir, "queues"), 0755)
 	require.NoError(t, err)
+	//nolint:gosec // Acceptable: test directory permissions
 	err = os.MkdirAll(filepath.Join(dataDir, "kv"), 0755)
 	require.NoError(t, err)
 	err = os.MkdirAll(filepath.Join(dataDir, "metadata"), 0755)

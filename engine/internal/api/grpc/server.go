@@ -65,7 +65,8 @@ func (s *Server) Start(ctx context.Context) error {
 		return nil
 	}
 
-	listener, err := net.Listen("tcp", s.addr)
+	lc := net.ListenConfig{}
+	listener, err := lc.Listen(context.Background(), "tcp", s.addr)
 	if err != nil {
 		return err
 	}

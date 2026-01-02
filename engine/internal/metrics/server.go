@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/flowmesh/engine/internal/logger"
 	"github.com/prometheus/client_golang/prometheus"
@@ -49,8 +50,9 @@ func (s *Server) Start(ctx context.Context) error {
 	}
 
 	s.httpServer = &http.Server{
-		Addr:    s.addr,
-		Handler: mux,
+		Addr:              s.addr,
+		Handler:           mux,
+		ReadHeaderTimeout: 10 * time.Second,
 	}
 
 	s.log.Info().Str("addr", s.addr).Msg("Starting metrics server")

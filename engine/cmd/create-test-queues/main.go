@@ -28,9 +28,7 @@ func main() {
 		os.Exit(1)
 	}
 	defer func() {
-		if err := storageBackend.Close(ctx); err != nil {
-			// Ignore close errors in defer
-		}
+		_ = storageBackend.Close(ctx) // Ignore close errors in defer
 	}()
 
 	// Create test queues

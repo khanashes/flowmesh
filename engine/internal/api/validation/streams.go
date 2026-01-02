@@ -78,9 +78,9 @@ func ValidateConsumerGroupName(group string) error {
 
 	// Check for invalid characters
 	for _, char := range group {
-		if !((char >= 'a' && char <= 'z') ||
-			(char >= 'A' && char <= 'Z') ||
-			(char >= '0' && char <= '9') ||
+		if (char < 'a' || char > 'z') &&
+			(char < 'A' || char > 'Z') &&
+			(char < '0' || char > '9') &&
 			char == '-' ||
 			char == '_' ||
 			char == '.') {

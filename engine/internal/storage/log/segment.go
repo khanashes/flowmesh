@@ -90,6 +90,7 @@ func (sw *SegmentWriter) WriteEntry(data []byte) error {
 	if len(data) > math.MaxUint32 {
 		return fmt.Errorf("entry too large: %d bytes exceeds maximum %d", len(data), math.MaxUint32) //nolint:goerr113
 	}
+	//nolint:gosec // Safe: we checked len(data) <= math.MaxUint32 above
 	length := uint32(len(data))
 	if err := binary.Write(sw.file, binary.BigEndian, length); err != nil {
 		return err
@@ -150,6 +151,7 @@ type SegmentReader struct {
 
 // NewSegmentReader creates a new segment reader
 func NewSegmentReader(path string) (*SegmentReader, error) {
+	//nolint:gosec // Acceptable: path is validated and comes from internal storage
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err

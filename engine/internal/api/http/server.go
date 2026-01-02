@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/flowmesh/engine/internal/logger"
 	"github.com/flowmesh/engine/internal/storage"
@@ -32,8 +33,9 @@ func NewServer(addr string, storage storage.StorageBackend) *Server {
 	s.router = NewRouter(storage)
 
 	s.httpServer = &http.Server{
-		Addr:    addr,
-		Handler: s.router.mux,
+		Addr:              addr,
+		Handler:           s.router.mux,
+		ReadHeaderTimeout: 10 * time.Second,
 	}
 
 	return s
