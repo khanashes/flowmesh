@@ -369,7 +369,8 @@ func (m *Manager) flush() error {
 	}
 
 	if err := os.Rename(tmpFile, m.filePath); err != nil {
-		_ = os.Remove(tmpFile) // Ignore remove error
+		//nolint:errcheck // Ignore remove error
+		_ = os.Remove(tmpFile)
 		return fmt.Errorf("failed to rename consumer offsets file: %w", err)
 	}
 

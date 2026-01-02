@@ -1574,7 +1574,10 @@ func (m *Manager) GetJobPayload(ctx context.Context, resourcePath string, jobID 
 	if err != nil {
 		return nil, fmt.Errorf("failed to open segment: %w", err)
 	}
-	defer reader.Close()
+	defer func() {
+		//nolint:errcheck // Ignore close errors in defer
+		_ = reader.Close()
+	}()
 
 	// Seek to the offset
 	// Note: We need to read entries until we find the one at the correct offset
@@ -1727,7 +1730,10 @@ func (m *Manager) recoverLastSeq(resourcePath string, partition int32) (int64, e
 	if err != nil {
 		return -1, err
 	}
-	defer reader.Close()
+	defer func() {
+		//nolint:errcheck // Ignore close errors in defer
+		_ = reader.Close()
+	}()
 
 	var lastSeq int64 = -1
 	for {
@@ -1812,7 +1818,8 @@ func (m *Manager) rebuildReadyHeap(resourcePath string, partition int32, state *
 			}
 		}
 
-		reader.Close()
+		//nolint:errcheck // Ignore close error
+		_ = reader.Close()
 	}
 
 	return nil

@@ -71,7 +71,8 @@ func (c *Checkpoint) Save(path string) error {
 
 	// Atomic rename
 	if err := os.Rename(tmpPath, path); err != nil {
-		os.Remove(tmpPath) // Clean up temp file
+		//nolint:errcheck // Clean up temp file, ignore remove error
+		_ = os.Remove(tmpPath)
 		return fmt.Errorf("failed to rename checkpoint file: %w", err)
 	}
 
