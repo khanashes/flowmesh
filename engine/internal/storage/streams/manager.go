@@ -382,14 +382,14 @@ func (m *Manager) ReadWithOptions(ctx context.Context, resourcePath string, part
 				if errors.Is(readErr, io.EOF) {
 					break // End of segment
 				}
-				reader.Close()
+				_ = reader.Close() // Ignore close error
 				return nil, ReadError{ResourcePath: resourcePath, Offset: offset, Err: readErr}
 			}
 
 			// Decode message
 			msg, decodeErr := log.DecodeMessage(data)
 			if decodeErr != nil {
-				reader.Close()
+				_ = reader.Close() // Ignore close error
 				return nil, ReadError{ResourcePath: resourcePath, Offset: offset, Err: fmt.Errorf("failed to decode message: %w", decodeErr)}
 			}
 

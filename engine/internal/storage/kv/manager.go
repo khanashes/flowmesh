@@ -552,7 +552,11 @@ func (m *Manager) recoverKV(ctx context.Context, resourcePath string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create iterator: %w", err)
 	}
-	defer iter.Close()
+	defer func() {
+		if err := iter.Close(); err != nil {
+			// Ignore close errors in defer
+		}
+	}()
 
 	keysCount := 0
 	expiredCount := 0
