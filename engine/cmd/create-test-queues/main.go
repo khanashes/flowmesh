@@ -27,7 +27,11 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Failed to build storage: %v\n", err)
 		os.Exit(1)
 	}
-	defer storageBackend.Close(ctx)
+	defer func() {
+		if err := storageBackend.Close(ctx); err != nil {
+			// Ignore close errors in defer
+		}
+	}()
 
 	// Create test queues
 	queues := []struct {

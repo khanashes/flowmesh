@@ -153,7 +153,11 @@ func ExampleConsumerGroups() {
 	if err != nil {
 		panic(err)
 	}
-	defer storage.Close(ctx)
+	defer func() {
+		if err := storage.Close(ctx); err != nil {
+			// Ignore close errors in defer
+		}
+	}()
 
 	if err := storage.Start(ctx); err != nil {
 		panic(err)

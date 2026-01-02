@@ -266,7 +266,11 @@ func (m *Manager) Get(ctx context.Context, resourcePath, key string) ([]byte, er
 		span.RecordError(err)
 		return nil, fmt.Errorf("failed to get key: %w", err)
 	}
-	defer closer.Close()
+	defer func() {
+		if err := closer.Close(); err != nil {
+			// Ignore close errors in defer
+		}
+	}()
 
 	// Copy value bytes (closer will free the original)
 	valueCopy := make([]byte, len(valueBytes))
@@ -362,7 +366,7 @@ func (m *Manager) Exists(ctx context.Context, resourcePath, key string) (bool, e
 		}
 		return false, fmt.Errorf("failed to check key existence: %w", err)
 	}
-	closer.Close()
+	_ = closer.Close() // Ignore close error
 
 	return true, nil
 }
@@ -409,7 +413,11 @@ func (m *Manager) ListKeys(ctx context.Context, resourcePath, prefix string) ([]
 	if err != nil {
 		return nil, fmt.Errorf("failed to create iterator: %w", err)
 	}
-	defer iter.Close()
+	defer func() {
+		if err := iter.Close(); err != nil {
+			// Ignore close errors in defer
+		}
+	}()
 
 	for iter.First(); iter.Valid(); iter.Next() {
 		encodedKey := iter.Key()
@@ -654,7 +662,11 @@ func (m *Manager) Scan(ctx context.Context, resourcePath, prefix, filterStr stri
 	if err != nil {
 		return nil, fmt.Errorf("failed to create iterator: %w", err)
 	}
-	defer iter.Close()
+	defer func() {
+		if err := iter.Close(); err != nil {
+			// Ignore close errors in defer
+		}
+	}()
 
 	for iter.First(); iter.Valid(); iter.Next() {
 		if len(results) >= limit {

@@ -117,7 +117,10 @@ func (h *StreamHandlers) WriteEvents(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 
 	// Broadcast stream stats update after writing events
 	if h.wsHub != nil {
@@ -244,7 +247,10 @@ func (h *StreamHandlers) ReadStream(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 }
 
 // CommitOffsetRequest represents a request to commit an offset
@@ -318,7 +324,10 @@ func (h *StreamHandlers) CommitOffset(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 }
 
 // GetOffsetResponse represents a response to getting an offset
@@ -377,7 +386,10 @@ func (h *StreamHandlers) GetOffset(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 }
 
 // GetLatestOffsetResponse represents a response to getting the latest offset
@@ -436,7 +448,10 @@ func (h *StreamHandlers) GetLatestOffset(w http.ResponseWriter, r *http.Request)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 }
 
 // GetConsumerGroupStateResponse represents a response to getting consumer group state
@@ -512,7 +527,10 @@ func (h *StreamHandlers) GetConsumerGroupState(w http.ResponseWriter, r *http.Re
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 }
 
 // ListStreamsResponse represents a response to listing streams
@@ -550,11 +568,14 @@ func (h *StreamHandlers) ListStreams(w http.ResponseWriter, r *http.Request) {
 	// Write response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(ListStreamsResponse{
+	if err := json.NewEncoder(w).Encode(ListStreamsResponse{
 		Status:  "success",
 		Message: "streams retrieved successfully",
 		Streams: streams,
-	})
+	}); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 }
 
 // StreamStats represents stream statistics
@@ -620,7 +641,10 @@ func (h *StreamHandlers) GetStreamStats(w http.ResponseWriter, r *http.Request) 
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 
 	// Broadcast stats update via WebSocket
 	if h.wsHub != nil {
@@ -703,7 +727,10 @@ func (h *StreamHandlers) ListConsumerGroups(w http.ResponseWriter, r *http.Reque
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 }
 
 // Helper functions
@@ -830,5 +857,8 @@ func (h *StreamHandlers) writeError(w http.ResponseWriter, err error, resourcePa
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		// Failed to encode response, but we've already written the status code
+		return
+	}
 }

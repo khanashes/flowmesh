@@ -401,7 +401,11 @@ func (m *Manager) truncateCorruptedSegment(segmentPath string) error {
 	if err != nil {
 		return err
 	}
-	defer reader.Close()
+	defer func() {
+		if err := reader.Close(); err != nil {
+			// Ignore close errors in defer
+		}
+	}()
 
 	// Read entries until corruption is found
 	lastValidOffset := int64(0)

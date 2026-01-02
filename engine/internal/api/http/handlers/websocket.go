@@ -152,7 +152,9 @@ func (h *Hub) messageToBytes(msg *WSMessage) []byte {
 func (c *Client) readPump() {
 	defer func() {
 		c.hub.unregister <- c
-		c.conn.Close()
+		if err := c.conn.Close(); err != nil {
+			// Ignore close errors in defer
+		}
 	}()
 
 	if err := c.conn.SetReadDeadline(time.Now().Add(pongWait)); err != nil {
@@ -187,7 +189,9 @@ func (c *Client) writePump() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
-		c.conn.Close()
+		if err := c.conn.Close(); err != nil {
+			// Ignore close errors in defer
+		}
 	}()
 
 	for {
@@ -208,7 +212,7 @@ func (c *Client) writePump() {
 				return
 			}
 			if _, err := w.Write(message); err != nil {
-				w.Close()
+				_ = w.Close()
 				return
 			}
 
@@ -216,11 +220,11 @@ func (c *Client) writePump() {
 			n := len(c.send)
 			for i := 0; i < n; i++ {
 				if _, err := w.Write([]byte{'\n'}); err != nil {
-					w.Close()
+					_ = w.Close()
 					return
 				}
 				if _, err := w.Write(<-c.send); err != nil {
-					w.Close()
+					_ = w.Close()
 					return
 				}
 			}

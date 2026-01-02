@@ -153,7 +153,8 @@ func (s *ReplayService) ListReplaySessions(ctx context.Context, req *flowmeshpb.
 	protoSessions := make([]*flowmeshpb.ReplaySession, len(sessions))
 	for i, session := range sessions {
 		protoSession := s.sessionToProto(session)
-		// Get progress for each session
+		// Get progress for each session (ignore errors as progress is optional)
+		//nolint:errcheck // Progress is optional, ignore errors
 		progress, _ := replayMgr.GetReplayProgress(ctx, session.ID)
 		if progress != nil {
 			protoSession.Progress = s.progressToProto(progress)

@@ -75,7 +75,7 @@ func (s *Server) Stop(ctx context.Context) error {
 	s.log.Info().Msg("Stopping HTTP server")
 
 	if err := s.httpServer.Shutdown(ctx); err != nil {
-		s.httpServer.Close()
+		_ = s.httpServer.Close() // Ignore close error if shutdown failed
 		return err
 	}
 

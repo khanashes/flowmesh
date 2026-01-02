@@ -261,7 +261,7 @@ func (s *Store) flush() error {
 	}
 
 	if err := os.Rename(tmpFile, s.filePath); err != nil {
-		os.Remove(tmpFile)
+		_ = os.Remove(tmpFile) // Ignore remove error
 		return fmt.Errorf("failed to rename metadata file: %w", err)
 	}
 

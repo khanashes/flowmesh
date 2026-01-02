@@ -52,7 +52,7 @@ func NewSegmentWriter(path string, policy FsyncPolicy) (*SegmentWriter, error) {
 	// Get current file size
 	stat, err := file.Stat()
 	if err != nil {
-		file.Close()
+		_ = file.Close() // Ignore close error
 		return nil, err
 	}
 
@@ -232,7 +232,11 @@ func ValidateSegment(path string) error {
 	if err != nil {
 		return err
 	}
-	defer reader.Close()
+	defer func() {
+		if err := reader.Close(); err != nil {
+			// Ignore close errors in defer
+		}
+	}()
 
 	// Read through all entries to check for corruption
 	for {

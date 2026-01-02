@@ -15,7 +15,7 @@ func TempDir(t *testing.T) string {
 	dir, err := os.MkdirTemp("", "flowmesh-test-*")
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		os.RemoveAll(dir)
+		_ = os.RemoveAll(dir) // Ignore cleanup errors in tests
 	})
 	return dir
 }
@@ -29,9 +29,9 @@ func TempFile(t *testing.T, dir, pattern string) string {
 	}
 	file, err := os.CreateTemp(dir, pattern)
 	require.NoError(t, err)
-	file.Close()
+	_ = file.Close() // Ignore close error
 	t.Cleanup(func() {
-		os.Remove(file.Name())
+		_ = os.Remove(file.Name()) // Ignore cleanup errors in tests
 	})
 	return file.Name()
 }
