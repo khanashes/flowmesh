@@ -80,7 +80,8 @@ func (s *Server) Stop(ctx context.Context) error {
 	s.log.Info().Msg("Stopping metrics server")
 
 	if err := s.httpServer.Shutdown(ctx); err != nil {
-		_ = s.httpServer.Close() // Ignore close error if shutdown failed
+		//nolint:errcheck // Ignore close error if shutdown failed
+		_ = s.httpServer.Close()
 		return err
 	}
 

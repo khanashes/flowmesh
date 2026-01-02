@@ -82,8 +82,10 @@ func validateDirectory(path string) error {
 	if err != nil {
 		return fmt.Errorf("directory is not writable: %w", err)
 	}
-	_ = file.Close()        // Ignore close error
-	_ = os.Remove(testFile) // Ignore remove error
+	//nolint:errcheck // Ignore cleanup errors in test
+	_ = file.Close()
+	//nolint:errcheck // Ignore cleanup errors in test
+	_ = os.Remove(testFile)
 
 	return nil
 }

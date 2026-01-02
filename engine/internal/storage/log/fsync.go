@@ -88,6 +88,7 @@ func (fs *FsyncScheduler) flushAll() {
 	fs.mu.RUnlock()
 
 	for _, w := range writers {
-		_ = w.Flush() // Ignore errors, individual writers log them
+		//nolint:errcheck // Ignore errors, individual writers log them
+		_ = w.Flush()
 	}
 }

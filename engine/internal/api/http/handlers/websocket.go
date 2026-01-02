@@ -212,6 +212,7 @@ func (c *Client) writePump() {
 				return
 			}
 			if _, err := w.Write(message); err != nil {
+				//nolint:errcheck // Ignore close error when write fails
 				_ = w.Close()
 				return
 			}
@@ -220,10 +221,12 @@ func (c *Client) writePump() {
 			n := len(c.send)
 			for i := 0; i < n; i++ {
 				if _, err := w.Write([]byte{'\n'}); err != nil {
+					//nolint:errcheck // Ignore close error when write fails
 					_ = w.Close()
 					return
 				}
 				if _, err := w.Write(<-c.send); err != nil {
+					//nolint:errcheck // Ignore close error when write fails
 					_ = w.Close()
 					return
 				}

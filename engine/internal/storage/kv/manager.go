@@ -366,7 +366,8 @@ func (m *Manager) Exists(ctx context.Context, resourcePath, key string) (bool, e
 		}
 		return false, fmt.Errorf("failed to check key existence: %w", err)
 	}
-	_ = closer.Close() // Ignore close error
+	//nolint:errcheck // Ignore close error
+	_ = closer.Close()
 
 	return true, nil
 }

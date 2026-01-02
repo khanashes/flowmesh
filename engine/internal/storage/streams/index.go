@@ -123,7 +123,8 @@ func (idx *OffsetIndex) Save(path string) error {
 	}
 
 	if err := os.Rename(tmpFile, path); err != nil {
-		_ = os.Remove(tmpFile) // Ignore remove error
+		//nolint:errcheck // Ignore remove error
+		_ = os.Remove(tmpFile)
 		return fmt.Errorf("failed to rename index file: %w", err)
 	}
 

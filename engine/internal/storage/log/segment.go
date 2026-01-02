@@ -52,7 +52,8 @@ func NewSegmentWriter(path string, policy FsyncPolicy) (*SegmentWriter, error) {
 	// Get current file size
 	stat, err := file.Stat()
 	if err != nil {
-		_ = file.Close() // Ignore close error
+		//nolint:errcheck // Ignore close error
+		_ = file.Close()
 		return nil, err
 	}
 

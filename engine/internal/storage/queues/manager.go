@@ -843,7 +843,8 @@ func (m *Manager) MoveToDLQ(ctx context.Context, resourcePath string, jobID stri
 				break
 			}
 		}
-		_ = reader.Close() // Ignore close error
+		//nolint:errcheck // Ignore close error
+		_ = reader.Close()
 	}
 
 	if len(payload) == 0 {
@@ -1294,13 +1295,15 @@ func (m *Manager) Peek(ctx context.Context, resourcePath string, filterStr strin
 
 		// Seek to offset
 		if _, err := reader.Seek(job.PayloadPos.Offset, io.SeekStart); err != nil {
-			_ = reader.Close() // Ignore close error
+			//nolint:errcheck // Ignore close error
+			_ = reader.Close()
 			m.log.Warn().Err(err).Msg("Failed to seek to message offset")
 			continue
 		}
 
 		data, _, err := reader.ReadEntry()
-		_ = reader.Close() // Close immediately to avoid leaking handles in loop
+		//nolint:errcheck // Close immediately to avoid leaking handles in loop
+		_ = reader.Close()
 		if err != nil {
 			m.log.Warn().Err(err).Msg("Failed to read message entry")
 			continue
