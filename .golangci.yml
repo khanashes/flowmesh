@@ -88,6 +88,7 @@ linters:
         - gocognit
         - lll
         - errorlint
+        - dogsled
     - path: internal/version
       text: "version"
     - linters:
